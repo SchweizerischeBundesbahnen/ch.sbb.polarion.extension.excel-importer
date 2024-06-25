@@ -35,7 +35,7 @@ Changes only take effect after restart of Polarion.
 2. On the top of the project's navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Project's administration page will be opened.
 3. On the administration's navigation pane select Portal ➙ Topics and click on Edit button of desired View.
 4. In opened Topics Configuration editor insert following new topic:
-   ```
+   ```xml
    …
    <topic id="excel-importer"/>
    …
