@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+<plugin>
+    <extension
+            point="com.polarion.portal.tomcat.webapps">
+        <webapp
+                name="polarion/excel-importer"
+                contextRoot="webapp/excel-importer">
+        </webapp>
+    </extension>
+
+    <extension
+            point="com.polarion.portal.tomcat.webapps">
+        <webapp
+                name="polarion/excel-importer-admin"
+                contextRoot="webapp/excel-importer-admin">
+        </webapp>
+    </extension>
+</plugin>
