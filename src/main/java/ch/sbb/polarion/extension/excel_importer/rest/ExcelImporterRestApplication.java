@@ -18,16 +18,14 @@ public class ExcelImporterRestApplication extends GenericRestApplication {
         NamedSettingsRegistry.INSTANCE.register(List.of(new ExcelSheetMappingSettings()));
     }
 
+
     @Override
-    @NotNull
-    protected Set<Class<?>> getControllerClasses() {
-        final Set<Class<?>> controllerClasses = super.getControllerClasses();
-        controllerClasses.addAll(Set.of(
-                ExcelImportApiController.class,
-                ExcelImportInternalController.class,
-                WorkItemsApiController.class,
-                WorkItemsInternalController.class
-        ));
-        return controllerClasses;
+    protected @NotNull Set<Object> getExtensionControllerSingletons() {
+        return Set.of(
+                new ExcelImportApiController(),
+                new ExcelImportInternalController(),
+                new WorkItemsApiController(),
+                new WorkItemsInternalController()
+        );
     }
 }
