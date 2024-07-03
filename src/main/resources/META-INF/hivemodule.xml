@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module id="ch.sbb.polarion.extension.excel_importer" version="1.0.0">
+    <contribution configuration-id="com.polarion.xray.webui.administrationPageExtenders">
+        <extender name="About"
+                  parentNodeName="Excel Importer"
+                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
+                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+                  pageUrl="/polarion/excel-importer-admin/pages/about.jsp"
+                  projectScope="true"
+                  repositoryScope="true"/>
+
+        <extender name="REST API"
+                  parentNodeName="Excel Importer"
+                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
+                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+                  pageUrl="/polarion/excel-importer/rest/swagger"
+                  projectScope="true"
+                  repositoryScope="true"/>
+
+        <extender name="Mappings"
+                  parentNodeName="Excel Importer"
+                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
+                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+                  pageUrl="/polarion/excel-importer-admin/pages/mappings.jsp?scope=$scope$"
+                  projectScope="true"
+                  repositoryScope="false"/>
+
+        <extender name="Import File"
+                  parentNodeName="Excel Importer"
+                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
+                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+                  pageUrl="/polarion/excel-importer-admin/pages/import_file.jsp?scope=$scope$"
+                  projectScope="true"
+                  repositoryScope="false"/>
+    </contribution>
+
+    <contribution configuration-id="com.polarion.xray.webui.customNavigationExtenders">
+        <extenders extender="excelImporterNavigationExtender"/>
+    </contribution>
+
+    <service-point id="excelImporterNavigationExtender" interface="com.polarion.alm.ui.server.navigation.NavigationExtender">
+        <invoke-factory>
+            <construct class="ch.sbb.polarion.extension.excel_importer.ExcelImporterNavigationExtender"/>
+        </invoke-factory>
+    </service-point>
+
+</module>

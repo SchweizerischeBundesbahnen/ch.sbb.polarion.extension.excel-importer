@@ -1,5 +1,4 @@
-Support-Email: polarion-opensource@sbb.ch
-Bundle-Name: Extension for Polarion ALM
+Bundle-Name: Excel Importer for Polarion ALM
 Require-Bundle: com.polarion.portal.tomcat,
  com.polarion.alm.ui,
  com.polarion.platform.guice,
@@ -8,7 +7,7 @@ Require-Bundle: com.polarion.portal.tomcat,
  com.fasterxml.jackson,
  com.fasterxml.jackson.jaxrs,
  io.swagger,
- org.apache.commons.logging,
- slf4j.api,
  org.springframework.spring-core,
- org.springframework.spring-web
+ org.springframework.spring-web,
+ ch.sbb.polarion.thirdparty.bundles.org.apache.poi
+Export-Package: ch.sbb.polarion.extension.excel_importer
