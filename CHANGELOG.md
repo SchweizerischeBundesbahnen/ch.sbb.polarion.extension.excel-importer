@@ -1,4 +1,13 @@
-# Changelog before migration to conventional commits
+# Changelog
+
+## 2.4.0 (2024-07-03)
+
+
+### Miscellaneous Chores
+
+* migration from BitBucket ([#3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/3)) ([ad17388](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/ad17388a144aac0ebe1524f62835808ec82309a0))
+
+## Changelog before migration to conventional commits
 
 | Version | Changes                                                                                                                                                                      |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
