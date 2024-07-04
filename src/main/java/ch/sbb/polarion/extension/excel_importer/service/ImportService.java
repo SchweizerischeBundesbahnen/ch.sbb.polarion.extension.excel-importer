@@ -138,7 +138,11 @@ public class ImportService {
         if (Objects.equals(newValue, existingValue)) {
             return false;
         }
-        IType fieldType = fieldMetadataSet.stream().filter(m -> m.getId().equals(fieldId)).findFirst().orElseThrow().getType();
+        IType fieldType = fieldMetadataSet.stream().filter(m -> m.getId().equals(fieldId))
+                .findFirst()
+                .map(FieldMetadata::getType)
+                .orElse(FieldType.STRING.getType());
+
         if (FieldType.BOOLEAN.getType().equals(fieldType)) {
             if (newValue instanceof String value) {
                 //later generic will treat all nonsense values (e.g. 'qwe', 'yes' etc.) as false so we can do it here in advance
