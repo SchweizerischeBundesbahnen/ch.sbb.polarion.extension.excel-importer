@@ -142,7 +142,6 @@ public class ImportService {
                 .findFirst()
                 .map(FieldMetadata::getType)
                 .orElseThrow(() -> new IllegalArgumentException("Cannot find field metadata for ID '%s'".formatted(fieldId)));
-
         if (FieldType.BOOLEAN.getType().equals(fieldType)) {
             if (newValue instanceof String value) {
                 //later generic will treat all nonsense values (e.g. 'qwe', 'yes' etc.) as false so we can do it here in advance
