@@ -134,14 +134,17 @@ public class ImportService {
      */
     @SuppressWarnings("java:S1125") //will be improve later
     private boolean existingValueDiffers(IWorkItem workItem, String fieldId, Object newValue, Set<FieldMetadata> fieldMetadataSet) {
+        FieldMetadata fieldMetadata = fieldMetadataSet.stream()
+                .filter(m -> m.getId().equals(fieldId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Cannot find field metadata for ID '%s'".formatted(fieldId)));
+
         Object existingValue = polarionServiceExt.getFieldValue(workItem, fieldId);
-        if (Objects.equals(newValue, existingValue)) {
+        if (existingValue == null && newValue == null) {
             return false;
         }
-        IType fieldType = fieldMetadataSet.stream().filter(m -> m.getId().equals(fieldId))
-                .findFirst()
-                .map(FieldMetadata::getType)
-                .orElseThrow(() -> new IllegalArgumentException("Cannot find field metadata for ID '%s'".formatted(fieldId)));
+
+        IType fieldType = fieldMetadata.getType();
         if (FieldType.BOOLEAN.getType().equals(fieldType)) {
             if (newValue instanceof String value) {
                 //later generic will treat all nonsense values (e.g. 'qwe', 'yes' etc.) as false so we can do it here in advance
@@ -153,7 +156,7 @@ public class ImportService {
             //WORKAROUND: converting to string helps to find same values even between different types (Float, Double etc.)
             return !Objects.equals(String.valueOf(newValue), String.valueOf(existingValue));
         } else {
-            return true;
+            return !Objects.equals(newValue, existingValue);
         }
     }
 
