@@ -70,7 +70,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
 
     @Override
     public Set<String> getUsedColumnsLetters() {
-        return columnsMapping.keySet();
+        return (columnsMapping != null)? columnsMapping.keySet() : Set.of();
     }
 
 }
