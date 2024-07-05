@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.excel-importer</artifactId>
-    <version>2.4.1-SNAPSHOT</version>
+    <version>2.5.0</version>
     <packaging>jar</packaging>
 
     <name>Polarion ALM extension to process WorkItems by uploading xlsx-files</name>

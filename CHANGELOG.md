@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.5.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v2.4.0...v2.5.0) (2024-07-05)
+
+
+### Features
+
+* app icon added ([#11](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/11)) ([1c3064a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/1c3064a863b03fe2bcac4d2e0954861e128745b8))
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v6.0.2 ([2feb16b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/2feb16bdbc65ae3a6fd6d551167d549bfb0ef2fe))
+* Fixed null columnsMapping and field not existing in fieldMetadat… ([#7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/7)) ([28ef99a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/28ef99aebeaadd38c4a0a220b2758d77d2f5eb8e)), closes [#6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/6)
+
 ## 2.4.0 (2024-07-03)
 
 
