@@ -141,7 +141,7 @@ public class ImportService {
         IType fieldType = fieldMetadataSet.stream().filter(m -> m.getId().equals(fieldId))
                 .findFirst()
                 .map(FieldMetadata::getType)
-                .orElse(FieldType.STRING.getType());
+                .orElseThrow(() -> new IllegalArgumentException("Cannot find field metadata for ID '%s'".formatted(fieldId)));
 
         if (FieldType.BOOLEAN.getType().equals(fieldType)) {
             if (newValue instanceof String value) {
