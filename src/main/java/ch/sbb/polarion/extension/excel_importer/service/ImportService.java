@@ -138,6 +138,8 @@ public class ImportService {
         if (Objects.equals(newValue, existingValue)) {
             return false;
         }
+//        IType fieldType = fieldMetadataSet.stream().filter(m -> m.getId().equals(fieldId)).findFirst().orElseThrow().getType();
+
         IType fieldType = fieldMetadataSet.stream().filter(m -> m.getId().equals(fieldId))
                 .findFirst()
                 .map(FieldMetadata::getType)

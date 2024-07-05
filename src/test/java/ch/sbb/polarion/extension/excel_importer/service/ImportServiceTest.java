@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettingsModel;
+import ch.sbb.polarion.extension.generic.fields.FieldType;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.shared.api.transaction.RunnableInWriteTransaction;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
@@ -94,10 +95,13 @@ class ImportServiceTest {
 
         ICustomField excelIdField = mock(ICustomField.class);
         when(excelIdField.getId()).thenReturn("excelId");
+        when(excelIdField.getType()).thenReturn(FieldType.STRING.getType());
         ICustomField excelDataField = mock(ICustomField.class);
         when(excelDataField.getId()).thenReturn("excelData");
+        when(excelDataField.getType()).thenReturn(FieldType.BOOLEAN.getType());
         ICustomField nullPossibleField = mock(ICustomField.class);
         when(nullPossibleField.getId()).thenReturn("nullPossible");
+        when(nullPossibleField.getType()).thenReturn(FieldType.FLOAT.getType());
 
         when(customFieldsService.getCustomFields(anyString(), any(), anyString())).thenReturn(Arrays.asList(excelIdField, excelDataField, nullPossibleField));
         when(customFieldsService.getCustomFields(anyString(), any(), eq(null))).thenReturn(Collections.EMPTY_LIST);
@@ -177,8 +181,10 @@ class ImportServiceTest {
 
         ICustomField excelIdField = mock(ICustomField.class);
         when(excelIdField.getId()).thenReturn("id");
+        when(excelIdField.getType()).thenReturn(FieldType.STRING.getType());
         ICustomField excelTitleField = mock(ICustomField.class);
         when(excelTitleField.getId()).thenReturn("title");
+        when(excelTitleField.getType()).thenReturn(FieldType.STRING.getType());
 
         when(customFieldsService.getCustomFields(anyString(), any(), anyString())).thenReturn(Arrays.asList(excelIdField, excelTitleField));
         when(customFieldsService.getCustomFields(anyString(), any(), eq(null))).thenReturn(Collections.EMPTY_LIST);
