@@ -13,7 +13,9 @@ mvn clean package
 ## Installation to Polarion
 
 !!! WARNING
-Before using this extension you have to ensure that the current Polarion instance contains Apache POI extension v.5.2.x (`<polarion_home>/polarion/extensions/ch.sbb.polarion.thirdparty.bundles.org.apache.poi/eclipse/plugins/org.apache.poi-<version>.jar`).
+Before using this extension you have to ensure that the current Polarion instance contains Apache POI Polarion Bundle (for more information please check [ch.sbb.polarion.thirdparty.bundles](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.thirdparty.bundles)):
+`<polarion_home>/polarion/extensions/ch.sbb.polarion.thirdparty.bundles.org.apache.poi/eclipse/plugins/org.apache.poi-<version>.jar` should be installed in Polarion.
+
 
 To install the extension to Polarion, file `ch.sbb.polarion.extension.excel-importer-<version>.jar`
 should be copied to `<polarion_home>/polarion/extensions/ch.sbb.polarion.extension.excel-importer/eclipse/plugins`
