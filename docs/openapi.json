@@ -25,6 +25,133 @@
         ]
       }
     },
+    "/api/projects/{projectId}/import": {
+      "post": {
+        "operationId": "importExcelSheet",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "mappingName": {
+                    "default": "Default",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResult"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "summary": "Imports Excel sheet",
+        "tags": [
+          "Excel Import"
+        ]
+      }
+    },
+    "/api/projects/{projectId}/workitem_types": {
+      "get": {
+        "operationId": "getWorkItemTypes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ITypeOpt"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "summary": "Get workitem types for project",
+        "tags": [
+          "WorkItems"
+        ]
+      }
+    },
+    "/api/projects/{projectId}/workitem_types/{workItemType}/fields": {
+      "get": {
+        "operationId": "getWorkItemFields",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "workItemType",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FieldMetadata"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "summary": "Get all fields for requested project and workitem type",
+        "tags": [
+          "WorkItems"
+        ]
+      }
+    },
     "/api/settings": {
       "get": {
         "operationId": "readFeaturesList_1",
@@ -357,6 +484,106 @@
             "type": "string"
           },
           "swaggerUiUrl": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "FieldMetadata": {
+        "properties": {
+          "custom": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "multi": {
+            "type": "boolean"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "type": {
+            "$ref": "#/components/schemas/IType"
+          }
+        },
+        "type": "object"
+      },
+      "IType": {
+        "type": "object"
+      },
+      "ITypeOpt": {
+        "properties": {
+          "default": {
+            "type": "boolean"
+          },
+          "enumId": {
+            "type": "string"
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phantom": {
+            "type": "boolean"
+          },
+          "properties": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "sequenceNumber": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ImportResult": {
+        "properties": {
+          "createdIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "unchangedIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "updatedIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "Option": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "name": {
             "type": "string"
           }
         },
