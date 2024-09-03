@@ -6,6 +6,7 @@ Column-to-Field mapping is manageable using mapping settings.
 ## Build
 
 This extension can be produced using maven:
+
 ```bash
 mvn clean package
 ```
@@ -25,7 +26,8 @@ For automated installation with maven env variable `POLARION_HOME` should be def
 Changes only take effect after restart of Polarion.
 
 ## Apache POI Polarion Bundle
-Latest Polarion installations have relatively old version of Apache POI so it is recommended to use Apache POI Polarion Bundle (for more information please check [ch.sbb.polarion.thirdparty.bundles](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.thirdparty.bundles)):
+
+Latest Polarion installations have relatively old version of Apache POI, so it is recommended to use Apache POI Polarion Bundle (for more information please check [ch.sbb.polarion.thirdparty.bundles](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.thirdparty.bundles)):
 its artifact must be placed to `<polarion_home>/polarion/extensions/ch.sbb.polarion.thirdparty.bundles.org.apache.poi/eclipse/plugins/org.apache.poi-<version>.jar`
 
 ## Polarion configuration
@@ -43,97 +45,10 @@ its artifact must be placed to `<polarion_home>/polarion/extensions/ch.sbb.polar
    ```
 5. Save changes by clicking 💾 Save
 
-## Extension's REST API
+## REST API
 
-### Settings
+This extension provides REST API. OpenAPI Specification can be obtained [here](docs/openapi.json).
 
-Settings may be changed using `/api/settings/mappings/names/{mappingName}` endpoint.
-Request body example:
+## Known issues
 
-```json
-{
-  "sheetName": "Sheet 1",
-  "startFromRow": 1,
-  "columnsMapping": {
-    "A": "title",
-    "B": "docId",
-    "C": "docName"
-  },
-  "defaultWorkItemType": "requirement",
-  "linkColumn": "B"
-}
-```
-
-List of workItem types for project may be accessible using `/api/projects/{projectId}/workitem_types` endpoint.
-Request body example:
-
-```json
-[
-  {
-    "sequenceNumber": 1,
-    "name": "User Story",
-    "hidden": false,
-    "properties": {
-      "color": "#F1ED92",
-      "description": "A functional requirement.",
-      "iconURL": "/polarion/icons/default/enums/type_userstory.gif"
-    },
-    "id": "userstory",
-    "default": true,
-    "enumId": "work-item-type",
-    "phantom": false
-  },
-  {
-    "sequenceNumber": 2,
-    "name": "Requirement",
-    "hidden": false,
-    "properties": {
-      "color": "#A280A9",
-      "description": "A nonfunctional requirement.",
-      "iconURL": "/polarion/icons/default/enums/type_requirement.gif"
-    },
-    "id": "requirement",
-    "default": false,
-    "enumId": "work-item-type",
-    "phantom": false
-  }
-]
-```
-
-List of workItem fields for project and workitem type may be accessible using `/api/projects/{projectId}/workitem_types/{workItemType}/fields` endpoint.
-Request body example:
-
-```json
-[
-  "approvals",
-  "assignee",
-  "attachments",
-  "author",
-  "categories",
-  "comments"
-]
-```
-
-### Import file
-
-Import is accessible by posting a xlsx-file to the `/api/projects/{projectId}/import` endpoint.
-
-Response example:
-
-```json
-{
-  "updatedIds": [
-    "updated_id1",
-    "updated_id2"
-  ],
-  "createdIds": [
-    "created_id1",
-    "created_id2"
-  ],
-  "unchangedIds": [
-    "unchanged_id1",
-    "unchanged_id2"
-  ]
-}
-```
-
+All good so far.
