@@ -12,7 +12,9 @@ import com.polarion.alm.tracker.model.ITrackerProject;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
@@ -34,14 +36,25 @@ public class ExcelImportInternalController {
 
     protected final PolarionServiceExt polarionServiceExt = new PolarionServiceExt();
 
-    @Operation(summary = "Imports Excel sheet")
     @POST
     @Path("/projects/{projectId}/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Imports Excel sheet",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Successful import",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON,
+                                    schema = @Schema(implementation = ImportResult.class)
+                            )
+                    )
+            }
+    )
     public ImportResult importExcelSheet(@PathParam("projectId") String projectId,
                                          @DefaultValue(NamedSettings.DEFAULT_NAME) @FormDataParam("mappingName") String mappingName,
-                                         @Parameter(schema = @Schema(type="string", format = "binary")) @FormDataParam("file") InputStream inputStream) {
+                                         @Parameter(schema = @Schema(type = "string", format = "binary")) @FormDataParam("file") InputStream inputStream) {
         final ITrackerProject trackerProject = polarionServiceExt.findProject(projectId);
 
         ExcelSheetMappingSettingsModel settings = new ExcelSheetMappingSettings().load(projectId, SettingId.fromName(mappingName));

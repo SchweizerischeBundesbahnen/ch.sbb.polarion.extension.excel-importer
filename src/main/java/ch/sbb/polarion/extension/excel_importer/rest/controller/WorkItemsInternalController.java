@@ -5,6 +5,9 @@ import ch.sbb.polarion.extension.generic.fields.model.FieldMetadata;
 import com.polarion.alm.tracker.model.ITypeOpt;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import javax.ws.rs.GET;
@@ -22,18 +25,40 @@ public class WorkItemsInternalController {
 
     protected final PolarionServiceExt polarionServiceExt = new PolarionServiceExt();
 
-    @Operation(summary = "Get all fields for requested project and workitem type")
     @GET
     @Path("/projects/{projectId}/workitem_types/{workItemType}/fields")
     @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get all fields for requested project and workitem type",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Successfully retrieved fields",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON,
+                                    schema = @Schema(implementation = FieldMetadata.class)
+                            )
+                    )
+            }
+    )
     public Set<FieldMetadata> getWorkItemFields(@PathParam("projectId") String projectId, @PathParam("workItemType") String workItemType) {
         return polarionServiceExt.getWorkItemsFields(projectId, workItemType);
     }
 
-    @Operation(summary = "Get workitem types for project")
     @GET
     @Path("/projects/{projectId}/workitem_types")
     @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get workitem types for project",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Successfully retrieved work item types",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON,
+                                    schema = @Schema(implementation = ITypeOpt.class)
+                            )
+                    )
+            }
+    )
     public List<ITypeOpt> getWorkItemTypes(@PathParam("projectId") String projectId) {
         return polarionServiceExt.getWorkItemTypes(projectId);
     }
