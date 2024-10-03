@@ -63,7 +63,7 @@ function createFieldCell(tableRow, fieldValue) {
 
     const mappingButton = document.createElement('button');
     mappingButton.classList.add('toolbar-button', 'options-mapping-button');
-    mappingButton.textContent = 'Enum mapping';
+    mappingButton.textContent = 'Options mapping';
     mappingButton.style.display = 'none';
     mappingButton.addEventListener('click', () => {
 
@@ -74,8 +74,7 @@ function createFieldCell(tableRow, fieldValue) {
 
         const hint = document.createElement('span');
         hint.classList.add('option-mapping-hint');
-        hint.innerHTML = 'By default both key and value are used for mapping to proper enum option. ' +
-            'Overriding values below will discontinue this behavior, so do not forget to specify enum default value explicitly if it still required.';
+        hint.innerHTML = 'Use <b>(empty)</b> keyword to map empty column value to some specific option.';
         const hintWrapper = document.createElement('span');
         hintWrapper.classList.add('option-mapping-hint-wrapper');
         hintWrapper.appendChild(hint);
@@ -107,7 +106,7 @@ function createFieldCell(tableRow, fieldValue) {
             const input = document.createElement('input');
             input.type = "text";
             input.placeholder = option.name;
-            input.title = `Comma-separated list of alternative values, which will be mapped to the enum option "${option.key}"`;
+            input.title = `Comma-separated list of alternative values, which will be mapped to the option "${option.key}"`;
             input.value = getEnumMappingForField(fieldSelect.value, option.key);
             input.classList.add('fs-14', 'option-mapping-value');
             cell.appendChild(input);
@@ -159,7 +158,7 @@ function createHiddenInput(className, value) {
     return idInput;
 }
 
-function saveEnumMapping() {
+function saveOptionsMapping() {
     const fieldId = (document.getElementById('modal-popup').getElementsByClassName('field-id')[0]).value;
     cache.enumsMapping[fieldId] = Object.fromEntries(getOptionsMapping());
 }
