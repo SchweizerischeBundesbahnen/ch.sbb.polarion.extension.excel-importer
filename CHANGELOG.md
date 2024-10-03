@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.8.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v2.7.0...v2.8.0) (2024-10-03)
+
+
+### Features
+
+* custom value mapping for boolean attributes ([#46](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/46)) ([e7d5626](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/e7d56262fd0eec599f40d36110e0cc51f29db5cb)), closes [#43](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/43)
+* Extended REST API annotation ([#41](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/41)) ([73ef2cd](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/73ef2cdb744ae445bc59e6eb18ca120bddb9a7c2)), closes [#40](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/40)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v7.2.0 ([#44](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/44)) ([53be861](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/53be861ed555aea06185ef274458f4668fd883a9))
+
 ## [2.7.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v2.6.2...v2.7.0) (2024-09-03)
 
 
