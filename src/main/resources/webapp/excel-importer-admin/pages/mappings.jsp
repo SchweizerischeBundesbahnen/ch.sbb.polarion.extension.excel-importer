@@ -121,10 +121,10 @@
 </div>
 
 <jsp:include page='modal.jsp'>
-    <jsp:param name="titleText" value="Enum mapping"/>
+    <jsp:param name="titleText" value="Options mapping"/>
     <jsp:param name="okText" value="Accept"/>
     <jsp:param name="cancelText" value="Cancel"/>
-    <jsp:param name="okClickFunction" value="saveEnumMapping()"/>
+    <jsp:param name="okClickFunction" value="saveOptionsMapping()"/>
 </jsp:include>
 
 <script type="text/javascript" src="../ui/generic/js/common.js?bundle=<%= bundleTimestamp %>"></script>

@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
 import ch.sbb.polarion.extension.generic.fields.model.FieldMetadata;
+import ch.sbb.polarion.extension.generic.fields.model.Option;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.ITrackerProject;
@@ -12,6 +13,7 @@ import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import com.polarion.subterra.base.data.identification.IContextId;
+import com.polarion.subterra.base.data.model.internal.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -20,6 +22,8 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.service.PolarionService {
+
+    private static final Set<Option> BOOLEAN_OPTIONS_MAPPING = Set.of(new Option("True", "true"), new Option("False", "false"));
 
     public PolarionServiceExt() {
     }
@@ -41,6 +45,7 @@ public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.servic
         fields.addAll(getGeneralFields(IWorkItem.PROTO, contextId)); // get common fields for WorkItem
         fields.addAll(getCustomFields(IWorkItem.PROTO, contextId, null)); // get custom fields for WorkItem with any type in the project (-- All Types --)
         fields.addAll(getCustomFields(IWorkItem.PROTO, contextId, typeOpt.getId())); // get custom fields for WorkItem with specific type in the project
+        fillBooleanOptionMappings(fields); // set mappings for booleans
         return fields;
     }
 
@@ -83,5 +88,13 @@ public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.servic
             throw new IllegalArgumentException(String.format("Project '%s' does not exist", projectId));
         }
         return trackerProject;
+    }
+
+    private void fillBooleanOptionMappings(Set<FieldMetadata> fields) {
+        fields.forEach(f -> {
+            if (f.getType() instanceof PrimitiveType primitiveType && Boolean.class.getTypeName().equals(primitiveType.getTypeName())) {
+                f.setOptions(BOOLEAN_OPTIONS_MAPPING);
+            }
+        });
     }
 }

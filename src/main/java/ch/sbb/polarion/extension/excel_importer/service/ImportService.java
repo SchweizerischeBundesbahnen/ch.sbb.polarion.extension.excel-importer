@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.excel_importer.service;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettingsModel;
 import ch.sbb.polarion.extension.generic.fields.FieldType;
 import ch.sbb.polarion.extension.generic.fields.model.FieldMetadata;
+import ch.sbb.polarion.extension.generic.util.OptionsMappingUtils;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.tracker.model.ITrackerProject;
@@ -113,6 +114,9 @@ public class ImportService {
     private void fillWorkItemFields(IWorkItem workItem, Map<String, Object> mappingRecord, ExcelSheetMappingSettingsModel model, String linkColumnId) {
         mappingRecord.forEach((columnId, value) -> {
             String fieldId = model.getColumnsMapping().get(columnId);
+            // we need to know possible mapped value asap because some types (at least boolean) need it to check value for modification
+            String mappedOption = OptionsMappingUtils.getMappedOptionKey(fieldId, value, model.getEnumsMapping());
+            value = mappedOption != null ? mappedOption : value;
             Set<FieldMetadata> fieldMetadataSet = polarionServiceExt.getWorkItemsFields(workItem.getProjectId(), workItem.getType() == null ? "" : workItem.getType().getId());
             // The linkColumn field's value can't change, therefore it doesn't need to be overwritten.
             // However, it must be saved to the newly created work item otherwise sequential imports will produce several objects.
