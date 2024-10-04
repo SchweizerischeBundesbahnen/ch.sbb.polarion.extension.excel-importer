@@ -1,17 +1,35 @@
 {
   "openapi" : "3.0.1",
   "info" : {
-    "title" : "REST API"
+    "title" : "Excel Importer REST API",
+    "version" : "v1"
   },
   "paths" : {
+    "/api/context" : {
+      "get" : {
+        "operationId" : "getContext",
+        "responses" : {
+          "default" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Context"
+                }
+              }
+            },
+            "description" : "Context information"
+          }
+        },
+        "summary" : "Returns basic context information of Polarion's extension",
+        "tags" : [ "Extension Information" ]
+      }
+    },
     "/api/projects/{projectId}/import" : {
       "post" : {
-        "tags" : [ "Excel Import" ],
-        "summary" : "Imports Excel sheet",
         "operationId" : "importExcelSheet",
         "parameters" : [ {
-          "name" : "projectId",
           "in" : "path",
+          "name" : "projectId",
           "required" : true,
           "schema" : {
             "type" : "string"
@@ -23,13 +41,13 @@
               "schema" : {
                 "type" : "object",
                 "properties" : {
-                  "mappingName" : {
-                    "type" : "string",
-                    "default" : "Default"
-                  },
                   "file" : {
                     "type" : "string",
                     "format" : "binary"
+                  },
+                  "mappingName" : {
+                    "type" : "string",
+                    "default" : "Default"
                   }
                 }
               }
@@ -38,60 +56,26 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Successful import",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ImportResult"
                 }
               }
-            }
+            },
+            "description" : "Successful import"
           }
-        }
-      }
-    },
-    "/api/projects/{projectId}/workitem_types/{workItemType}/fields" : {
-      "get" : {
-        "tags" : [ "WorkItems" ],
-        "summary" : "Get all fields for requested project and workitem type",
-        "operationId" : "getWorkItemFields",
-        "parameters" : [ {
-          "name" : "projectId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "workItemType",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Successfully retrieved fields",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/FieldMetadata"
-                }
-              }
-            }
-          }
-        }
+        },
+        "summary" : "Imports Excel sheet",
+        "tags" : [ "Excel Import" ]
       }
     },
     "/api/projects/{projectId}/workitem_types" : {
       "get" : {
-        "tags" : [ "WorkItems" ],
-        "summary" : "Get workitem types for project",
         "operationId" : "getWorkItemTypes",
         "parameters" : [ {
-          "name" : "projectId",
           "in" : "path",
+          "name" : "projectId",
           "required" : true,
           "schema" : {
             "type" : "string"
@@ -99,71 +83,165 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Successfully retrieved work item types",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ITypeOpt"
                 }
               }
-            }
+            },
+            "description" : "Successfully retrieved work item types"
           }
-        }
+        },
+        "summary" : "Get workitem types for project",
+        "tags" : [ "WorkItems" ]
       }
     },
-    "/api/context" : {
+    "/api/projects/{projectId}/workitem_types/{workItemType}/fields" : {
       "get" : {
-        "tags" : [ "Extension Information" ],
-        "summary" : "Returns basic context information of Polarion's extension",
-        "operationId" : "getContext",
-        "responses" : {
-          "default" : {
-            "description" : "Context information",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Context"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/version" : {
-      "get" : {
-        "tags" : [ "Extension Information" ],
-        "summary" : "Returns version of Polarion's extension",
-        "operationId" : "getVersion",
-        "responses" : {
-          "default" : {
-            "description" : "Version information",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Version"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/settings/{feature}/names/{name}" : {
-      "post" : {
-        "tags" : [ "Settings" ],
-        "summary" : "Updates name of specified named setting",
-        "operationId" : "renameSetting_1",
+        "operationId" : "getWorkItemFields",
         "parameters" : [ {
-          "name" : "feature",
           "in" : "path",
+          "name" : "projectId",
           "required" : true,
           "schema" : {
             "type" : "string"
           }
         }, {
-          "name" : "name",
           "in" : "path",
+          "name" : "workItemType",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FieldMetadata"
+                }
+              }
+            },
+            "description" : "Successfully retrieved fields"
+          }
+        },
+        "summary" : "Get all fields for requested project and workitem type",
+        "tags" : [ "WorkItems" ]
+      }
+    },
+    "/api/settings" : {
+      "get" : {
+        "operationId" : "readFeaturesList_1",
+        "responses" : {
+          "default" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "List of supported features"
+          }
+        },
+        "summary" : "Returns the complete list of all supported features",
+        "tags" : [ "Settings" ]
+      }
+    },
+    "/api/settings/{feature}/default-content" : {
+      "get" : {
+        "operationId" : "getDefaultValues_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "feature",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "default" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SettingsModel"
+                }
+              }
+            },
+            "description" : "Default values"
+          }
+        },
+        "summary" : "Returns default values of specified setting",
+        "tags" : [ "Settings" ]
+      }
+    },
+    "/api/settings/{feature}/names" : {
+      "get" : {
+        "operationId" : "readSettingNames_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "feature",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "default" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SettingName"
+                }
+              }
+            },
+            "description" : "List of setting names"
+          }
+        },
+        "summary" : "Returns names of specified setting",
+        "tags" : [ "Settings" ]
+      }
+    },
+    "/api/settings/{feature}/names/{name}" : {
+      "delete" : {
+        "operationId" : "deleteSetting_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "feature",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "name",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Setting deleted successfully"
+          }
+        },
+        "summary" : "Deletes specified setting by id",
+        "tags" : [ "Settings" ]
+      },
+      "post" : {
+        "operationId" : "renameSetting_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "feature",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "name",
           "required" : true,
           "schema" : {
             "type" : "string"
@@ -182,167 +260,62 @@
           "204" : {
             "description" : "Setting name updated successfully"
           }
-        }
-      },
-      "delete" : {
-        "tags" : [ "Settings" ],
-        "summary" : "Deletes specified setting by id",
-        "operationId" : "deleteSetting_1",
-        "parameters" : [ {
-          "name" : "feature",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "name",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Setting deleted successfully"
-          }
-        }
-      }
-    },
-    "/api/settings/{feature}/default-content" : {
-      "get" : {
-        "tags" : [ "Settings" ],
-        "summary" : "Returns default values of specified setting",
-        "operationId" : "getDefaultValues_1",
-        "parameters" : [ {
-          "name" : "feature",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "default" : {
-            "description" : "Default values",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SettingsModel"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/settings" : {
-      "get" : {
-        "tags" : [ "Settings" ],
-        "summary" : "Returns the complete list of all supported features",
-        "operationId" : "readFeaturesList_1",
-        "responses" : {
-          "default" : {
-            "description" : "List of supported features",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/settings/{feature}/names/{name}/revisions" : {
-      "get" : {
-        "tags" : [ "Settings" ],
-        "summary" : "Returns revisions history of specified setting with specified id",
-        "operationId" : "readRevisionsList_1",
-        "parameters" : [ {
-          "name" : "feature",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "name",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "default" : {
-            "description" : "List of revisions",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Revision"
-                }
-              }
-            }
-          }
-        }
+        },
+        "summary" : "Updates name of specified named setting",
+        "tags" : [ "Settings" ]
       }
     },
     "/api/settings/{feature}/names/{name}/content" : {
       "get" : {
-        "tags" : [ "Settings" ],
-        "summary" : "Returns values (content) of specified setting by its id and revision",
         "operationId" : "readSetting_1",
         "parameters" : [ {
+          "in" : "path",
           "name" : "feature",
-          "in" : "path",
           "required" : true,
           "schema" : {
             "type" : "string"
           }
         }, {
+          "in" : "path",
           "name" : "name",
-          "in" : "path",
           "required" : true,
           "schema" : {
             "type" : "string"
           }
         }, {
-          "name" : "revision",
           "in" : "query",
+          "name" : "revision",
           "schema" : {
             "type" : "string"
           }
         } ],
         "responses" : {
           "default" : {
-            "description" : "Setting content",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/SettingsModel"
                 }
               }
-            }
+            },
+            "description" : "Setting content"
           }
-        }
+        },
+        "summary" : "Returns values (content) of specified setting by its id and revision",
+        "tags" : [ "Settings" ]
       },
       "put" : {
-        "tags" : [ "Settings" ],
-        "summary" : "Creates or updates named setting. Creation scenario will use default setting value if no body specified in the request.",
         "operationId" : "saveSetting_1",
         "parameters" : [ {
-          "name" : "feature",
           "in" : "path",
+          "name" : "feature",
           "required" : true,
           "schema" : {
             "type" : "string"
           }
         }, {
-          "name" : "name",
           "in" : "path",
+          "name" : "name",
           "required" : true,
           "schema" : {
             "type" : "string"
@@ -361,17 +334,24 @@
           "204" : {
             "description" : "Setting created/updated successfully"
           }
-        }
+        },
+        "summary" : "Creates or updates named setting. Creation scenario will use default setting value if no body specified in the request.",
+        "tags" : [ "Settings" ]
       }
     },
-    "/api/settings/{feature}/names" : {
+    "/api/settings/{feature}/names/{name}/revisions" : {
       "get" : {
-        "tags" : [ "Settings" ],
-        "summary" : "Returns names of specified setting",
-        "operationId" : "readSettingNames_1",
+        "operationId" : "readRevisionsList_1",
         "parameters" : [ {
-          "name" : "feature",
           "in" : "path",
+          "name" : "feature",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "name",
           "required" : true,
           "schema" : {
             "type" : "string"
@@ -379,32 +359,137 @@
         } ],
         "responses" : {
           "default" : {
-            "description" : "List of setting names",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/SettingName"
+                  "$ref" : "#/components/schemas/Revision"
                 }
               }
-            }
+            },
+            "description" : "List of revisions"
           }
-        }
+        },
+        "summary" : "Returns revisions history of specified setting with specified id",
+        "tags" : [ "Settings" ]
+      }
+    },
+    "/api/version" : {
+      "get" : {
+        "operationId" : "getVersion",
+        "responses" : {
+          "default" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Version"
+                }
+              }
+            },
+            "description" : "Version information"
+          }
+        },
+        "summary" : "Returns version of Polarion's extension",
+        "tags" : [ "Extension Information" ]
       }
     }
   },
   "components" : {
     "schemas" : {
-      "ImportResult" : {
+      "Context" : {
+        "type" : "object",
+        "description" : "Represents the context for building URLs related to Polarion services",
+        "properties" : {
+          "baseUrl" : {
+            "type" : "string",
+            "description" : "Returns the base URL constructed with the extension context",
+            "example" : "/polarion/pdf-exporter"
+          },
+          "extensionContext" : {
+            "type" : "string",
+            "description" : "The extension context used as a base for URL construction",
+            "example" : "pdf-exporter"
+          },
+          "restUrl" : {
+            "type" : "string",
+            "description" : "Returns the REST API URL constructed with the extension context",
+            "example" : "/polarion/pdf-exporter/rest"
+          },
+          "swaggerUiUrl" : {
+            "type" : "string",
+            "description" : "Returns the Swagger UI URL for the REST API"
+          }
+        }
+      },
+      "FieldMetadata" : {
         "type" : "object",
         "properties" : {
-          "updatedIds" : {
+          "custom" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "multi" : {
+            "type" : "boolean"
+          },
+          "options" : {
             "type" : "array",
-            "description" : "List of IDs that were updated during the import process",
             "items" : {
-              "type" : "string",
-              "description" : "List of IDs that were updated during the import process"
+              "$ref" : "#/components/schemas/Option"
+            },
+            "uniqueItems" : true
+          },
+          "required" : {
+            "type" : "boolean"
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/IType"
+          }
+        }
+      },
+      "IType" : {
+        "type" : "object"
+      },
+      "ITypeOpt" : {
+        "type" : "object",
+        "properties" : {
+          "default" : {
+            "type" : "boolean"
+          },
+          "enumId" : {
+            "type" : "string"
+          },
+          "hidden" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "phantom" : {
+            "type" : "boolean"
+          },
+          "properties" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
             }
           },
+          "sequenceNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "ImportResult" : {
+        "type" : "object",
+        "description" : "Represents the result of an Excel import operation",
+        "properties" : {
           "createdIds" : {
             "type" : "array",
             "description" : "List of IDs that were created during the import process",
@@ -420,42 +505,16 @@
               "type" : "string",
               "description" : "List of IDs that were unchanged during the import process"
             }
-          }
-        },
-        "description" : "Represents the result of an Excel import operation"
-      },
-      "FieldMetadata" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string"
           },
-          "label" : {
-            "type" : "string"
-          },
-          "type" : {
-            "$ref" : "#/components/schemas/IType"
-          },
-          "custom" : {
-            "type" : "boolean"
-          },
-          "required" : {
-            "type" : "boolean"
-          },
-          "multi" : {
-            "type" : "boolean"
-          },
-          "options" : {
-            "uniqueItems" : true,
+          "updatedIds" : {
             "type" : "array",
+            "description" : "List of IDs that were updated during the import process",
             "items" : {
-              "$ref" : "#/components/schemas/Option"
+              "type" : "string",
+              "description" : "List of IDs that were updated during the import process"
             }
           }
         }
-      },
-      "IType" : {
-        "type" : "object"
       },
       "Option" : {
         "type" : "object",
@@ -468,119 +527,10 @@
           }
         }
       },
-      "ITypeOpt" : {
-        "type" : "object",
-        "properties" : {
-          "name" : {
-            "type" : "string"
-          },
-          "hidden" : {
-            "type" : "boolean"
-          },
-          "properties" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "string"
-            }
-          },
-          "id" : {
-            "type" : "string"
-          },
-          "default" : {
-            "type" : "boolean"
-          },
-          "sequenceNumber" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "phantom" : {
-            "type" : "boolean"
-          },
-          "enumId" : {
-            "type" : "string"
-          }
-        }
-      },
-      "Context" : {
-        "type" : "object",
-        "properties" : {
-          "extensionContext" : {
-            "type" : "string",
-            "description" : "The extension context used as a base for URL construction.",
-            "example" : "pdf-exporter"
-          },
-          "swaggerUiUrl" : {
-            "type" : "string",
-            "description" : "Returns the Swagger UI URL for the REST API."
-          },
-          "restUrl" : {
-            "type" : "string",
-            "description" : "Returns the REST API URL constructed with the extension context.",
-            "example" : "/polarion/pdf-exporter/rest"
-          },
-          "baseUrl" : {
-            "type" : "string",
-            "description" : "Returns the base URL constructed with the extension context.",
-            "example" : "/polarion/pdf-exporter"
-          }
-        },
-        "description" : "Represents the context for building URLs related to Polarion services."
-      },
-      "Version" : {
-        "type" : "object",
-        "properties" : {
-          "bundleName" : {
-            "type" : "string",
-            "description" : "The name of the bundle"
-          },
-          "bundleVendor" : {
-            "type" : "string",
-            "description" : "The vendor of the bundle"
-          },
-          "supportEmail" : {
-            "type" : "string",
-            "description" : "Support email for the bundle"
-          },
-          "automaticModuleName" : {
-            "type" : "string",
-            "description" : "The automatic module name"
-          },
-          "bundleVersion" : {
-            "type" : "string",
-            "description" : "The version of the bundle"
-          },
-          "bundleBuildTimestamp" : {
-            "type" : "string",
-            "description" : "The build timestamp of the bundle"
-          },
-          "projectURL" : {
-            "type" : "string",
-            "description" : "The project URL"
-          }
-        },
-        "description" : "Details about the software version"
-      },
-      "SettingsModel" : {
-        "type" : "object",
-        "properties" : {
-          "bundleTimestamp" : {
-            "type" : "string",
-            "description" : "The bundle timestamp of the setting"
-          }
-        },
-        "description" : "Settings model"
-      },
       "Revision" : {
         "type" : "object",
+        "description" : "Revision details",
         "properties" : {
-          "name" : {
-            "type" : "string",
-            "description" : "The name of the revision"
-          },
-          "date" : {
-            "type" : "string",
-            "description" : "The date of the revision"
-          },
           "author" : {
             "type" : "string",
             "description" : "The author of the revision"
@@ -589,12 +539,19 @@
             "type" : "string",
             "description" : "The baseline of the revision"
           },
+          "date" : {
+            "type" : "string",
+            "description" : "The date of the revision"
+          },
           "description" : {
             "type" : "string",
             "description" : "The description of the revision"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "The name of the revision"
           }
-        },
-        "description" : "Revision details"
+        }
       },
       "SettingName" : {
         "type" : "object",
@@ -606,6 +563,50 @@
           "scope" : {
             "type" : "string",
             "description" : "The scope of the setting"
+          }
+        }
+      },
+      "SettingsModel" : {
+        "type" : "object",
+        "description" : "Settings model",
+        "properties" : {
+          "bundleTimestamp" : {
+            "type" : "string",
+            "description" : "The bundle timestamp of the setting"
+          }
+        }
+      },
+      "Version" : {
+        "type" : "object",
+        "description" : "Details about the software version",
+        "properties" : {
+          "automaticModuleName" : {
+            "type" : "string",
+            "description" : "The automatic module name"
+          },
+          "bundleBuildTimestamp" : {
+            "type" : "string",
+            "description" : "The build timestamp of the bundle"
+          },
+          "bundleName" : {
+            "type" : "string",
+            "description" : "The name of the bundle"
+          },
+          "bundleVendor" : {
+            "type" : "string",
+            "description" : "The vendor of the bundle"
+          },
+          "bundleVersion" : {
+            "type" : "string",
+            "description" : "The version of the bundle"
+          },
+          "projectURL" : {
+            "type" : "string",
+            "description" : "The project URL"
+          },
+          "supportEmail" : {
+            "type" : "string",
+            "description" : "Support email for the bundle"
           }
         }
       }
