@@ -136,10 +136,9 @@ public class ImportService {
     @VisibleForTesting
     boolean ensureValidValue(String fieldId, Object value, Set<FieldMetadata> fieldMetadataSet) {
         FieldMetadata fieldMetadata = getFieldMetadataForField(fieldMetadataSet, fieldId);
-        if (FieldType.BOOLEAN.getType().equals(fieldMetadata.getType())) {
-            if (!(value instanceof String) || !("true".equalsIgnoreCase((String) value) || "false".equalsIgnoreCase((String) value))) {
-                throw new IllegalArgumentException(String.format("'%s' isn't a valid boolean value", value == null ? "" : value));
-            }
+        if (FieldType.BOOLEAN.getType().equals(fieldMetadata.getType()) &&
+                (!(value instanceof String) || !("true".equalsIgnoreCase((String) value) || "false".equalsIgnoreCase((String) value)))) {
+            throw new IllegalArgumentException(String.format("'%s' isn't a valid boolean value", value == null ? "" : value));
         }
         return true;
     }
