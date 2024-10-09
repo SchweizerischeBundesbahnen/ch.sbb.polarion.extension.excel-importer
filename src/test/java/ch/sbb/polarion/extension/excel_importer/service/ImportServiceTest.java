@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.excel_importer.service;
 
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettingsModel;
 import ch.sbb.polarion.extension.generic.fields.FieldType;
+import ch.sbb.polarion.extension.generic.fields.model.FieldMetadata;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.shared.api.transaction.RunnableInWriteTransaction;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
@@ -33,10 +34,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -144,7 +145,7 @@ class ImportServiceTest {
             Map<String, Object> map = new HashMap<>();
             map.put("A", "a1");
             map.put("B", "b1");
-            map.put("C", "c1");
+            map.put("C", "false");
             map.put("D", null);
 
             //test using disabled 'overwriteWithEmpty'
@@ -257,6 +258,84 @@ class ImportServiceTest {
                     new ImportService(polarionServiceExt).processFile(project, List.of(mapThree), generateSettingsForIdImport(true)));
 
         }
+    }
+
+    @Test
+    void testEnsureValidValue() {
+        ImportService service = new ImportService(mock(PolarionServiceExt.class));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> service.ensureValidValue("someField", "true", Set.of()));
+        assertEquals("Cannot find field metadata for ID 'someField'", exception.getMessage());
+
+        Set<FieldMetadata> metadataSet = Set.of(FieldMetadata.builder()
+                .id("someField")
+                .type(FieldType.BOOLEAN.getType())
+                .build());
+        assertTrue(service.ensureValidValue("someField", "true", metadataSet));
+        assertTrue(service.ensureValidValue("someField", "True", metadataSet));
+        assertTrue(service.ensureValidValue("someField", "FALSE", metadataSet));
+
+        exception = assertThrows(IllegalArgumentException.class, () -> service.ensureValidValue("someField", "FALSE ", metadataSet));
+        assertEquals("'FALSE ' isn't a valid boolean value", exception.getMessage());
+
+        exception = assertThrows(IllegalArgumentException.class, () -> service.ensureValidValue("someField", 42, metadataSet));
+        assertEquals("'42' isn't a valid boolean value", exception.getMessage());
+
+        exception = assertThrows(IllegalArgumentException.class, () -> service.ensureValidValue("someField", null, metadataSet));
+        assertEquals("'' isn't a valid boolean value", exception.getMessage());
+    }
+
+    @Test
+    void testExistingValueDiffers() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+        IWorkItem workItem = mock(IWorkItem.class);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.existingValueDiffers(workItem, "unknownFieldId", "someValue", Set.of()));
+        assertEquals("Cannot find field metadata for ID 'unknownFieldId'", exception.getMessage());
+
+        Set<FieldMetadata> stringMetadata = Set.of(FieldMetadata.builder().id("fieldId").type(FieldType.STRING.getType()).build());
+
+        when(polarionService.getFieldValue(workItem, "fieldId")).thenReturn(null);
+        assertFalse(service.existingValueDiffers(workItem, "fieldId", null, stringMetadata));
+        assertTrue(service.existingValueDiffers(workItem, "fieldId", "someValue", stringMetadata));
+        assertTrue(service.existingValueDiffers(workItem, "fieldId", "", stringMetadata));
+
+        when(polarionService.getFieldValue(workItem, "fieldId")).thenReturn("");
+        assertTrue(service.existingValueDiffers(workItem, "fieldId", null, stringMetadata));
+
+        when(polarionService.getFieldValue(workItem, "fieldId")).thenReturn("someValue");
+        assertFalse(service.existingValueDiffers(workItem, "fieldId", "someValue", stringMetadata));
+
+        when(polarionService.getFieldValue(workItem, "fieldId")).thenReturn("someValue");
+        assertTrue(service.existingValueDiffers(workItem, "fieldId", "someValue ", stringMetadata));
+
+        Set<FieldMetadata> booleanMetadata = Set.of(FieldMetadata.builder().id("fieldId").type(FieldType.BOOLEAN.getType()).build());
+        when(polarionService.getFieldValue(workItem, "fieldId")).thenReturn(null);
+        assertFalse(service.existingValueDiffers(workItem, "fieldId", null, booleanMetadata));
+        assertFalse(service.existingValueDiffers(workItem, "fieldId", "someValue", booleanMetadata)); // unrealistic scenario
+        assertFalse(service.existingValueDiffers(workItem, "fieldId", "", booleanMetadata)); // unrealistic scenario
+
+        when(polarionService.getFieldValue(workItem, "fieldId")).thenReturn(false);
+        assertTrue(service.existingValueDiffers(workItem, "fieldId", "true", booleanMetadata));
+        assertFalse(service.existingValueDiffers(workItem, "fieldId", null, booleanMetadata));
+        assertFalse(service.existingValueDiffers(workItem, "fieldId", "FALSE", booleanMetadata));
+
+        // boolean fields can hold null values, they are treated as having 'false' value
+        when(polarionService.getFieldValue(workItem, "fieldId")).thenReturn(null);
+        assertTrue(service.existingValueDiffers(workItem, "fieldId", "true", booleanMetadata));
+        assertFalse(service.existingValueDiffers(workItem, "fieldId", "false", booleanMetadata));
+
+        Set<FieldMetadata> floatMetadata = Set.of(FieldMetadata.builder().id("fieldId").type(FieldType.FLOAT.getType()).build());
+        when(polarionService.getFieldValue(workItem, "fieldId")).thenReturn(null);
+        assertFalse(service.existingValueDiffers(workItem, "fieldId", null, floatMetadata));
+        assertTrue(service.existingValueDiffers(workItem, "fieldId", 0f, floatMetadata));
+
+        when(polarionService.getFieldValue(workItem, "fieldId")).thenReturn(42f);
+        assertFalse(service.existingValueDiffers(workItem, "fieldId", "42.0", floatMetadata));
+        assertTrue(service.existingValueDiffers(workItem, "fieldId", "42", floatMetadata));
+        assertTrue(service.existingValueDiffers(workItem, "fieldId", null, floatMetadata));
     }
 
     private ExcelSheetMappingSettingsModel generateSettings(boolean overwriteWithEmpty) {

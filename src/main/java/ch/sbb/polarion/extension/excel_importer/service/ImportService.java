@@ -12,6 +12,7 @@ import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.core.util.StringUtils;
 import com.polarion.subterra.base.data.model.IType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,6 +123,7 @@ public class ImportService {
             // However, it must be saved to the newly created work item otherwise sequential imports will produce several objects.
             if (fieldId != null && !fieldId.equals(IUniqueObject.KEY_ID) && (!fieldId.equals(linkColumnId) || !workItem.isPersisted()) &&
                     (model.isOverwriteWithEmpty() || !isEmpty(value)) &&
+                    ensureValidValue(fieldId, value, fieldMetadataSet) &&
                     existingValueDiffers(workItem, fieldId, value, fieldMetadataSet)) {
                 polarionServiceExt.setFieldValue(workItem, fieldId, value, model.getEnumsMapping());
             } else if (fieldId != null && fieldId.equals(IUniqueObject.KEY_ID) && !fieldId.equals(linkColumnId)) {
@@ -131,18 +133,26 @@ public class ImportService {
         });
     }
 
+    @VisibleForTesting
+    boolean ensureValidValue(String fieldId, Object value, Set<FieldMetadata> fieldMetadataSet) {
+        FieldMetadata fieldMetadata = getFieldMetadataForField(fieldMetadataSet, fieldId);
+        if (FieldType.BOOLEAN.getType().equals(fieldMetadata.getType())) {
+            if (!(value instanceof String) || !("true".equalsIgnoreCase((String) value) || "false".equalsIgnoreCase((String) value))) {
+                throw new IllegalArgumentException(String.format("'%s' isn't a valid boolean value", value == null ? "" : value));
+            }
+        }
+        return true;
+    }
+
     /**
      * Here wy try to make a preliminary check whether the value differs with the existing one.
      * This can be useful coz Polarion sometimes makes update in case when it isn't needed (e.g. if you try to
      * set false to the boolean field which already has this value Polarion will rewrite the value and increment revision).
      */
-    @SuppressWarnings("java:S1125") //will be improve later
-    private boolean existingValueDiffers(IWorkItem workItem, String fieldId, Object newValue, Set<FieldMetadata> fieldMetadataSet) {
-        FieldMetadata fieldMetadata = fieldMetadataSet.stream()
-                .filter(m -> m.getId().equals(fieldId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Cannot find field metadata for ID '%s'".formatted(fieldId)));
-
+    @SuppressWarnings("java:S1125") //will be improved later
+    @VisibleForTesting
+    boolean existingValueDiffers(IWorkItem workItem, String fieldId, Object newValue, Set<FieldMetadata> fieldMetadataSet) {
+        FieldMetadata fieldMetadata = getFieldMetadataForField(fieldMetadataSet, fieldId);
         Object existingValue = polarionServiceExt.getFieldValue(workItem, fieldId);
         if (existingValue == null && newValue == null) {
             return false;
@@ -150,18 +160,21 @@ public class ImportService {
 
         IType fieldType = fieldMetadata.getType();
         if (FieldType.BOOLEAN.getType().equals(fieldType)) {
-            if (newValue instanceof String value) {
-                //later generic will treat all nonsense values (e.g. 'qwe', 'yes' etc.) as false so we can do it here in advance
-                newValue = Boolean.valueOf(value);
-            }
-            //treat nulls as false values for both new and existing values
-            return !Objects.equals(existingValue == null ? false : existingValue, newValue == null ? false : newValue);
+            newValue = Boolean.valueOf((String) newValue); // validator that had been running before must ensure that the new value is a proper string
+            return !Objects.equals(existingValue == null ? false : existingValue, newValue);
         } else if (FieldType.FLOAT.getType().equals(fieldType)) {
             //WORKAROUND: converting to string helps to find same values even between different types (Float, Double etc.)
             return !Objects.equals(String.valueOf(newValue), String.valueOf(existingValue));
         } else {
             return !Objects.equals(newValue, existingValue);
         }
+    }
+
+    private FieldMetadata getFieldMetadataForField(Set<FieldMetadata> fieldMetadataSet, String fieldId) {
+        return fieldMetadataSet.stream()
+                .filter(m -> m.getId().equals(fieldId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Cannot find field metadata for ID '%s'".formatted(fieldId)));
     }
 
     private boolean isEmpty(Object value) {
