@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v2.8.0...v2.8.1) (2024-10-15)
+
+
+### Bug Fixes
+
+* unknown values must raise error for boolean fields instead of be… ([#51](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/51)) ([7415219](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/7415219fde4a35cb77ae7cb43df46498d27e4ebb)), closes [#43](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/43)
+
 ## [2.8.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v2.7.0...v2.8.0) (2024-10-03)
 
 
