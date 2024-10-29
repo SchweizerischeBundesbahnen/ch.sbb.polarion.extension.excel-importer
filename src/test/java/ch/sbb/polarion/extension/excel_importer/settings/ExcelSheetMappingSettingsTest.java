@@ -48,8 +48,9 @@ class ExcelSheetMappingSettingsTest {
             ExcelSheetMappingSettingsModel model = excelSheetMappingSettings.defaultValues();
             model.setBundleTimestamp("default");
 
+            SettingId settingId = SettingId.fromName("Any setting name");
             assertThrows(ObjectNotFoundException.class, () -> {
-                ExcelSheetMappingSettingsModel loadedModel = excelSheetMappingSettings.load(projectName, SettingId.fromName("Any setting name"));
+                excelSheetMappingSettings.load(projectName, settingId);
             });
         }
     }
