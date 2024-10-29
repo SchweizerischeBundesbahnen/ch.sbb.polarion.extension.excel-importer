@@ -137,7 +137,7 @@ public class ImportService {
     boolean ensureValidValue(String fieldId, Object value, Set<FieldMetadata> fieldMetadataSet) {
         FieldMetadata fieldMetadata = getFieldMetadataForField(fieldMetadataSet, fieldId);
         if (FieldType.BOOLEAN.getType().equals(fieldMetadata.getType()) &&
-                (!(value instanceof String) || !("true".equalsIgnoreCase((String) value) || "false".equalsIgnoreCase((String) value)))) {
+                (!(value instanceof String stringValue) || !("true".equalsIgnoreCase(stringValue) || "false".equalsIgnoreCase(stringValue)))) {
             throw new IllegalArgumentException(String.format("'%s' isn't a valid boolean value", value == null ? "" : value));
         }
         return true;
