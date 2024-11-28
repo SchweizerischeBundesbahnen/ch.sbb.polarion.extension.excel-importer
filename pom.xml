@@ -83,6 +83,12 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.polarion.thirdparty</groupId>
+            <artifactId>net.htmlparser.jericho_3.1.0</artifactId>
+            <version>${polarion.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

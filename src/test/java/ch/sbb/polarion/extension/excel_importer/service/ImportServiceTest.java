@@ -261,28 +261,48 @@ class ImportServiceTest {
     }
 
     @Test
+    void testPreProcessValue() {
+        ImportService service = new ImportService(mock(PolarionServiceExt.class));
+
+        FieldMetadata stringMetadata = FieldMetadata.builder().id("fieldId").type(FieldType.STRING.getType()).build();
+        assertEquals("aaa\nbbb", service.preProcessValue("aaa\nbbb", stringMetadata));
+
+        // in case of rich text some characters must be converted to their HTML equivalents
+        FieldMetadata richMetadata = FieldMetadata.builder().id("fieldId").type(FieldType.RICH.getType()).build();
+        assertEquals("aaa<br/>bbb", service.preProcessValue("aaa\nbbb", richMetadata));
+        assertEquals("aaa&nbsp;&nbsp;&nbsp;&nbsp;bbb", service.preProcessValue("aaa\tbbb", richMetadata));
+        assertEquals("&lt;tag&gt;&amp;", service.preProcessValue("<tag>&", richMetadata));
+    }
+
+    @Test
     void testEnsureValidValue() {
         ImportService service = new ImportService(mock(PolarionServiceExt.class));
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> service.ensureValidValue("someField", "true", Set.of()));
-        assertEquals("Cannot find field metadata for ID 'someField'", exception.getMessage());
+        FieldMetadata metadata = mock(FieldMetadata.class);
+        when(metadata.getType()).thenReturn(FieldType.BOOLEAN.getType());
 
-        Set<FieldMetadata> metadataSet = Set.of(FieldMetadata.builder()
-                .id("someField")
-                .type(FieldType.BOOLEAN.getType())
-                .build());
-        assertTrue(service.ensureValidValue("someField", "true", metadataSet));
-        assertTrue(service.ensureValidValue("someField", "True", metadataSet));
-        assertTrue(service.ensureValidValue("someField", "FALSE", metadataSet));
+        assertTrue(service.ensureValidValue("true", metadata));
+        assertTrue(service.ensureValidValue("True", metadata));
+        assertTrue(service.ensureValidValue("FALSE", metadata));
 
-        exception = assertThrows(IllegalArgumentException.class, () -> service.ensureValidValue("someField", "FALSE ", metadataSet));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> service.ensureValidValue("FALSE ", metadata));
         assertEquals("'FALSE ' isn't a valid boolean value", exception.getMessage());
 
-        exception = assertThrows(IllegalArgumentException.class, () -> service.ensureValidValue("someField", 42, metadataSet));
+        exception = assertThrows(IllegalArgumentException.class, () -> service.ensureValidValue(42, metadata));
         assertEquals("'42' isn't a valid boolean value", exception.getMessage());
 
-        exception = assertThrows(IllegalArgumentException.class, () -> service.ensureValidValue("someField", null, metadataSet));
+        exception = assertThrows(IllegalArgumentException.class, () -> service.ensureValidValue(null, metadata));
         assertEquals("'' isn't a valid boolean value", exception.getMessage());
+    }
+
+    @Test
+    void testGetFieldMetadataForField() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.getFieldMetadataForField(Set.of(), "unknownFieldId"));
+        assertEquals("Cannot find field metadata for ID 'unknownFieldId'", exception.getMessage());
     }
 
     @Test
@@ -291,11 +311,7 @@ class ImportServiceTest {
         ImportService service = new ImportService(polarionService);
         IWorkItem workItem = mock(IWorkItem.class);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> service.existingValueDiffers(workItem, "unknownFieldId", "someValue", Set.of()));
-        assertEquals("Cannot find field metadata for ID 'unknownFieldId'", exception.getMessage());
-
-        Set<FieldMetadata> stringMetadata = Set.of(FieldMetadata.builder().id("fieldId").type(FieldType.STRING.getType()).build());
+        FieldMetadata stringMetadata = FieldMetadata.builder().id("fieldId").type(FieldType.STRING.getType()).build();
 
         when(polarionService.getFieldValue(workItem, "fieldId")).thenReturn(null);
         assertFalse(service.existingValueDiffers(workItem, "fieldId", null, stringMetadata));
@@ -311,7 +327,7 @@ class ImportServiceTest {
         when(polarionService.getFieldValue(workItem, "fieldId")).thenReturn("someValue");
         assertTrue(service.existingValueDiffers(workItem, "fieldId", "someValue ", stringMetadata));
 
-        Set<FieldMetadata> booleanMetadata = Set.of(FieldMetadata.builder().id("fieldId").type(FieldType.BOOLEAN.getType()).build());
+        FieldMetadata booleanMetadata = FieldMetadata.builder().id("fieldId").type(FieldType.BOOLEAN.getType()).build();
         when(polarionService.getFieldValue(workItem, "fieldId")).thenReturn(null);
         assertFalse(service.existingValueDiffers(workItem, "fieldId", null, booleanMetadata));
         assertFalse(service.existingValueDiffers(workItem, "fieldId", "someValue", booleanMetadata)); // unrealistic scenario
@@ -327,7 +343,7 @@ class ImportServiceTest {
         assertTrue(service.existingValueDiffers(workItem, "fieldId", "true", booleanMetadata));
         assertFalse(service.existingValueDiffers(workItem, "fieldId", "false", booleanMetadata));
 
-        Set<FieldMetadata> floatMetadata = Set.of(FieldMetadata.builder().id("fieldId").type(FieldType.FLOAT.getType()).build());
+        FieldMetadata floatMetadata = FieldMetadata.builder().id("fieldId").type(FieldType.FLOAT.getType()).build();
         when(polarionService.getFieldValue(workItem, "fieldId")).thenReturn(null);
         assertFalse(service.existingValueDiffers(workItem, "fieldId", null, floatMetadata));
         assertTrue(service.existingValueDiffers(workItem, "fieldId", 0f, floatMetadata));
