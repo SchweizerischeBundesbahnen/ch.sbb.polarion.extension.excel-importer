@@ -1,37 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module id="ch.sbb.polarion.extension.excel_importer" version="1.0.0">
+
     <contribution configuration-id="com.polarion.xray.webui.administrationPageExtenders">
-        <extender name="About"
+        <extender id="about"
+                  name="About"
+                  parentNodeId="excel-importer"
                   parentNodeName="Excel Importer"
-                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
-                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
-                  pageUrl="/polarion/excel-importer-admin/pages/about.jsp"
+                  parentNodeIconUrl="/polarion/excel-importer-admin/ui/images/menu/30x30/_parent.svg"
+                  iconUrl="/polarion/excel-importer-admin/ui/images/menu/16x16/about.svg"
+                  pageUrl="/polarion/excel-importer-admin/pages/about.jsp?scope=$scope$"
                   projectScope="true"
+                  projectGroupScope="false"
                   repositoryScope="true"/>
 
-        <extender name="REST API"
-                  parentNodeName="Excel Importer"
-                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
-                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+        <extender id="rest-api"
+                  name="REST API"
+                  parentNodeId="excel-importer"
+                  iconUrl="/polarion/excel-importer-admin/ui/images/menu/16x16/rest_api.svg"
                   pageUrl="/polarion/excel-importer/rest/swagger"
                   projectScope="true"
+                  projectGroupScope="false"
                   repositoryScope="true"/>
 
-        <extender name="Mappings"
-                  parentNodeName="Excel Importer"
-                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
-                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+        <extender id="mappings"
+                  name="Mappings"
+                  parentNodeId="excel-importer"
+                  iconUrl="/polarion/excel-importer-admin/ui/images/menu/16x16/mapping.svg"
                   pageUrl="/polarion/excel-importer-admin/pages/mappings.jsp?scope=$scope$"
                   projectScope="true"
-                  repositoryScope="false"/>
+                  projectGroupScope="false"
+                  repositoryScope="true"/>
 
-        <extender name="Import File"
-                  parentNodeName="Excel Importer"
-                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
-                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+        <extender id="import-file"
+                  name="Import File"
+                  parentNodeId="excel-importer"
+                  iconUrl="/polarion/excel-importer-admin/ui/images/menu/16x16/import.svg"
                   pageUrl="/polarion/excel-importer-admin/pages/import_file.jsp?scope=$scope$"
                   projectScope="true"
-                  repositoryScope="false"/>
+                  projectGroupScope="false"
+                  repositoryScope="true"/>
     </contribution>
 
     <contribution configuration-id="com.polarion.xray.webui.customNavigationExtenders">
