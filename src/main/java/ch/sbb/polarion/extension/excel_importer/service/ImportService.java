@@ -10,6 +10,7 @@ import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.ITypeOpt;
 import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.core.util.StringUtils;
+import com.polarion.core.util.xml.HTMLHelper;
 import com.polarion.subterra.base.data.model.IType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -112,30 +113,44 @@ public class ImportService {
         return stringIdValue;
     }
 
-    private void fillWorkItemFields(IWorkItem workItem, Map<String, Object> mappingRecord, ExcelSheetMappingSettingsModel model, String linkColumnId) {
+    private void fillWorkItemFields(@NotNull IWorkItem workItem, Map<String, Object> mappingRecord, ExcelSheetMappingSettingsModel model, @NotNull String linkColumnId) {
+        Set<FieldMetadata> fieldMetadataSet = polarionServiceExt.getWorkItemsFields(workItem.getProjectId(), workItem.getType() == null ? "" : workItem.getType().getId());
         mappingRecord.forEach((columnId, value) -> {
             String fieldId = model.getColumnsMapping().get(columnId);
-            // we need to know possible mapped value asap because some types (at least boolean) need it to check value for modification
-            String mappedOption = OptionsMappingUtils.getMappedOptionKey(fieldId, value, model.getEnumsMapping());
-            value = mappedOption != null ? mappedOption : value;
-            Set<FieldMetadata> fieldMetadataSet = polarionServiceExt.getWorkItemsFields(workItem.getProjectId(), workItem.getType() == null ? "" : workItem.getType().getId());
-            // The linkColumn field's value can't change, therefore it doesn't need to be overwritten.
-            // However, it must be saved to the newly created work item otherwise sequential imports will produce several objects.
-            if (fieldId != null && !fieldId.equals(IUniqueObject.KEY_ID) && (!fieldId.equals(linkColumnId) || !workItem.isPersisted()) &&
-                    (model.isOverwriteWithEmpty() || !isEmpty(value)) &&
-                    ensureValidValue(fieldId, value, fieldMetadataSet) &&
-                    existingValueDiffers(workItem, fieldId, value, fieldMetadataSet)) {
-                polarionServiceExt.setFieldValue(workItem, fieldId, value, model.getEnumsMapping());
-            } else if (fieldId != null && fieldId.equals(IUniqueObject.KEY_ID) && !fieldId.equals(linkColumnId)) {
-                // If the work item id is imported, it must be the Link Column. Its value also can't be set by imported data unlike other possible Link Column fields.
-                throw new IllegalArgumentException("WorkItem id can only be imported if it is used as Link Column.");
+            if (fieldId != null) {
+                // we need to know possible mapped value asap because some types (at least boolean) need it to check value for modification
+                String mappedOption = OptionsMappingUtils.getMappedOptionKey(fieldId, value, model.getEnumsMapping());
+                value = mappedOption != null ? mappedOption : value;
+                setFieldValue(value, getFieldMetadataForField(fieldMetadataSet, fieldId), workItem, model, linkColumnId);
             }
         });
     }
 
+    private void setFieldValue(Object value, @NotNull FieldMetadata fieldMetadata, IWorkItem workItem, ExcelSheetMappingSettingsModel model, @NotNull String linkColumnId) {
+        // The linkColumn field's value can't change, therefore it doesn't need to be overwritten.
+        // However, it must be saved to the newly created work item otherwise sequential imports will produce several objects.
+        String fieldId = fieldMetadata.getId();
+        if (!IUniqueObject.KEY_ID.equals(fieldId) && (!linkColumnId.equals(fieldId) || !workItem.isPersisted()) &&
+                (model.isOverwriteWithEmpty() || !isEmpty(value)) &&
+                ensureValidValue(value, fieldMetadata) &&
+                existingValueDiffers(workItem, fieldId, value, fieldMetadata)) {
+            polarionServiceExt.setFieldValue(workItem, fieldId, preProcessValue(value, fieldMetadata), model.getEnumsMapping());
+        } else if (IUniqueObject.KEY_ID.equals(fieldId) && !linkColumnId.equals(fieldId)) {
+            // If the work item id is imported, it must be the Link Column. Its value also can't be set by imported data unlike other possible Link Column fields.
+            throw new IllegalArgumentException("WorkItem id can only be imported if it is used as Link Column.");
+        }
+    }
+
     @VisibleForTesting
-    boolean ensureValidValue(String fieldId, Object value, Set<FieldMetadata> fieldMetadataSet) {
-        FieldMetadata fieldMetadata = getFieldMetadataForField(fieldMetadataSet, fieldId);
+    Object preProcessValue(Object value, @NotNull FieldMetadata fieldMetadata) {
+        if (FieldType.RICH.getType().equals(fieldMetadata.getType()) && value instanceof String richTextString) {
+            return HTMLHelper.convertPlainToHTML(richTextString);
+        }
+        return value;
+    }
+
+    @VisibleForTesting
+    boolean ensureValidValue(Object value, FieldMetadata fieldMetadata) {
         if (FieldType.BOOLEAN.getType().equals(fieldMetadata.getType()) &&
                 (!(value instanceof String stringValue) || !("true".equalsIgnoreCase(stringValue) || "false".equalsIgnoreCase(stringValue)))) {
             throw new IllegalArgumentException(String.format("'%s' isn't a valid boolean value", value == null ? "" : value));
@@ -150,8 +165,7 @@ public class ImportService {
      */
     @SuppressWarnings("java:S1125") //will be improved later
     @VisibleForTesting
-    boolean existingValueDiffers(IWorkItem workItem, String fieldId, Object newValue, Set<FieldMetadata> fieldMetadataSet) {
-        FieldMetadata fieldMetadata = getFieldMetadataForField(fieldMetadataSet, fieldId);
+    boolean existingValueDiffers(IWorkItem workItem, String fieldId, Object newValue, FieldMetadata fieldMetadata) {
         Object existingValue = polarionServiceExt.getFieldValue(workItem, fieldId);
         if (existingValue == null && newValue == null) {
             return false;
@@ -169,7 +183,9 @@ public class ImportService {
         }
     }
 
-    private FieldMetadata getFieldMetadataForField(Set<FieldMetadata> fieldMetadataSet, String fieldId) {
+    @NotNull
+    @VisibleForTesting
+    FieldMetadata getFieldMetadataForField(Set<FieldMetadata> fieldMetadataSet, String fieldId) {
         return fieldMetadataSet.stream()
                 .filter(m -> m.getId().equals(fieldId))
                 .findFirst()
