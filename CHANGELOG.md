@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.8.3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v2.8.2...v2.8.3) (2024-11-29)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v7.7.0 ([db79d9a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/db79d9a292fa6fc0ccc02005a93f0a1fd962850f))
+* linebreaks are not imported into rich text fields ([#65](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/65)) ([430c718](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/430c7181fe5c7b08079fd2c239a2744e6056dbec)), closes [#63](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/63)
+
+
+### Documentation
+
+* Quick Help for Mappings improved ([#67](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/67)) ([bf6f98e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/bf6f98e6f9cafd2fabde54e3a3b901b0473c61a0)), closes [#54](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/54)
+
 ## [2.8.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v2.8.1...v2.8.2) (2024-10-29)
 
 
