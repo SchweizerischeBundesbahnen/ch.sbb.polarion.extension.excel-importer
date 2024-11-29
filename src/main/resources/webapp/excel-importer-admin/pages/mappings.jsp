@@ -1,3 +1,4 @@
+<%@ page import="java.lang.String" %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 
@@ -63,9 +64,9 @@
 <div class="standard-admin-page">
     <h1>Mappings</h1>
 
-    <jsp:include page='/common/jsp/notifications.jsp' />
+    <jsp:include page='/common/jsp/notifications.jsp'/>
 
-    <jsp:include page='/common/jsp/configurations.jsp' />
+    <jsp:include page='/common/jsp/configurations.jsp'/>
 
     <h2>General Settings</h2>
     <table>
@@ -106,17 +107,33 @@
     <h2 class="align-left">Quick Help</h2>
 
     <div class="quick-help-text">
-        <h3>How-to configure excel column to Workitem field mapping</h3>
-        <p>First section contains inputs with Excel sheet name (standard Excel sheet name 'Sheet1' by default) and row number (1 by default) to import data from.</p>
-        <p>Second section contains combobox with workitem types available for current project.</p>
-        <p>Third section contains comboboxes with Excel column name to Polarion workitem field mapping.</p>
-        <p>Next section contains combobox with Excel column name to link Excel row with Polarion workitem to import data to.</p>
-        <p>If date, time, or date-time will be stored in the text format cells, there will be an attempt to parse stored information from ISO date format.</p>
-        <p>For date-time pattern 'yyyy-MM-ddTHH:mm:ss' supported.</p>
-        <p>For date only pattern 'yyyy-MM-dd' supported.</p>
-        <p>For time only both 'HH:mm:ss' and 'HH:mm' patterns are supported.</p>
-        <p>For duration type field only days and hours are supported due to polarion limitations.</p>
-        <p>Examples: (d=days, h=hours): 1d, 3d, 1/2h, 2 1/2h, 3d 1h</p>
+        <div>
+            <h3>General Settings</h3>
+            <p>This section contains inputs with the Excel sheet name (<code>Sheet1</code> by default) and the row number (1 by default) to import data from.</p>
+
+            <h3>Workitem Type</h3>
+            <p>This section contains a combobox with workitem types available for the current project.</p>
+
+            <h3>Column Name To Workitem Field Mapping</h3>
+            <p>This section contains comboboxes for mapping Excel column names to Polarion workitem fields.</p>
+            <p><strong>Note:</strong> If a mandatory Polarion field is not mapped, an error will occur during the import process.</p>
+            <p>If a mapped column contains an empty value, this will result in an error unless explicitly allowed in the mapping configuration using <strong>(empty)</strong> meta value.</p>
+
+            <h3>Link Column</h3>
+            <p>This section contains a combobox for linking Excel rows to existing Polarion workitems for data updates.</p>
+
+            <h3>Date and Time Formats</h3>
+            <p>If date, time, or date-time values are stored in text format, the importer will attempt to parse them using supported ISO date format patterns:</p>
+            <ul>
+                <li>Date-time: <code>yyyy-MM-ddTHH:mm:ss</code></li>
+                <li>Date only: <code>yyyy-MM-dd</code></li>
+                <li>Time only: <code>HH:mm:ss</code> or <code>HH:mm</code></li>
+            </ul>
+
+            <h3>Duration Fields</h3>
+            <p>For duration-type fields only days and hours are supported due to Polarion limitations.</p>
+            <p>Examples (d=days, h=hours): <code>1d</code>, <code>3d</code>, <code>1/2h</code>, <code>2 1/2h</code>, <code>3d 1h</code>.</p>
+        </div>
     </div>
 </div>
 
