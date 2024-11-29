@@ -28,7 +28,7 @@ public class ExcelImporterNavigationExtender extends NavigationExtender {
     @Nullable
     @Override
     public String getIconUrl() {
-        return "/polarion/icons/default/topicIcons/documentsAndWiki.svg";
+        return "/polarion/excel-importer-admin/ui/images/menu/30x30/_parent.svg";
     }
 
     @Nullable
