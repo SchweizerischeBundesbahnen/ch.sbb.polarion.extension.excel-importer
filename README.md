@@ -18,6 +18,13 @@ Column-to-Field mapping is manageable using mapping settings.
 > Starting from version 3.0.0 only latest version of Polarion is supported.
 > Right now it is Polarion 2410.
 
+## Quick start
+
+The latest version of the extension can be downloaded from the [releases page](../../releases/latest) and installed to Polarion instance without necessity to be compiled from the sources.
+The extension should be copied to `<polarion_home>/polarion/extensions/ch.sbb.polarion.extension.excel-importer/eclipse/plugins` and changes will take effect after Polarion restart.
+> [!IMPORTANT]
+> Don't forget to clear `<polarion_home>/data/workspace/.config` folder after extension installation/update to make it work properly.
+
 ## Build
 
 This extension can be produced using maven:
