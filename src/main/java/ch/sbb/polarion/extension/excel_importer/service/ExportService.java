@@ -11,9 +11,12 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import java.io.ByteArrayOutputStream;
@@ -67,7 +70,7 @@ public class ExportService {
                 Element cellElement = cells.get(j);
                 Cell cell = row.createCell(j);
                 cell.setCellStyle(cellElement.is("th") ? headerCellStyle : regularCellStyle);
-                cell.setCellValue(cellElement.text());
+                cell.setCellValue(extractTextWithLineBreaks(cellElement));
             }
         }
 
@@ -84,5 +87,20 @@ public class ExportService {
 
         byte[] excelBytes = outputStream.toByteArray();
         return Base64.getEncoder().encodeToString(excelBytes);
+    }
+
+    @VisibleForTesting
+    String extractTextWithLineBreaks(Element element) {
+        StringBuilder text = new StringBuilder();
+        for (Node node : element.childNodes()) {
+            if (node instanceof TextNode textNode) {
+                text.append(textNode.text());
+            } else if (node.nodeName().equals("br")) {
+                text.append("\n"); // Convert <br> to newline
+            } else if (node instanceof Element childElement) {
+                text.append(extractTextWithLineBreaks(childElement)); // Recursively handle nested elements
+            }
+        }
+        return text.toString().trim();
     }
 }
