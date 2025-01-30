@@ -1,7 +1,7 @@
 package ch.sbb.polarion.extension.excel_importer.rest;
 
-import ch.sbb.polarion.extension.excel_importer.rest.controller.ExcelImportApiController;
-import ch.sbb.polarion.extension.excel_importer.rest.controller.ExcelImportInternalController;
+import ch.sbb.polarion.extension.excel_importer.rest.controller.ExcelProcessingApiController;
+import ch.sbb.polarion.extension.excel_importer.rest.controller.ExcelProcessingInternalController;
 import ch.sbb.polarion.extension.excel_importer.rest.controller.WorkItemsApiController;
 import ch.sbb.polarion.extension.excel_importer.rest.controller.WorkItemsInternalController;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettings;
@@ -22,8 +22,8 @@ public class ExcelImporterRestApplication extends GenericRestApplication {
     @Override
     protected @NotNull Set<Object> getExtensionControllerSingletons() {
         return Set.of(
-                new ExcelImportApiController(),
-                new ExcelImportInternalController(),
+                new ExcelProcessingApiController(),
+                new ExcelProcessingInternalController(),
                 new WorkItemsApiController(),
                 new WorkItemsInternalController()
         );

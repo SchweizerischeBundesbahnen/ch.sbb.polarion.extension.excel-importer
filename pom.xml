@@ -77,6 +77,13 @@
         </dependency>
 
         <dependency>
+            <groupId>com.polarion.thirdparty</groupId>
+            <artifactId>org.jsoup_1.15.2</artifactId>
+            <version>${polarion.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>ch.sbb.polarion.extensions</groupId>
             <artifactId>ch.sbb.polarion.extension.generic.app</artifactId>
             <version>${project.parent.version}</version>

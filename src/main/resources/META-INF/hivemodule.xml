@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module id="ch.sbb.polarion.extension.excel_importer" version="1.0.0">
 
+    <contribution configuration-id="com.polarion.alm.wiki.renderingContext">
+        <item key="excelTool" value="instance:ch.sbb.polarion.extension.excel_importer.ExcelTool" />
+    </contribution>
+
+    <!-- Classic Wiki Page -->
+    <contribution configuration-id="com.polarion.alm.richpages.velocityContext">
+        <item key="excelTool" value="instance:ch.sbb.polarion.extension.excel_importer.ExcelTool" />
+    </contribution>
+
     <contribution configuration-id="com.polarion.xray.webui.administrationPageExtenders">
         <extender id="about"
                   name="About"

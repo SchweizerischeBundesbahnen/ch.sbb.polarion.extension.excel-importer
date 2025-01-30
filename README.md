@@ -71,6 +71,33 @@ its artifact must be placed to `<polarion_home>/polarion/extensions/ch.sbb.polar
 
 This extension provides REST API. OpenAPI Specification can be obtained [here](docs/openapi.json).
 
+## Velocity functions
+
+### Convert HTML table to XLSX
+It is possible to generate xlsx document from existing html table in a LiveDoc or Wiki by adding code like this:
+```html
+$excelTool.init()
+<p>
+<input type="button" onclick="$excelTool.exportHtmlTable('users-table', 'Users', 'UsersData')" value="Export to Excel">
+</p>
+<table id="users-table">
+   <tr>
+      <th>Name</th>
+      <th>Phone number</th>
+   </tr>
+   <tr>
+      <td>John Doe</td>
+      <td>555-12-34</td>
+   </tr>
+   <tr>
+      <td>Ann Smith</td>
+      <td>555-09-87</td>
+   </tr>
+</table>
+
+```
+In the above case extension generates the file `UsersData.xlsx` with the data from table `users-table` on the sheet `Users`.
+
 ## Known issues
 
 All good so far.
