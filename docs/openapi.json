@@ -1,614 +1,716 @@
 {
-  "openapi" : "3.0.1",
-  "info" : {
-    "title" : "Excel Importer REST API",
-    "version" : "v1"
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Excel Importer REST API",
+    "version": "v1"
   },
-  "paths" : {
-    "/api/context" : {
-      "get" : {
-        "operationId" : "getContext",
-        "responses" : {
-          "default" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Context"
+  "paths": {
+    "/api/context": {
+      "get": {
+        "operationId": "getContext",
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Context"
                 }
               }
             },
-            "description" : "Context information"
+            "description": "Context information"
           }
         },
-        "summary" : "Returns basic context information of Polarion's extension",
-        "tags" : [ "Extension Information" ]
+        "summary": "Returns basic context information of Polarion's extension",
+        "tags": [
+          "Extension Information"
+        ]
       }
     },
-    "/api/projects/{projectId}/import" : {
-      "post" : {
-        "operationId" : "importExcelSheet",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "projectId",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "multipart/form-data" : {
-              "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "file" : {
-                    "type" : "string",
-                    "format" : "binary"
+    "/api/exportHtmlTable": {
+      "post": {
+        "operationId": "exportHtmlTable",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "sheetName": {
+                    "type": "string"
                   },
-                  "mappingName" : {
-                    "type" : "string",
-                    "default" : "Default"
+                  "tableHtml": {
+                    "format": "byte",
+                    "type": "string"
                   }
-                }
+                },
+                "type": "object"
               }
             }
           }
         },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ImportResult"
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportHtmlTableResult"
                 }
               }
             },
-            "description" : "Successful import"
+            "description": "Successful export"
           }
         },
-        "summary" : "Imports Excel sheet",
-        "tags" : [ "Excel Import" ]
+        "summary": "Export html table as excel sheet",
+        "tags": [
+          "Excel Processing"
+        ]
       }
     },
-    "/api/projects/{projectId}/workitem_types" : {
-      "get" : {
-        "operationId" : "getWorkItemTypes",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "projectId",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+    "/api/projects/{projectId}/import": {
+      "post": {
+        "operationId": "importExcelSheet",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ITypeOpt"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "mappingName": {
+                    "default": "Default",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResult"
                 }
               }
             },
-            "description" : "Successfully retrieved work item types"
+            "description": "Successful import"
           }
         },
-        "summary" : "Get workitem types for project",
-        "tags" : [ "WorkItems" ]
+        "summary": "Imports Excel sheet",
+        "tags": [
+          "Excel Processing"
+        ]
       }
     },
-    "/api/projects/{projectId}/workitem_types/{workItemType}/fields" : {
-      "get" : {
-        "operationId" : "getWorkItemFields",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "projectId",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+    "/api/projects/{projectId}/workitem_types": {
+      "get": {
+        "operationId": "getWorkItemTypes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
-        }, {
-          "in" : "path",
-          "name" : "workItemType",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/FieldMetadata"
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ITypeOpt"
                 }
               }
             },
-            "description" : "Successfully retrieved fields"
+            "description": "Successfully retrieved work item types"
           }
         },
-        "summary" : "Get all fields for requested project and workitem type",
-        "tags" : [ "WorkItems" ]
+        "summary": "Get workitem types for project",
+        "tags": [
+          "WorkItems"
+        ]
       }
     },
-    "/api/settings" : {
-      "get" : {
-        "operationId" : "readFeaturesList_1",
-        "responses" : {
-          "default" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "string"
+    "/api/projects/{projectId}/workitem_types/{workItemType}/fields": {
+      "get": {
+        "operationId": "getWorkItemFields",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "workItemType",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldMetadata"
                 }
               }
             },
-            "description" : "List of supported features"
+            "description": "Successfully retrieved fields"
           }
         },
-        "summary" : "Returns the complete list of all supported features",
-        "tags" : [ "Settings" ]
+        "summary": "Get all fields for requested project and workitem type",
+        "tags": [
+          "WorkItems"
+        ]
       }
     },
-    "/api/settings/{feature}/default-content" : {
-      "get" : {
-        "operationId" : "getDefaultValues_1",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "feature",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "default" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SettingsModel"
+    "/api/settings": {
+      "get": {
+        "operationId": "readFeaturesList_1",
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
                 }
               }
             },
-            "description" : "Default values"
+            "description": "List of supported features"
           }
         },
-        "summary" : "Returns default values of specified setting",
-        "tags" : [ "Settings" ]
+        "summary": "Returns the complete list of all supported features",
+        "tags": [
+          "Settings"
+        ]
       }
     },
-    "/api/settings/{feature}/names" : {
-      "get" : {
-        "operationId" : "readSettingNames_1",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "feature",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+    "/api/settings/{feature}/default-content": {
+      "get": {
+        "operationId": "getDefaultValues_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feature",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
-        } ],
-        "responses" : {
-          "default" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SettingName"
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsModel"
                 }
               }
             },
-            "description" : "List of setting names"
+            "description": "Default values"
           }
         },
-        "summary" : "Returns names of specified setting",
-        "tags" : [ "Settings" ]
+        "summary": "Returns default values of specified setting",
+        "tags": [
+          "Settings"
+        ]
       }
     },
-    "/api/settings/{feature}/names/{name}" : {
-      "delete" : {
-        "operationId" : "deleteSetting_1",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "feature",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+    "/api/settings/{feature}/names": {
+      "get": {
+        "operationId": "readSettingNames_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feature",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
-        }, {
-          "in" : "path",
-          "name" : "name",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Setting deleted successfully"
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingName"
+                }
+              }
+            },
+            "description": "List of setting names"
           }
         },
-        "summary" : "Deletes specified setting by id",
-        "tags" : [ "Settings" ]
+        "summary": "Returns names of specified setting",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/api/settings/{feature}/names/{name}": {
+      "delete": {
+        "operationId": "deleteSetting_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feature",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Setting deleted successfully"
+          }
+        },
+        "summary": "Deletes specified setting by id",
+        "tags": [
+          "Settings"
+        ]
       },
-      "post" : {
-        "operationId" : "renameSetting_1",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "feature",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+      "post": {
+        "operationId": "renameSetting_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feature",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
-        }, {
-          "in" : "path",
-          "name" : "name",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "type" : "string"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
               }
             }
           }
         },
-        "responses" : {
-          "204" : {
-            "description" : "Setting name updated successfully"
+        "responses": {
+          "204": {
+            "description": "Setting name updated successfully"
           }
         },
-        "summary" : "Updates name of specified named setting",
-        "tags" : [ "Settings" ]
+        "summary": "Updates name of specified named setting",
+        "tags": [
+          "Settings"
+        ]
       }
     },
-    "/api/settings/{feature}/names/{name}/content" : {
-      "get" : {
-        "operationId" : "readSetting_1",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "feature",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+    "/api/settings/{feature}/names/{name}/content": {
+      "get": {
+        "operationId": "readSetting_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feature",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "revision",
+            "schema": {
+              "type": "string"
+            }
           }
-        }, {
-          "in" : "path",
-          "name" : "name",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "revision",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "default" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SettingsModel"
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsModel"
                 }
               }
             },
-            "description" : "Setting content"
+            "description": "Setting content"
           }
         },
-        "summary" : "Returns values (content) of specified setting by its id and revision",
-        "tags" : [ "Settings" ]
+        "summary": "Returns values (content) of specified setting by its id and revision",
+        "tags": [
+          "Settings"
+        ]
       },
-      "put" : {
-        "operationId" : "saveSetting_1",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "feature",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+      "put": {
+        "operationId": "saveSetting_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feature",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
-        }, {
-          "in" : "path",
-          "name" : "name",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "type" : "string"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
               }
             }
           }
         },
-        "responses" : {
-          "204" : {
-            "description" : "Setting created/updated successfully"
+        "responses": {
+          "204": {
+            "description": "Setting created/updated successfully"
           }
         },
-        "summary" : "Creates or updates named setting. Creation scenario will use default setting value if no body specified in the request.",
-        "tags" : [ "Settings" ]
+        "summary": "Creates or updates named setting. Creation scenario will use default setting value if no body specified in the request.",
+        "tags": [
+          "Settings"
+        ]
       }
     },
-    "/api/settings/{feature}/names/{name}/revisions" : {
-      "get" : {
-        "operationId" : "readRevisionsList_1",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "feature",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+    "/api/settings/{feature}/names/{name}/revisions": {
+      "get": {
+        "operationId": "readRevisionsList_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feature",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
-        }, {
-          "in" : "path",
-          "name" : "name",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "default" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Revision"
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Revision"
                 }
               }
             },
-            "description" : "List of revisions"
+            "description": "List of revisions"
           }
         },
-        "summary" : "Returns revisions history of specified setting with specified id",
-        "tags" : [ "Settings" ]
+        "summary": "Returns revisions history of specified setting with specified id",
+        "tags": [
+          "Settings"
+        ]
       }
     },
-    "/api/version" : {
-      "get" : {
-        "operationId" : "getVersion",
-        "responses" : {
-          "default" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Version"
+    "/api/version": {
+      "get": {
+        "operationId": "getVersion",
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Version"
                 }
               }
             },
-            "description" : "Version information"
+            "description": "Version information"
           }
         },
-        "summary" : "Returns version of Polarion's extension",
-        "tags" : [ "Extension Information" ]
+        "summary": "Returns version of Polarion's extension",
+        "tags": [
+          "Extension Information"
+        ]
       }
     }
   },
-  "components" : {
-    "schemas" : {
-      "Context" : {
-        "type" : "object",
-        "description" : "Represents the context for building URLs related to Polarion services",
-        "properties" : {
-          "baseUrl" : {
-            "type" : "string",
-            "description" : "Returns the base URL constructed with the extension context",
-            "example" : "/polarion/pdf-exporter"
+  "components": {
+    "schemas": {
+      "Context": {
+        "description": "Represents the context for building URLs related to Polarion services",
+        "properties": {
+          "baseUrl": {
+            "description": "Returns the base URL constructed with the extension context",
+            "example": "/polarion/pdf-exporter",
+            "type": "string"
           },
-          "extensionContext" : {
-            "type" : "string",
-            "description" : "The extension context used as a base for URL construction",
-            "example" : "pdf-exporter"
+          "extensionContext": {
+            "description": "The extension context used as a base for URL construction",
+            "example": "pdf-exporter",
+            "type": "string"
           },
-          "restUrl" : {
-            "type" : "string",
-            "description" : "Returns the REST API URL constructed with the extension context",
-            "example" : "/polarion/pdf-exporter/rest"
+          "restUrl": {
+            "description": "Returns the REST API URL constructed with the extension context",
+            "example": "/polarion/pdf-exporter/rest",
+            "type": "string"
           },
-          "swaggerUiUrl" : {
-            "type" : "string",
-            "description" : "Returns the Swagger UI URL for the REST API"
+          "swaggerUiUrl": {
+            "description": "Returns the Swagger UI URL for the REST API",
+            "type": "string"
           }
-        }
+        },
+        "type": "object"
       },
-      "FieldMetadata" : {
-        "type" : "object",
-        "properties" : {
-          "custom" : {
-            "type" : "boolean"
+      "ExportHtmlTableResult": {
+        "description": "Represents the result of a html table export operation",
+        "properties": {
+          "content": {
+            "description": "Base64-encoded excel file content",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "FieldMetadata": {
+        "properties": {
+          "custom": {
+            "type": "boolean"
           },
-          "id" : {
-            "type" : "string"
+          "id": {
+            "type": "string"
           },
-          "label" : {
-            "type" : "string"
+          "label": {
+            "type": "string"
           },
-          "multi" : {
-            "type" : "boolean"
+          "multi": {
+            "type": "boolean"
           },
-          "options" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/Option"
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
             },
-            "uniqueItems" : true
+            "type": "array",
+            "uniqueItems": true
           },
-          "required" : {
-            "type" : "boolean"
+          "required": {
+            "type": "boolean"
           },
-          "type" : {
-            "$ref" : "#/components/schemas/IType"
+          "type": {
+            "$ref": "#/components/schemas/IType"
           }
-        }
+        },
+        "type": "object"
       },
-      "IType" : {
-        "type" : "object"
+      "IType": {
+        "type": "object"
       },
-      "ITypeOpt" : {
-        "type" : "object",
-        "properties" : {
-          "default" : {
-            "type" : "boolean"
+      "ITypeOpt": {
+        "properties": {
+          "default": {
+            "type": "boolean"
           },
-          "enumId" : {
-            "type" : "string"
+          "enumId": {
+            "type": "string"
           },
-          "hidden" : {
-            "type" : "boolean"
+          "hidden": {
+            "type": "boolean"
           },
-          "id" : {
-            "type" : "string"
+          "id": {
+            "type": "string"
           },
-          "name" : {
-            "type" : "string"
+          "name": {
+            "type": "string"
           },
-          "phantom" : {
-            "type" : "boolean"
+          "phantom": {
+            "type": "boolean"
           },
-          "properties" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "string"
-            }
+          "properties": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
           },
-          "sequenceNumber" : {
-            "type" : "integer",
-            "format" : "int32"
+          "sequenceNumber": {
+            "format": "int32",
+            "type": "integer"
           }
-        }
+        },
+        "type": "object"
       },
-      "ImportResult" : {
-        "type" : "object",
-        "description" : "Represents the result of an Excel import operation",
-        "properties" : {
-          "createdIds" : {
-            "type" : "array",
-            "description" : "List of IDs that were created during the import process",
-            "items" : {
-              "type" : "string",
-              "description" : "List of IDs that were created during the import process"
-            }
+      "ImportResult": {
+        "description": "Represents the result of an Excel import operation",
+        "properties": {
+          "createdIds": {
+            "description": "List of IDs that were created during the import process",
+            "items": {
+              "description": "List of IDs that were created during the import process",
+              "type": "string"
+            },
+            "type": "array"
           },
-          "unchangedIds" : {
-            "type" : "array",
-            "description" : "List of IDs that were unchanged during the import process",
-            "items" : {
-              "type" : "string",
-              "description" : "List of IDs that were unchanged during the import process"
-            }
+          "unchangedIds": {
+            "description": "List of IDs that were unchanged during the import process",
+            "items": {
+              "description": "List of IDs that were unchanged during the import process",
+              "type": "string"
+            },
+            "type": "array"
           },
-          "updatedIds" : {
-            "type" : "array",
-            "description" : "List of IDs that were updated during the import process",
-            "items" : {
-              "type" : "string",
-              "description" : "List of IDs that were updated during the import process"
-            }
+          "updatedIds": {
+            "description": "List of IDs that were updated during the import process",
+            "items": {
+              "description": "List of IDs that were updated during the import process",
+              "type": "string"
+            },
+            "type": "array"
           }
-        }
+        },
+        "type": "object"
       },
-      "Option" : {
-        "type" : "object",
-        "properties" : {
-          "key" : {
-            "type" : "string"
+      "Option": {
+        "properties": {
+          "key": {
+            "type": "string"
           },
-          "name" : {
-            "type" : "string"
+          "name": {
+            "type": "string"
           }
-        }
+        },
+        "type": "object"
       },
-      "Revision" : {
-        "type" : "object",
-        "description" : "Revision details",
-        "properties" : {
-          "author" : {
-            "type" : "string",
-            "description" : "The author of the revision"
+      "Revision": {
+        "description": "Revision details",
+        "properties": {
+          "author": {
+            "description": "The author of the revision",
+            "type": "string"
           },
-          "baseline" : {
-            "type" : "string",
-            "description" : "The baseline of the revision"
+          "baseline": {
+            "description": "The baseline of the revision",
+            "type": "string"
           },
-          "date" : {
-            "type" : "string",
-            "description" : "The date of the revision"
+          "date": {
+            "description": "The date of the revision",
+            "type": "string"
           },
-          "description" : {
-            "type" : "string",
-            "description" : "The description of the revision"
+          "description": {
+            "description": "The description of the revision",
+            "type": "string"
           },
-          "name" : {
-            "type" : "string",
-            "description" : "The name of the revision"
+          "name": {
+            "description": "The name of the revision",
+            "type": "string"
           }
-        }
+        },
+        "type": "object"
       },
-      "SettingName" : {
-        "type" : "object",
-        "properties" : {
-          "name" : {
-            "type" : "string",
-            "description" : "The name of the setting"
+      "SettingName": {
+        "properties": {
+          "name": {
+            "description": "The name of the setting",
+            "type": "string"
           },
-          "scope" : {
-            "type" : "string",
-            "description" : "The scope of the setting"
+          "scope": {
+            "description": "The scope of the setting",
+            "type": "string"
           }
-        }
+        },
+        "type": "object"
       },
-      "SettingsModel" : {
-        "type" : "object",
-        "description" : "Settings model",
-        "properties" : {
-          "bundleTimestamp" : {
-            "type" : "string",
-            "description" : "The bundle timestamp of the setting"
+      "SettingsModel": {
+        "description": "Settings model",
+        "properties": {
+          "bundleTimestamp": {
+            "description": "The bundle timestamp of the setting",
+            "type": "string"
           }
-        }
+        },
+        "type": "object"
       },
-      "Version" : {
-        "type" : "object",
-        "description" : "Details about the software version",
-        "properties" : {
-          "automaticModuleName" : {
-            "type" : "string",
-            "description" : "The automatic module name"
+      "Version": {
+        "description": "Details about the software version",
+        "properties": {
+          "automaticModuleName": {
+            "description": "The automatic module name",
+            "type": "string"
           },
-          "bundleBuildTimestamp" : {
-            "type" : "string",
-            "description" : "The build timestamp of the bundle"
+          "bundleBuildTimestamp": {
+            "description": "The build timestamp of the bundle",
+            "type": "string"
           },
-          "bundleName" : {
-            "type" : "string",
-            "description" : "The name of the bundle"
+          "bundleName": {
+            "description": "The name of the bundle",
+            "type": "string"
           },
-          "bundleVendor" : {
-            "type" : "string",
-            "description" : "The vendor of the bundle"
+          "bundleVendor": {
+            "description": "The vendor of the bundle",
+            "type": "string"
           },
-          "bundleVersion" : {
-            "type" : "string",
-            "description" : "The version of the bundle"
+          "bundleVersion": {
+            "description": "The version of the bundle",
+            "type": "string"
           },
-          "projectURL" : {
-            "type" : "string",
-            "description" : "The project URL"
+          "projectURL": {
+            "description": "The project URL",
+            "type": "string"
           },
-          "supportEmail" : {
-            "type" : "string",
-            "description" : "Support email for the bundle"
+          "supportEmail": {
+            "description": "Support email for the bundle",
+            "type": "string"
           }
-        }
+        },
+        "type": "object"
       }
     }
   }

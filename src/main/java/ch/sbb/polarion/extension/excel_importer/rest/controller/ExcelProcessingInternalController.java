@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.excel_importer.rest.controller;
 
+import ch.sbb.polarion.extension.excel_importer.service.ExportHtmlTableResult;
+import ch.sbb.polarion.extension.excel_importer.service.ExportService;
 import ch.sbb.polarion.extension.excel_importer.service.ImportResult;
 import ch.sbb.polarion.extension.excel_importer.service.ImportService;
 import ch.sbb.polarion.extension.excel_importer.service.PolarionServiceExt;
@@ -29,10 +31,10 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-@Tag(name = "Excel Import")
+@Tag(name = "Excel Processing")
 @Hidden
 @Path("/internal")
-public class ExcelImportInternalController {
+public class ExcelProcessingInternalController {
 
     protected final PolarionServiceExt polarionServiceExt = new PolarionServiceExt();
 
@@ -60,6 +62,28 @@ public class ExcelImportInternalController {
         ExcelSheetMappingSettingsModel settings = new ExcelSheetMappingSettings().load(projectId, SettingId.fromName(mappingName));
         List<Map<String, Object>> xlsxData = new XlsxParser().parseFileStream(inputStream, settings);
         return new ImportService().processFile(trackerProject, xlsxData, settings);
+    }
+
+    @POST
+    @Path("/exportHtmlTable")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Export html table as excel sheet",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Successful export",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON,
+                                    schema = @Schema(implementation = ExportHtmlTableResult.class)
+                            )
+                    )
+            }
+    )
+    public ExportHtmlTableResult exportHtmlTable(
+            @Parameter(schema = @Schema(type = "string", format = "")) @FormDataParam("sheetName") String sheetName,
+            @Parameter(schema = @Schema(type = "string", format = "byte")) @FormDataParam("tableHtml") String tableHtml) {
+        return new ExportHtmlTableResult(new ExportService().exportHtmlTable(sheetName, tableHtml));
     }
 
 }
