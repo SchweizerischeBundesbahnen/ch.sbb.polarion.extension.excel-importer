@@ -6,7 +6,7 @@ import org.intellij.lang.annotations.Language;
 
 import java.util.Objects;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "java:S1118"})
 public class ExcelTool {
 
     @SneakyThrows
