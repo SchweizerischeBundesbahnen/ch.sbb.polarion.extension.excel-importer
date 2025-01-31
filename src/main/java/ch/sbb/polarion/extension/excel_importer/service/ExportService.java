@@ -2,10 +2,12 @@ package ch.sbb.polarion.extension.excel_importer.service;
 
 import com.polarion.core.util.StringUtils;
 import lombok.SneakyThrows;
+import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Hyperlink;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -70,7 +72,14 @@ public class ExportService {
                 Element cellElement = cells.get(j);
                 Cell cell = row.createCell(j);
                 cell.setCellStyle(cellElement.is("th") ? headerCellStyle : regularCellStyle);
-                cell.setCellValue(extractTextWithLineBreaks(cellElement));
+
+                CellValue cellValue = extractTextWithLineBreaks(cellElement);
+                cell.setCellValue(cellValue.getText());
+                if (cellValue.getLink() != null) {
+                    Hyperlink hyperlink = workbook.getCreationHelper().createHyperlink(HyperlinkType.URL);
+                    hyperlink.setAddress(cellValue.getLink());
+                    cell.setHyperlink(hyperlink);
+                }
             }
         }
 
@@ -90,17 +99,31 @@ public class ExportService {
     }
 
     @VisibleForTesting
-    String extractTextWithLineBreaks(Element element) {
-        StringBuilder text = new StringBuilder();
+    CellValue extractTextWithLineBreaks(Element element) {
+        CellValue result = new CellValue();
+
+        if (element.nodeName().equals("a")) {
+            String href = element.attr("href");
+            result.setLink(href);
+            result.setText(element.text());
+            return result;
+        }
+
+        StringBuilder cellText = new StringBuilder();
         for (Node node : element.childNodes()) {
             if (node instanceof TextNode textNode) {
-                text.append(textNode.text());
+                cellText.append(textNode.text());
             } else if (node.nodeName().equals("br")) {
-                text.append("\n"); // Convert <br> to newline
+                cellText.append("\n"); // Convert <br> to newline
             } else if (node instanceof Element childElement) {
-                text.append(extractTextWithLineBreaks(childElement)); // Recursively handle nested elements
+                CellValue childCellValue = extractTextWithLineBreaks(childElement); // Recursively handle nested elements
+                cellText.append(childCellValue.getText());
+                if (childCellValue.getLink() != null) {
+                    result.setLink(childCellValue.getLink());
+                }
             }
         }
-        return text.toString().trim();
+        result.setText(cellText.toString().trim());
+        return result;
     }
 }
