@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v2.8.3...v3.0.0) (2025-01-31)
+
+
+### ⚠ BREAKING CHANGES
+
+* Polarion 2410 support ([#73](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/73))
+
+### Features
+
+* export LiveDoc html table as xslx file ([#76](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/76)) ([fc1094f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/fc1094fb3e45ba0727e9dbdd805ffc307614df6e)), closes [#75](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/75)
+* Polarion 2410 support ([#73](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/73)) ([8d049f6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/8d049f622ec71de1a406406b5afbe5351f774ac5)), closes [#72](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/72)
+
+
+### Bug Fixes
+
+* preserve line breaks during html table export ([#77](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/77)) ([8b8178a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/8b8178a15a070fee59515313ac8b39412c62a03a))
+
 ## [2.8.3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v2.8.2...v2.8.3) (2024-11-29)
 
 
