@@ -14,4 +14,4 @@ Require-Bundle: com.polarion.portal.tomcat,
  org.jsoup,
  ch.sbb.polarion.thirdparty.bundles.org.apache.poi;resolution:=optional
 Export-Package: ch.sbb.polarion.extension.excel_importer
-Import-Package: org.apache.poi,org.apache.poi.ooxml,org.apache.poi.openxml4j.exceptions,org.apache.poi.ss.usermodel,org.apache.poi.ss.util,org.apache.poi.xssf.usermodel
+Import-Package: org.apache.poi,org.apache.poi.ooxml,org.apache.poi.openxml4j.exceptions,org.apache.poi.common.usermodel,org.apache.poi.ss.usermodel,org.apache.poi.ss.util,org.apache.poi.xssf.usermodel
