@@ -1,90 +1,53 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
+import ch.sbb.polarion.extension.excel_importer.service.htmltable.CellData;
+import ch.sbb.polarion.extension.excel_importer.service.htmltable.HtmlTableParser;
+import ch.sbb.polarion.extension.excel_importer.service.htmltable.StyleContext;
+import ch.sbb.polarion.extension.excel_importer.service.htmltable.StyleUtil;
 import com.polarion.core.util.StringUtils;
 import lombok.SneakyThrows;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.FillPatternType;
-import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Hyperlink;
-import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.jetbrains.annotations.VisibleForTesting;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
-import org.jsoup.nodes.TextNode;
-import org.jsoup.select.Elements;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 
 public class ExportService {
 
     @SneakyThrows
     public String exportHtmlTable(String sheetName, String htmlTableContentBase64Encoded) {
 
-        if (StringUtils.isEmpty(htmlTableContentBase64Encoded)) {
-            throw new IllegalArgumentException("html table content is empty");
-        }
+        List<List<CellData>> cellsData = new HtmlTableParser().parse(htmlTableContentBase64Encoded);
 
-        String tableHtml = new String(Base64.getDecoder().decode(htmlTableContentBase64Encoded), StandardCharsets.UTF_8);
-
-        // Parse the HTML string
-        Document doc = Jsoup.parse(tableHtml);
-
-        // Select the inner table
-        Element table = doc.selectFirst("table");
-
-        if (table == null) {
-            throw new IllegalArgumentException("html table not found in the provided html");
-        }
-
-        Workbook workbook = new XSSFWorkbook();
+        XSSFWorkbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet(StringUtils.isEmpty(sheetName) ? "Sheet1" : sheetName);
 
-        Font headerFont = workbook.createFont();
-        headerFont.setColor(IndexedColors.BLACK.index);
-        headerFont.setBold(true);
-        CellStyle headerCellStyle = sheet.getWorkbook().createCellStyle();
-        headerCellStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
-        headerCellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        headerCellStyle.setFont(headerFont);
-        CellStyle regularCellStyle = sheet.getWorkbook().createCellStyle();
-        regularCellStyle.setWrapText(true);
-
-        int columnsCount = 0;
-        Elements rows = table.select("tr");
-        for (int i = 0; i < rows.size(); i++) {
+        StyleContext styleContext = new StyleContext(workbook);
+        for (int i = 0; i < cellsData.size(); i++) {
             Row row = sheet.createRow(i);
             row.setHeight((short) -1); // workaround to auto size height
-            Element rowElement = rows.get(i);
-            Elements cells = rowElement.select("th, td"); // Select both header and data cells
-            columnsCount = Math.max(columnsCount, cells.size());
+            List<CellData> cells = cellsData.get(i);
 
             for (int j = 0; j < cells.size(); j++) {
-                Element cellElement = cells.get(j);
+                CellData data = cells.get(j);
                 Cell cell = row.createCell(j);
-                cell.setCellStyle(cellElement.is("th") ? headerCellStyle : regularCellStyle);
+                styleContext.applyStyle(cell, data);
+                setCellValue(cell, data, workbook);
 
-                CellValue cellValue = extractTextWithLineBreaks(cellElement);
-                cell.setCellValue(cellValue.getText());
-                if (cellValue.getLink() != null) {
-                    Hyperlink hyperlink = workbook.getCreationHelper().createHyperlink(HyperlinkType.URL);
-                    hyperlink.setAddress(cellValue.getLink());
-                    cell.setHyperlink(hyperlink);
+                if (data.isHeader()) {
+                    String columnWidth = data.getAttrs().get().get(StyleUtil.CUSTOM_ATTR_COLUMN_WIDTH);
+                    if (!StringUtils.isEmpty(columnWidth)) {
+                        sheet.setColumnWidth(j, (int) StyleUtil.CHARACTER_WIDTH_TO_PX_MULTIPLIER * Integer.parseInt(columnWidth));
+                    } else {
+                        sheet.autoSizeColumn(j);
+                    }
                 }
             }
-        }
-
-        for (int i = 0; i < columnsCount; i++) {
-            sheet.setColumnWidth(i, 25 * 300);
         }
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -98,32 +61,17 @@ public class ExportService {
         return Base64.getEncoder().encodeToString(excelBytes);
     }
 
-    @VisibleForTesting
-    CellValue extractTextWithLineBreaks(Element element) {
-        CellValue result = new CellValue();
-
-        if (element.nodeName().equals("a")) {
-            String href = element.attr("href");
-            result.setLink(href);
-            result.setText(element.text());
-            return result;
-        }
-
-        StringBuilder cellText = new StringBuilder();
-        for (Node node : element.childNodes()) {
-            if (node instanceof TextNode textNode) {
-                cellText.append(textNode.text());
-            } else if (node.nodeName().equals("br")) {
-                cellText.append("\n"); // Convert <br> to newline
-            } else if (node instanceof Element childElement) {
-                CellValue childCellValue = extractTextWithLineBreaks(childElement); // Recursively handle nested elements
-                cellText.append(childCellValue.getText());
-                if (childCellValue.getLink() != null) {
-                    result.setLink(childCellValue.getLink());
-                }
+    private void setCellValue(Cell cell, CellData data, XSSFWorkbook workbook) {
+        switch (data.getType()) {
+            case TEXT -> cell.setCellValue((String) data.getValue());
+            case LINK -> {
+                cell.setCellValue((String) data.getValue());
+                Hyperlink hyperlink = workbook.getCreationHelper().createHyperlink(HyperlinkType.URL);
+                hyperlink.setAddress(data.getLink());
+                cell.setHyperlink(hyperlink);
             }
+            case IMAGE -> throw new IllegalStateException("Not implemented: " + data.getType());
         }
-        result.setText(cellText.toString().trim());
-        return result;
     }
+
 }
