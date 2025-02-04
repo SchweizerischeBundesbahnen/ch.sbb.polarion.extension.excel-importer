@@ -1,12 +1,24 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
+import ch.sbb.polarion.extension.excel_importer.utils.PolarionUtils;
+import org.apache.commons.io.IOUtils;
 import org.intellij.lang.annotations.Language;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 class ExportServiceTest {
 
@@ -17,16 +29,39 @@ class ExportServiceTest {
                     <th>Header 1</th>
                     <th>Header 2</th>
                     <th>Header 3</th>
+                    <th>Header 4</th>
                 </tr>
                 <tr>
                     <td>Data 1</td>
                     <td>Data 2</td>
                     <td><a href="https://polarion.url/polarion/#/project/elibrary/workitem?id=EL-12345">EL-12345 - Mega WorkItem</a></td>
+                    <td><img src="https://polarion.url/polarion/image.png" alt=''></td>
                 </tr>
             </table>
             """;
 
     private final ExportService exportService = new ExportService();
+
+
+    MockedStatic<PolarionUtils> polarionUtilsMockedStatic;
+    MockedStatic<IOUtils> ioUtilsMockedStatic;
+
+    @BeforeEach
+    void setUp() throws IOException {
+        polarionUtilsMockedStatic = mockStatic(PolarionUtils.class);
+        ioUtilsMockedStatic = mockStatic(IOUtils.class);
+
+        URL imageURL = mock(URL.class);
+        when(imageURL.openStream()).thenReturn(mock(InputStream.class));
+        polarionUtilsMockedStatic.when(() -> PolarionUtils.getAbsoluteUrl(anyString())).thenReturn(imageURL);
+        ioUtilsMockedStatic.when(() -> IOUtils.toByteArray(any(InputStream.class))).thenReturn("image_content".getBytes(StandardCharsets.UTF_8));
+    }
+
+    @AfterEach
+    void tearDown() {
+        polarionUtilsMockedStatic.close();
+        ioUtilsMockedStatic.close();
+    }
 
     @Test
     void exportHtmlTableValidInputTest() {

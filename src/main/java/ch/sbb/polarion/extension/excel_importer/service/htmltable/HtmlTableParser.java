@@ -1,8 +1,11 @@
 package ch.sbb.polarion.extension.excel_importer.service.htmltable;
 
 import ch.sbb.polarion.extension.excel_importer.service.CellValue;
+import ch.sbb.polarion.extension.excel_importer.utils.PolarionUtils;
 import com.polarion.core.util.StringUtils;
 import lombok.Data;
+import lombok.SneakyThrows;
+import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -11,6 +14,8 @@ import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
+import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -28,6 +33,8 @@ public class HtmlTableParser {
     private static final String HTML_TAG_TD = "td";
     private static final String HTML_ATTR_STYLE = "style";
     private static final String HTML_ATTR_HREF = "href";
+    private static final String HTML_TAG_IMG = "img";
+    private static final String HTML_ATTR_SRC = "src";
 
     public List<List<CellData>> parse(String htmlTableContentBase64Encoded) {
         if (StringUtils.isEmpty(htmlTableContentBase64Encoded)) {
@@ -58,8 +65,8 @@ public class HtmlTableParser {
                 CellValue cellValue = extractTextWithLineBreaks(cellElement);
                 rowData.add(CellData.builder()
                         .header(cellElement.is(HTML_TAG_TH))
-                        .type(cellValue.getLink() != null ? CellData.DataType.LINK : CellData.DataType.TEXT)
-                        .value(cellValue.getText())
+                        .type(cellValue.getType())
+                        .value(cellValue.getValue())
                         .link(cellValue.getLink())
                         .styles(new CellConfig(tableStyles, rowStyles, StyleUtil.parseStyleAttribute(cellElement.attr(HTML_ATTR_STYLE))))
                         .attrs(new CellConfig(tableAttrs, rowAttrs, StyleUtil.parseCustomAttributes(cellElement)))
@@ -71,18 +78,43 @@ public class HtmlTableParser {
         return cellData;
     }
 
+    @SneakyThrows
     @VisibleForTesting
     CellValue extractTextWithLineBreaks(Element element) {
         CellValue result = new CellValue();
 
-        if (element.nodeName().equals(HTML_TAG_A)) {
-            String href = element.attr(HTML_ATTR_HREF);
-            result.setLink(href);
-            result.setText(element.text());
-            return result;
+        String nodeName = element.nodeName();
+        switch (nodeName) {
+            case HTML_TAG_A:
+                handleAnchorElement(element, result);
+                break;
+            case HTML_TAG_IMG:
+                handleImageElement(element, result);
+                break;
+            default:
+                processChildNodes(element, result);
+                break;
         }
 
+        return result;
+    }
+
+    private void handleAnchorElement(Element element, CellValue result) {
+        String href = element.attr(HTML_ATTR_HREF);
+        result.setLink(href);
+        result.setText(element.text());
+    }
+
+    private void handleImageElement(Element element, CellValue result) throws IOException {
+        String src = element.attr(HTML_ATTR_SRC);
+        URL url = PolarionUtils.getAbsoluteUrl(src);
+        byte[] image = IOUtils.toByteArray(url.openStream());
+        result.setImage(image);
+    }
+
+    private void processChildNodes(Element element, CellValue result) {
         StringBuilder cellText = new StringBuilder();
+
         for (Node node : element.childNodes()) {
             if (node instanceof TextNode textNode) {
                 cellText.append(textNode.text());
@@ -90,14 +122,22 @@ public class HtmlTableParser {
                 cellText.append("\n"); // Convert <br> to newline
             } else if (node instanceof Element childElement) {
                 CellValue childCellValue = extractTextWithLineBreaks(childElement); // Recursively handle nested elements
-                cellText.append(childCellValue.getText());
-                if (childCellValue.getLink() != null) {
-                    result.setLink(childCellValue.getLink());
-                }
+                updateWithChildValues(childCellValue, result, cellText);
             }
         }
-        result.setText(cellText.toString().trim());
-        return result;
+
+        result.setText(cellText.toString());
     }
 
+    private void updateWithChildValues(CellValue childCellValue, CellValue result, StringBuilder cellText) {
+        if (childCellValue.getText() != null) {
+            cellText.append(childCellValue.getText());
+        }
+        if (childCellValue.getLink() != null) {
+            result.setLink(childCellValue.getLink());
+        }
+        if (childCellValue.getImage() != null) {
+            result.setImage(childCellValue.getImage());
+        }
+    }
 }
