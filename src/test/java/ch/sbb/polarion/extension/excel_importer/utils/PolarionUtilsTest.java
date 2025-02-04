@@ -4,11 +4,15 @@ import com.polarion.core.boot.PolarionProperties;
 import com.polarion.core.config.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
 import org.mockito.MockedStatic;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,32 +42,20 @@ class PolarionUtilsTest {
         }
     }
 
-    @Test
-    void testEnrichByProtocolPrefix_withNoProtocol() {
-        String hostname = "polarion.url";
-        String result = PolarionUtils.enrichByProtocolPrefix(hostname);
-        assertEquals("http://polarion.url", result);
+    public static Stream<Arguments> provideHostnames() {
+        return Stream.of(
+                Arguments.of("http://polarion.url", "http://polarion.url"),
+                Arguments.of("https://polarion.url", "https://polarion.url"),
+                Arguments.of("polarion.url", "http://polarion.url"),
+                Arguments.of("", "")
+        );
     }
 
-    @Test
-    void testEnrichByProtocolPrefix_withHttpProtocol() {
-        String hostname = "http://polarion.url";
+    @ParameterizedTest
+    @MethodSource("provideHostnames")
+    void testEnrichByProtocolPrefix_withAlreadyExistingProtocol(String hostname, String expected) {
         String result = PolarionUtils.enrichByProtocolPrefix(hostname);
-        assertEquals("http://polarion.url", result);
-    }
-
-    @Test
-    void testEnrichByProtocolPrefix_withHttpsProtocol() {
-        String hostname = "https://polarion.url";
-        String result = PolarionUtils.enrichByProtocolPrefix(hostname);
-        assertEquals("https://polarion.url", result);
-    }
-
-    @Test
-    void testEnrichByProtocolPrefix_withEmptyHostname() {
-        String hostname = "";
-        String result = PolarionUtils.enrichByProtocolPrefix(hostname);
-        assertEquals("", result);
+        assertEquals(expected, result);
     }
 
     @Test
