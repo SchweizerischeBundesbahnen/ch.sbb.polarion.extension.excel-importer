@@ -105,9 +105,15 @@ public class HtmlTableParser {
                 cellText.append("\n"); // Convert <br> to newline
             } else if (node instanceof Element childElement) {
                 CellValue childCellValue = extractTextWithLineBreaks(childElement); // Recursively handle nested elements
-                cellText.append(childCellValue.getText() != null ? childCellValue.getText() : "");
-                result.setLink(childCellValue.getLink() != null ? childCellValue.getLink() : result.getLink());
-                result.setImage(childCellValue.getImage() != null ? childCellValue.getImage() : result.getImage());
+                if (childCellValue.getText() != null) {
+                    cellText.append(childCellValue.getText());
+                }
+                if (childCellValue.getLink() != null) {
+                    result.setLink(childCellValue.getLink());
+                }
+                if (childCellValue.getImage() != null) {
+                    result.setImage(childCellValue.getImage());
+                }
             }
         }
 
