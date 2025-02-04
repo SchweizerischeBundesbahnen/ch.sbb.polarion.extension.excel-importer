@@ -83,9 +83,9 @@ $excelTool.init()
 <table id="users-table">
    <tr>
       <th style="font-weight: bold">Name</th>
-      <th xlsx_width="300">Phone number</th>
+      <th xlsx-width="300">Phone number</th>
    </tr>
-   <tr>
+   <tr style="color: #22CC66" xlsx-height="200">
       <td>John Doe</td>
       <td>555-12-34</td>
    </tr>
@@ -100,16 +100,17 @@ In the above case extension generates the file `UsersData.xlsx` with the data fr
 
 Supported custom attributes:
 
-| Attribute    | Description                                                                    |
-|--------------|--------------------------------------------------------------------------------|
-| xlsx_width   | Width for the column (approx. value in pixels). Can be put on 'th' tags only.  |
+| Attribute   | Description                                                                   |
+|-------------|-------------------------------------------------------------------------------|
+| xlsx-width  | Width for the column (approx. value in pixels). Can be put on 'th' tags only. |
+| xlsx-height | Height for the row (approx. value in pixels). Can be put on 'tr' tags only.   |
 
 Supported style properties:
 
 | Property         | Description                                           |
 |------------------|-------------------------------------------------------|
-| color            | Font color                                            |
-| background-color | Cell background color                                 |
+| color            | Font color (supported format: #RRGGBB)                |
+| background-color | Cell background color (supported format: #RRGGBB)     |
 | font-weight      | Bold font when value = 'bold' or integer value >= 700 |
 
 ## Known issues
