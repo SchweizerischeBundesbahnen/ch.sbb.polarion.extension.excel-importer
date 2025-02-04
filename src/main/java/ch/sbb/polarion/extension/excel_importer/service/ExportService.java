@@ -73,10 +73,16 @@ public class ExportService {
                 int pictureIdx = workbook.addPicture((byte[]) data.getValue(), Workbook.PICTURE_TYPE_PNG);
                 Drawing<?> drawing = sheet.createDrawingPatriarch();
                 ClientAnchor anchor = workbook.getCreationHelper().createClientAnchor();
+
+                // Set the image anchor to the top-left corner of the cell
                 anchor.setCol1(cell.getColumnIndex());
                 anchor.setRow1(cell.getRowIndex());
+                // Set the anchor's bottom-right corner (for resizing purposes)
+                anchor.setCol2(cell.getColumnIndex() + 1);
+                anchor.setRow2(cell.getRowIndex() + 1);
+
                 Picture pict = drawing.createPicture(anchor, pictureIdx);
-                pict.resize();
+                pict.resize(1); // Resize proportionally to the cell size
             }
         }
     }
