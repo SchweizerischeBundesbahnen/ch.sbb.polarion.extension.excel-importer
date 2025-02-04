@@ -14,6 +14,7 @@ import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
+import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -82,22 +83,38 @@ public class HtmlTableParser {
     CellValue extractTextWithLineBreaks(Element element) {
         CellValue result = new CellValue();
 
-        if (element.nodeName().equals(HTML_TAG_A)) {
-            String href = element.attr(HTML_ATTR_HREF);
-            result.setLink(href);
-            result.setText(element.text());
-            return result;
+        String nodeName = element.nodeName();
+        switch (nodeName) {
+            case HTML_TAG_A:
+                handleAnchorElement(element, result);
+                break;
+            case HTML_TAG_IMG:
+                handleImageElement(element, result);
+                break;
+            default:
+                processChildNodes(element, result);
+                break;
         }
 
-        if (element.nodeName().equals(HTML_TAG_IMG)) {
-            String src = element.attr(HTML_ATTR_SRC);
-            URL url = PolarionUtils.getAbsoluteUrl(src);
-            byte[] image = IOUtils.toByteArray(url.openStream());
-            result.setImage(image);
-            return result;
-        }
+        return result;
+    }
 
+    private void handleAnchorElement(Element element, CellValue result) {
+        String href = element.attr(HTML_ATTR_HREF);
+        result.setLink(href);
+        result.setText(element.text());
+    }
+
+    private void handleImageElement(Element element, CellValue result) throws IOException {
+        String src = element.attr(HTML_ATTR_SRC);
+        URL url = PolarionUtils.getAbsoluteUrl(src);
+        byte[] image = IOUtils.toByteArray(url.openStream());
+        result.setImage(image);
+    }
+
+    private void processChildNodes(Element element, CellValue result) {
         StringBuilder cellText = new StringBuilder();
+
         for (Node node : element.childNodes()) {
             if (node instanceof TextNode textNode) {
                 cellText.append(textNode.text());
@@ -105,20 +122,22 @@ public class HtmlTableParser {
                 cellText.append("\n"); // Convert <br> to newline
             } else if (node instanceof Element childElement) {
                 CellValue childCellValue = extractTextWithLineBreaks(childElement); // Recursively handle nested elements
-                if (childCellValue.getText() != null) {
-                    cellText.append(childCellValue.getText());
-                }
-                if (childCellValue.getLink() != null) {
-                    result.setLink(childCellValue.getLink());
-                }
-                if (childCellValue.getImage() != null) {
-                    result.setImage(childCellValue.getImage());
-                }
+                updateWithChildValues(childCellValue, result, cellText);
             }
         }
 
         result.setText(cellText.toString());
-        return result;
     }
 
+    private void updateWithChildValues(CellValue childCellValue, CellValue result, StringBuilder cellText) {
+        if (childCellValue.getText() != null) {
+            cellText.append(childCellValue.getText());
+        }
+        if (childCellValue.getLink() != null) {
+            result.setLink(childCellValue.getLink());
+        }
+        if (childCellValue.getImage() != null) {
+            result.setImage(childCellValue.getImage());
+        }
+    }
 }
