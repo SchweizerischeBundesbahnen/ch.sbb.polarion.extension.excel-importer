@@ -30,8 +30,8 @@ public class ExportService {
         StyleContext styleContext = new StyleContext(workbook);
         for (int i = 0; i < cellsData.size(); i++) {
             Row row = sheet.createRow(i);
-            row.setHeight((short) -1); // workaround to auto size height
             List<CellData> cells = cellsData.get(i);
+            row.setHeight(StyleUtil.getRowHeightForCell(cells.get(0)));
 
             for (int j = 0; j < cells.size(); j++) {
                 CellData data = cells.get(j);
@@ -40,12 +40,7 @@ public class ExportService {
                 setCellValue(cell, data, workbook);
 
                 if (data.isHeader()) {
-                    String columnWidth = data.getAttrs().get().get(StyleUtil.CUSTOM_ATTR_COLUMN_WIDTH);
-                    if (!StringUtils.isEmpty(columnWidth)) {
-                        sheet.setColumnWidth(j, (int) StyleUtil.CHARACTER_WIDTH_TO_PX_MULTIPLIER * Integer.parseInt(columnWidth));
-                    } else {
-                        sheet.autoSizeColumn(j);
-                    }
+                    StyleUtil.adjustColumnWidth(j, data, sheet);
                 }
             }
         }
