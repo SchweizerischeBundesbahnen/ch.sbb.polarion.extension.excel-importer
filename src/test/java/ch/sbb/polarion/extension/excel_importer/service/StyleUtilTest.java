@@ -82,11 +82,11 @@ class StyleUtilTest {
         CellData attrExistsCellData = CellData.builder().attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-width", "100"))).build();
         Sheet sheetMock = mock(Sheet.class);
         StyleUtil.adjustColumnWidth(5, noAttrCellData, sheetMock);
-        verify(sheetMock, times(0)).setColumnWidth(eq(5), eq(3664));
-        verify(sheetMock, times(1)).autoSizeColumn(eq(5));
+        verify(sheetMock, times(0)).setColumnWidth(5, 3664);
+        verify(sheetMock, times(1)).autoSizeColumn(5);
         StyleUtil.adjustColumnWidth(7, attrExistsCellData, sheetMock);
-        verify(sheetMock, times(1)).setColumnWidth(eq(7), eq(3664));
-        verify(sheetMock, times(0)).autoSizeColumn(eq(7));
+        verify(sheetMock, times(1)).setColumnWidth(7, 3664);
+        verify(sheetMock, times(0)).autoSizeColumn(7);
     }
 
     @Test
