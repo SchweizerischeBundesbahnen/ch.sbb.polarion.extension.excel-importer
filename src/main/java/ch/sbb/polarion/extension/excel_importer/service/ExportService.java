@@ -8,9 +8,13 @@ import com.polarion.core.util.StringUtils;
 import lombok.SneakyThrows;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.ClientAnchor;
+import org.apache.poi.ss.usermodel.Drawing;
 import org.apache.poi.ss.usermodel.Hyperlink;
+import org.apache.poi.ss.usermodel.Picture;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.ByteArrayOutputStream;
@@ -37,7 +41,7 @@ public class ExportService {
                 CellData data = cells.get(j);
                 Cell cell = row.createCell(j);
                 styleContext.applyStyle(cell, data);
-                setCellValue(cell, data, workbook);
+                setCellValue(cell, data, workbook, sheet);
 
                 if (data.isHeader()) {
                     StyleUtil.adjustColumnWidth(j, data, sheet);
@@ -56,7 +60,7 @@ public class ExportService {
         return Base64.getEncoder().encodeToString(excelBytes);
     }
 
-    private void setCellValue(Cell cell, CellData data, XSSFWorkbook workbook) {
+    private void setCellValue(Cell cell, CellData data, XSSFWorkbook workbook, Sheet sheet) {
         switch (data.getType()) {
             case TEXT -> cell.setCellValue((String) data.getValue());
             case LINK -> {
@@ -65,7 +69,15 @@ public class ExportService {
                 hyperlink.setAddress(data.getLink());
                 cell.setHyperlink(hyperlink);
             }
-            case IMAGE -> throw new IllegalStateException("Not implemented: " + data.getType());
+            case IMAGE -> {
+                int pictureIdx = workbook.addPicture((byte[]) data.getValue(), Workbook.PICTURE_TYPE_PNG);
+                Drawing<?> drawing = sheet.createDrawingPatriarch();
+                ClientAnchor anchor = workbook.getCreationHelper().createClientAnchor();
+                anchor.setCol1(cell.getColumnIndex());
+                anchor.setRow1(cell.getRowIndex());
+                Picture pict = drawing.createPicture(anchor, pictureIdx);
+                pict.resize();
+            }
         }
     }
 

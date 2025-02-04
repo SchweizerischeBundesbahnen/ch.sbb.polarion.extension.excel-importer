@@ -8,4 +8,5 @@ import lombok.NoArgsConstructor;
 public class CellValue {
     private String text;
     private String link;
+    private byte[] image;
 }

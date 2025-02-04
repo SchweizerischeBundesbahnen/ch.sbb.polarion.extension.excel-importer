@@ -1,8 +1,11 @@
 package ch.sbb.polarion.extension.excel_importer.service.htmltable;
 
 import ch.sbb.polarion.extension.excel_importer.service.CellValue;
+import ch.sbb.polarion.extension.excel_importer.utils.PolarionUtils;
 import com.polarion.core.util.StringUtils;
 import lombok.Data;
+import lombok.SneakyThrows;
+import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -11,6 +14,7 @@ import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -28,6 +32,8 @@ public class HtmlTableParser {
     private static final String HTML_TAG_TD = "td";
     private static final String HTML_ATTR_STYLE = "style";
     private static final String HTML_ATTR_HREF = "href";
+    private static final String HTML_TAG_IMG = "img";
+    private static final String HTML_ATTR_SRC = "src";
 
     public List<List<CellData>> parse(String htmlTableContentBase64Encoded) {
         if (StringUtils.isEmpty(htmlTableContentBase64Encoded)) {
@@ -71,6 +77,7 @@ public class HtmlTableParser {
         return cellData;
     }
 
+    @SneakyThrows
     @VisibleForTesting
     CellValue extractTextWithLineBreaks(Element element) {
         CellValue result = new CellValue();
@@ -82,6 +89,14 @@ public class HtmlTableParser {
             return result;
         }
 
+        if (element.nodeName().equals(HTML_TAG_IMG)) {
+            String src = element.attr(HTML_ATTR_SRC);
+            URL url = PolarionUtils.getAbsoluteUrl(src);
+            byte[] image = IOUtils.toByteArray(url.openStream());
+            result.setImage(image);
+            return result;
+        }
+
         StringBuilder cellText = new StringBuilder();
         for (Node node : element.childNodes()) {
             if (node instanceof TextNode textNode) {
@@ -90,13 +105,19 @@ public class HtmlTableParser {
                 cellText.append("\n"); // Convert <br> to newline
             } else if (node instanceof Element childElement) {
                 CellValue childCellValue = extractTextWithLineBreaks(childElement); // Recursively handle nested elements
-                cellText.append(childCellValue.getText());
+                if (childCellValue.getText() != null) {
+                    cellText.append(childCellValue.getText());
+                }
                 if (childCellValue.getLink() != null) {
                     result.setLink(childCellValue.getLink());
                 }
+                if (childCellValue.getImage() != null) {
+                    result.setImage(childCellValue.getImage());
+                }
             }
         }
-        result.setText(cellText.toString().trim());
+
+        result.setText(cellText.toString());
         return result;
     }
 
