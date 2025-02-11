@@ -65,14 +65,8 @@
 
         <dependency>
             <groupId>org.apache.poi</groupId>
-            <artifactId>poi</artifactId>
-            <version>${apache-poi.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-ooxml</artifactId>
-            <version>${apache-poi.version}</version>
+            <artifactId>poi-ooxml-4.1.0-modified</artifactId>
+            <version>${polarion.version}</version>
             <scope>provided</scope>
         </dependency>
 
