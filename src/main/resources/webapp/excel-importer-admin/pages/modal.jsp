@@ -17,7 +17,7 @@
                 This text must be dynamically replaced by the proper popup content.
             </main>
             <footer class="modal__footer">
-                <button class="toolbar-button" data-micromodal-close onclick="${param.okClickFunction}">${param.okText}</button>
+                <button id="toolbar-button-ok" class="toolbar-button" data-micromodal-close>${param.okText}</button>
                 <button class="toolbar-button" data-micromodal-close aria-label="Close this dialog window">${param.cancelText}</button>
             </footer>
         </div>

@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/custom-select.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/configurations.css?bundle=<%= bundleTimestamp %>">
+    <script type="module" src="../js/modules/mappings.js?bundle=<%= bundleTimestamp %>"></script>
     <style>
         #mapping-table {
             min-height: 1px;
@@ -97,11 +98,7 @@
     <input id="bundle-timestamp" type="hidden" value="<%= ch.sbb.polarion.extension.generic.util.VersionUtils.getVersion().getBundleBuildTimestamp() %>"/>
 </div>
 
-<jsp:include page='/common/jsp/buttons.jsp'>
-    <jsp:param name="saveFunction" value="saveSettings()"/>
-    <jsp:param name="cancelFunction" value="SbbCommon.cancelEdit()"/>
-    <jsp:param name="defaultFunction" value="revertToDefault()"/>
-</jsp:include>
+<jsp:include page='/common/jsp/buttons.jsp'/>
 
 <div class="standard-admin-page">
     <h2 class="align-left">Quick Help</h2>
@@ -141,12 +138,7 @@
     <jsp:param name="titleText" value="Options mapping"/>
     <jsp:param name="okText" value="Accept"/>
     <jsp:param name="cancelText" value="Cancel"/>
-    <jsp:param name="okClickFunction" value="saveOptionsMapping()"/>
 </jsp:include>
 
-<script type="text/javascript" src="../ui/generic/js/common.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../ui/generic/js/custom-select.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../ui/generic/js/configurations.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../js/mappings.js?bundle=<%= bundleTimestamp %>"></script>
 </body>
 </html>
