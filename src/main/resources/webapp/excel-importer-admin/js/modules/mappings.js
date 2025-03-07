@@ -1,11 +1,24 @@
-SbbCommon.init({
+import ExtensionContext from '../../ui/generic/js/modules/ExtensionContext.js';
+import ConfigurationsPane from '../../ui/generic/js/modules/ConfigurationsPane.js';
+
+const ctx = new ExtensionContext({
     extension: 'excel-importer',
     setting: 'mappings',
-    scope: SbbCommon.getValueById('scope')
+    scopeFieldId: 'scope'
 });
-Configurations.init({
-    setConfigurationContentCallback: parseAndSetSettings
+
+const conf = new ConfigurationsPane({
+    ctx: ctx,
+    setConfigurationContentCallback: parseAndSetSettings,
 });
+
+ctx.onClick(
+    'toolbar-button-ok', saveOptionsMapping,
+    'save-toolbar-button', saveSettings,
+    'cancel-toolbar-button', ctx.cancelEdit,
+    'default-toolbar-button', revertToDefault,
+    'revisions-toolbar-button', ctx.toggleRevisions,
+);
 
 function getColumnNames() {
     return ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
@@ -18,9 +31,9 @@ const cache = {
 
 function createMappingRow({recreateAddButton, columnValue, fieldValue}) {
     if (recreateAddButton) {
-        document.getElementById('add-button').remove();
+        ctx.getElementById('add-button').remove();
     }
-    const table = document.getElementById('mapping-table');
+    const table = ctx.getElementById('mapping-table');
     const tableRow = document.createElement('tr');
     tableRow.classList.add('mapping-row');
     createRemoveButtonCell(tableRow);
@@ -67,7 +80,7 @@ function createFieldCell(tableRow, fieldValue) {
     mappingButton.style.display = 'none';
     mappingButton.addEventListener('click', () => {
 
-        let popupBody = document.getElementById('modal-popup-content');
+        let popupBody = ctx.getElementById('modal-popup-content');
         popupBody.innerHTML = '';
 
         popupBody.appendChild(createHiddenInput('field-id', fieldSelect.value));
@@ -159,14 +172,14 @@ function createHiddenInput(className, value) {
 }
 
 function saveOptionsMapping() {
-    const fieldId = (document.getElementById('modal-popup').getElementsByClassName('field-id')[0]).value;
+    const fieldId = (ctx.getElementById('modal-popup').getElementsByClassName('field-id')[0]).value;
     cache.enumsMapping[fieldId] = Object.fromEntries(getOptionsMapping());
 }
 
 function populateFieldDropdown(container, selectedValue) {
-    SbbCommon.callAsync({
+    ctx.callAsync({
         method: 'GET',
-        url: `/polarion/${SbbCommon.extension}/rest/internal/projects/${getProjectIdFromScope()}/workitem_types/${SbbCommon.getValueById('wi-types')}/fields`,
+        url: `/polarion/${ctx.extension}/rest/internal/projects/${getProjectIdFromScope()}/workitem_types/${ctx.getValueById('wi-types')}/fields`,
         contentType: 'application/json',
         onOk: (responseText) => {
             cache.fields = JSON.parse(responseText);
@@ -179,7 +192,7 @@ function populateFieldDropdown(container, selectedValue) {
             const mappingButton = container.getElementsByClassName('options-mapping-button')[0];
             updateOptionsComponents(selectedValue, mappingButton);
         },
-        onError: () => SbbCommon.setLoadingErrorNotificationVisible(true)
+        onError: () => ctx.setLoadingErrorNotificationVisible(true)
     });
 }
 
@@ -206,8 +219,8 @@ function createAddButton() {
     const div = document.createElement('div');
     div.title = 'Add';
     div.addEventListener('click', () => {
-        if (SbbCommon.getValueById('wi-types').trim().length === 0) {
-            SbbCommon.showActionAlert({ containerId: 'action-error', message: 'Select workitem type first to start creating a mapping'});
+        if (ctx.getValueById('wi-types').trim().length === 0) {
+            ctx.showActionAlert({ containerId: 'action-error', message: 'Select workitem type first to start creating a mapping'});
         } else {
             createMappingRow({recreateAddButton: true});
             updateLinkColumnDropdown();
@@ -217,20 +230,20 @@ function createAddButton() {
     image.src = '/polarion/ria/images/control/tablePlus.png';
     div.appendChild(image);
     cell.appendChild(div);
-    document.getElementById('mapping-table').appendChild(row);
+    ctx.getElementById('mapping-table').appendChild(row);
 }
 
 function createWITypesDropdown() {
-    SbbCommon.setLoadingErrorNotificationVisible(false);
+    ctx.setLoadingErrorNotificationVisible(false);
 
     return new Promise((resolve, reject) => {
-        SbbCommon.callAsync({
+        ctx.callAsync({
             method: 'GET',
-            url: `/polarion/${SbbCommon.extension}/rest/internal/projects/${getProjectIdFromScope()}/workitem_types`,
+            url: `/polarion/${ctx.extension}/rest/internal/projects/${getProjectIdFromScope()}/workitem_types`,
             contentType: 'application/json',
             onOk: (responseText) => {
                 const workItemTypes = JSON.parse(responseText);
-                const select = document.getElementById('wi-types');
+                const select = ctx.getElementById('wi-types');
                 select.innerHTML = '';
                 workItemTypes.forEach((value) => {
                     const option = document.createElement('option');
@@ -244,7 +257,7 @@ function createWITypesDropdown() {
                 resolve();
             },
             onError: () => {
-                SbbCommon.setLoadingErrorNotificationVisible(true);
+                ctx.setLoadingErrorNotificationVisible(true);
                 reject();
             }
         })
@@ -252,7 +265,7 @@ function createWITypesDropdown() {
 }
 
 function updateFieldDropdowns() {
-    const table = document.getElementById('mapping-table');
+    const table = ctx.getElementById('mapping-table');
     const tableRows = table.getElementsByClassName('mapping-row');
     if (tableRows !== undefined && tableRows !== null) {
         Array.from(tableRows).forEach((row) => {
@@ -277,7 +290,7 @@ function populateDropdown(container, className, data, selectedValue) {
 }
 
 function getColumnToFieldMapping() {
-    const container = document.getElementById('mapping-table');
+    const container = ctx.getElementById('mapping-table');
     const rows = container.getElementsByClassName('mapping-row');
     const map = new Map();
     Array.from(rows).forEach(row => {
@@ -291,7 +304,7 @@ function getColumnToFieldMapping() {
 }
 
 function getOptionsMapping() {
-    const container = document.getElementById('options-mapping-table');
+    const container = ctx.getElementById('options-mapping-table');
     const rows = container.getElementsByClassName('options-mapping-row');
     const map = new Map();
     Array.from(rows).forEach(row => {
@@ -301,14 +314,14 @@ function getOptionsMapping() {
 }
 
 function updateLinkColumnDropdown() {
-    const table = document.getElementById('mapping-table');
+    const table = ctx.getElementById('mapping-table');
     const columns = table.getElementsByClassName('columns');
     const names = new Set();
     Array.from(columns).forEach((option) => {
         names.add(option.value);
     });
-    const linkColumnContainer = document.getElementById('link-column-container');
-    const linkColumnDropdown = document.getElementById('link-column');
+    const linkColumnContainer = ctx.getElementById('link-column-container');
+    const linkColumnDropdown = ctx.getElementById('link-column');
     const value = linkColumnDropdown.value;
     linkColumnDropdown.innerHTML = '';
     populateDropdown(linkColumnContainer, 'columns', names, value);
@@ -316,28 +329,28 @@ function updateLinkColumnDropdown() {
 
 function parseAndSetSettings(text) {
     const settings = JSON.parse(text);
-    SbbCommon.setValueById('sheet-name', settings.sheetName);
-    SbbCommon.setValueById('start-from-row', settings.startFromRow);
-    SbbCommon.setCheckboxValueById('overwrite', settings.overwriteWithEmpty);
-    SbbCommon.setValueById('wi-types', settings.defaultWorkItemType);
-    document.getElementById('mapping-table').innerHTML = '';
+    ctx.setValueById('sheet-name', settings.sheetName);
+    ctx.setValueById('start-from-row', settings.startFromRow);
+    ctx.setCheckboxValueById('overwrite', settings.overwriteWithEmpty);
+    ctx.setValueById('wi-types', settings.defaultWorkItemType);
+    ctx.getElementById('mapping-table').innerHTML = '';
     Object.entries(settings.columnsMapping).forEach(entry => {
         createMappingRow({columnValue: entry[0], fieldValue: entry[1]});
     })
     cache.enumsMapping = settings.enumsMapping == null ? {} : settings.enumsMapping;
     updateLinkColumnDropdown();
-    SbbCommon.setValueById('link-column', settings.linkColumn);
+    ctx.setValueById('link-column', settings.linkColumn);
     createAddButton();
 
-    if (settings.bundleTimestamp !== SbbCommon.getValueById('bundle-timestamp')) {
-        SbbCommon.setNewerVersionNotificationVisible(true);
+    if (settings.bundleTimestamp !== ctx.getValueById('bundle-timestamp')) {
+        ctx.setNewerVersionNotificationVisible(true);
     }
 }
 
 function getProjectIdFromScope() {
-    if (SbbCommon.scope) {
+    if (ctx.scope) {
         const regExp = 'project/(.*)/'
-        return SbbCommon.scope.match(regExp)[1];
+        return ctx.scope.match(regExp)[1];
     }
     return '';
 }
@@ -347,37 +360,37 @@ function saveSettings() {
         return;
     }
 
-    SbbCommon.hideActionAlerts();
+    ctx.hideActionAlerts();
 
-    SbbCommon.callAsync({
+    ctx.callAsync({
         method: 'PUT',
-        url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/names/${Configurations.getSelectedConfiguration()}/content?scope=${SbbCommon.scope}`,
+        url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/names/${conf.getSelectedConfiguration()}/content?scope=${ctx.scope}`,
         contentType: 'application/json',
         body: JSON.stringify({
-            'sheetName': SbbCommon.getValueById('sheet-name'),
-            'startFromRow': SbbCommon.getValueById('start-from-row'),
-            'overwriteWithEmpty': SbbCommon.getCheckboxValueById('overwrite'),
+            'sheetName': ctx.getValueById('sheet-name'),
+            'startFromRow': ctx.getValueById('start-from-row'),
+            'overwriteWithEmpty': ctx.getCheckboxValueById('overwrite'),
             'columnsMapping': Object.fromEntries(getColumnToFieldMapping()),
             'enumsMapping': cache.enumsMapping,
-            'defaultWorkItemType': SbbCommon.getValueById('wi-types'),
-            'linkColumn': SbbCommon.getValueById('link-column')
+            'defaultWorkItemType': ctx.getValueById('wi-types'),
+            'linkColumn': ctx.getValueById('link-column')
         }),
         onOk: () => {
-            SbbCommon.showSaveSuccessAlert();
-            SbbCommon.setNewerVersionNotificationVisible(false);
-            Configurations.loadConfigurationNames();
+            ctx.showSaveSuccessAlert();
+            ctx.setNewerVersionNotificationVisible(false);
+            conf.loadConfigurationNames();
         },
-        onError: () => SbbCommon.showSaveErrorAlert()
+        onError: () => ctx.showSaveErrorAlert()
     });
 }
 
 function validateBeforeSave() {
-    const sheetNameIsEmpty = checkIfEmptyValue(document.getElementById('sheet-name'));
+    const sheetNameIsEmpty = checkIfEmptyValue(ctx.getElementById('sheet-name'));
     if (sheetNameIsEmpty) {
         showErrorMessage('Sheet name cannot be empty');
         return false;
     }
-    const startFromRowValue = SbbCommon.getValueById('start-from-row');
+    const startFromRowValue = ctx.getValueById('start-from-row');
     if (startFromRowValue === undefined || startFromRowValue === null || startFromRowValue < 1) {
         showErrorMessage('Row number must be a positive integer value');
         return false;
@@ -387,7 +400,7 @@ function validateBeforeSave() {
         showErrorMessage(`Mapping for column ${validationResult.columnName} cannot be empty`);
         return false;
     }
-    const linkColumnIsEmpty = checkIfEmptyValue(document.getElementById('link-column'));
+    const linkColumnIsEmpty = checkIfEmptyValue(ctx.getElementById('link-column'));
     if (linkColumnIsEmpty) {
         showErrorMessage('Link column cannot be empty');
         return false;
@@ -396,7 +409,7 @@ function validateBeforeSave() {
 }
 
 function validateMapping() {
-    const mappingTable = document.getElementById('mapping-table');
+    const mappingTable = ctx.getElementById('mapping-table');
     let mappingRows = mappingTable.getElementsByClassName('mapping-row');
     let validationResult = {valid: true};
     Array.from(mappingRows).forEach((row) => {
@@ -415,23 +428,23 @@ function checkIfEmptyValue(element) {
 }
 
 function showErrorMessage(errorMessage) {
-    SbbCommon.showActionAlert({ containerId: 'action-error', message: errorMessage});
+    ctx.showActionAlert({ containerId: 'action-error', message: errorMessage});
 }
 
 function revertToDefault() {
     if (confirm('Are you sure you want to return the default values?')) {
-        SbbCommon.setLoadingErrorNotificationVisible(false);
-        SbbCommon.hideActionAlerts();
+        ctx.setLoadingErrorNotificationVisible(false);
+        ctx.hideActionAlerts();
 
-        SbbCommon.callAsync({
+        ctx.callAsync({
             method: 'GET',
-            url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/default-content`,
+            url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/default-content`,
             contentType: 'application/json',
             onOk: (responseText) => {
                 parseAndSetSettings(responseText);
-                SbbCommon.showRevertedToDefaultAlert();
+                ctx.showRevertedToDefaultAlert();
             },
-            onError: () => SbbCommon.setLoadingErrorNotificationVisible(true)
+            onError: () => ctx.setLoadingErrorNotificationVisible(true)
         });
     }
 }
@@ -439,5 +452,5 @@ function revertToDefault() {
 Promise.all([
     createWITypesDropdown()
 ]).then(() => {
-    Configurations.loadConfigurationNames();
+    conf.loadConfigurationNames();
 });

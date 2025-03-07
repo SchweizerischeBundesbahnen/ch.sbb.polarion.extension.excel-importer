@@ -6,7 +6,7 @@
 <head>
     <title>Import File</title>
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
-    <script type="text/javascript" src="../ui/generic/js/common.js?bundle=<%= bundleTimestamp %>"></script>
+    <script type="module" src="../js/modules/import_file.js?bundle=<%= bundleTimestamp %>"></script>
     <style type="text/css">
         input[type="file"] {
             display: none;
@@ -57,7 +57,5 @@
     <input id="scope" type="hidden" value="<%= request.getParameter("scope")%>"/>
     <input id="bundle-timestamp" type="hidden" value="<%= ch.sbb.polarion.extension.generic.util.VersionUtils.getVersion().getBundleBuildTimestamp() %>"/>
 </div>
-
-<script type="text/javascript" src="../js/import_file.js?bundle=<%= bundleTimestamp %>"></script>
 </body>
 </html>
