@@ -41,11 +41,19 @@ function importFile() {
         body: formData,
         onOk: (response) => {
             const result = JSON.parse(response);
+            const log = String(result.log);
             ctx.showActionAlert({
                 containerId: 'action-success',
-                message: `File successfully imported. Created: ${result.createdIds.length}, updated: ${result.updatedIds.length}, unchanged: ${result.unchangedIds.length}.`,
+                message: `File successfully imported. Created: ${result.createdIds.length}, updated: ${result.updatedIds.length}, unchanged: ${result.unchangedIds.length}, skipped: ${result.skippedIds.length}.
+                &nbsp;<a href="#" data-filename="${generateLogFileName()}" id="download-log-link">(log)</a>`,
                 hideAlertByTimeout: false
             });
+
+            ctx.onClick('download-log-link', () => {
+                    ctx.downloadBlob(new Blob([log], {type: "text/plain"}), ctx.getElementById("download-log-link").dataset.filename);
+                }
+            );
+
             disableAllButtons(false);
         },
         onError: (status, responseText) => {
@@ -65,6 +73,20 @@ function getProjectIdFromScope() {
         return ctx.scope.match(regExp)[1];
     }
     return '';
+}
+
+function generateLogFileName() {
+    const importFileName = ctx.getElementById("file-name").textContent;
+    const baseName = importFileName.replace(/\.[^/.]+$/, "") // remove file extension
+        .replace(/[^a-zA-Z0-9-_]/g, "").replace(/\s+/g, "_"); // sanitize the name
+    const now = new Date(); // append current date and time in the format YYYY_MM_DD_HH_MM_SS
+    const formattedDate = now.getFullYear() + "_" +
+        String(now.getMonth() + 1).padStart(2, "0") + "_" +
+        String(now.getDate()).padStart(2, "0") + "_" +
+        String(now.getHours()).padStart(2, "0") + "_" +
+        String(now.getMinutes()).padStart(2, "0") + "_" +
+        String(now.getSeconds()).padStart(2, "0");
+    return `${baseName}_${formattedDate}.txt`;
 }
 
 function disableAllButtons(disable) {

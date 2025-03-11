@@ -55,6 +55,8 @@ public class ImportService {
         List<String> updatedIds = new ArrayList<>();
         List<String> createdIds = new ArrayList<>();
         List<String> unchangedIds = new ArrayList<>();
+        List<String> skippedIds = new ArrayList<>();
+        List<String> log = new ArrayList<>();
 
         String identifierFieldId = settings.getColumnsMapping().get(settings.getLinkColumn());
         List<IWorkItem> foundWorkItems = polarionServiceExt.findWorkItemsById(project.getId(), settings.getDefaultWorkItemType(), identifierFieldId, workItemIds);
@@ -70,17 +72,23 @@ public class ImportService {
                 if (!identifierFieldId.equals("id")) {
                     workItem = polarionServiceExt.createWorkItem(project, workItemType);
                 } else {
-                    throw new IllegalArgumentException("If id is used as Link Column, no new Work Items can be created via import.");
+                    String idString = String.valueOf(idValue);
+                    skippedIds.add(idString);
+                    log.add("No work item found by ID '%s'. Since the 'id' is used as the 'Link Column', new work item creation is impossible".formatted(idString));
+                    continue;
                 }
             }
             fillWorkItemFields(workItem, columnMappingRecord, settings, identifierFieldId); //set fields values
             boolean isWorkItemUnchanged = !workItem.isModified(); // maybe isModified doesn't work on a new WI before save?
             workItem.save();
             if (createNew) {
+                log.add("New work item '%s' is being created".formatted(workItem.getId()));
                 createdIds.add(workItem.getId());
             } else if (isWorkItemUnchanged) {
+                log.add("No changes were made to '%s'".formatted(workItem.getId()));
                 unchangedIds.add(workItem.getId());
             } else {
+                log.add("The data was updated for '%s'".formatted(workItem.getId()));
                 updatedIds.add(workItem.getId());
             }
         }
@@ -89,6 +97,8 @@ public class ImportService {
                 .updatedIds(updatedIds)
                 .createdIds(createdIds)
                 .unchangedIds(unchangedIds)
+                .skippedIds(skippedIds)
+                .log(log.stream().collect(Collectors.joining(System.lineSeparator())))
                 .build();
     }
 
