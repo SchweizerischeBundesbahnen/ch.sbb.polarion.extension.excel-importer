@@ -492,17 +492,14 @@
         "properties": {
           "baseUrl": {
             "description": "Returns the base URL constructed with the extension context",
-            "example": "/polarion/pdf-exporter",
             "type": "string"
           },
           "extensionContext": {
             "description": "The extension context used as a base for URL construction",
-            "example": "pdf-exporter",
             "type": "string"
           },
           "restUrl": {
             "description": "Returns the REST API URL constructed with the extension context",
-            "example": "/polarion/pdf-exporter/rest",
             "type": "string"
           },
           "swaggerUiUrl": {
@@ -595,6 +592,18 @@
             "description": "List of IDs that were created during the import process",
             "items": {
               "description": "List of IDs that were created during the import process",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "log": {
+            "description": "Text log generated during import process",
+            "type": "string"
+          },
+          "skippedIds": {
+            "description": "List of IDs that were skipped during the import process",
+            "items": {
+              "description": "List of IDs that were skipped during the import process",
               "type": "string"
             },
             "type": "array"

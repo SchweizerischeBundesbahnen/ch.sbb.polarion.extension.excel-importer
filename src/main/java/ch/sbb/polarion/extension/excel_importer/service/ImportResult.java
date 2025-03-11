@@ -20,4 +20,10 @@ public class ImportResult {
 
     @Schema(description = "List of IDs that were unchanged during the import process")
     private List<String> unchangedIds;
+
+    @Schema(description = "List of IDs that were skipped during the import process")
+    private List<String> skippedIds;
+
+    @Schema(description = "Text log generated during import process")
+    private String log;
 }

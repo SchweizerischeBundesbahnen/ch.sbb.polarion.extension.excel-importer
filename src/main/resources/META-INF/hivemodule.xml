@@ -38,7 +38,7 @@
                   pageUrl="/polarion/excel-importer-admin/pages/mappings.jsp?scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
-                  repositoryScope="true"/>
+                  repositoryScope="false"/>
 
         <extender id="import-file"
                   name="Import File"
@@ -47,7 +47,7 @@
                   pageUrl="/polarion/excel-importer-admin/pages/import_file.jsp?scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
-                  repositoryScope="true"/>
+                  repositoryScope="false"/>
     </contribution>
 
     <contribution configuration-id="com.polarion.xray.webui.customNavigationExtenders">

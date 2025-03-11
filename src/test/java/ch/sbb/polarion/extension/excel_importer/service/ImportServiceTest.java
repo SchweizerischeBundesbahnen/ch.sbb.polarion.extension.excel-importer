@@ -149,18 +149,18 @@ class ImportServiceTest {
             map.put("D", null);
 
             //test using disabled 'overwriteWithEmpty'
-            assertEquals(new ImportResult(List.of(), List.of("testId"), List.of()),
+            assertEquals(new ImportResult(List.of(), List.of("testId"), List.of(), List.of(), "New work item 'testId' is being created"),
                     new ImportService(polarionServiceExt).processFile(project, List.of(map), generateSettings(false)));
             verify(workItem, times(0)).setCustomField(eq("nullPossible"), eq(null));
 
             //'overwriteWithEmpty' enabled but existing value is null therefore is no update expected
-            assertEquals(new ImportResult(List.of(), List.of("testId"), List.of()),
+            assertEquals(new ImportResult(List.of(), List.of("testId"), List.of(), List.of(), "New work item 'testId' is being created"),
                     new ImportService(polarionServiceExt).processFile(project, List.of(map), generateSettings(true)));
             verify(workItem, times(0)).setCustomField(eq("nullPossible"), eq(null));
 
             //'overwriteWithEmpty' enabled and existing value differs
             lenient().when(workItem.getCustomField(eq("nullPossible"))).thenReturn("someExistingValue");
-            assertEquals(new ImportResult(List.of(), List.of("testId"), List.of()),
+            assertEquals(new ImportResult(List.of(), List.of("testId"), List.of(), List.of(), "New work item 'testId' is being created"),
                     new ImportService(polarionServiceExt).processFile(project, List.of(map), generateSettings(true)));
             verify(workItem, times(1)).setCustomField(eq("nullPossible"), eq(null));
         }
@@ -231,12 +231,8 @@ class ImportServiceTest {
                     "Expected IllegalArgumentException thrown, but it didn't");
             assertEquals("WorkItem id can only be imported if it is used as Link Column.", exception.getMessage());
 
-            // test importing wi with id as link column but imported wi has id that does not exist
-            exception = assertThrows(IllegalArgumentException.class,
-                    () -> new ImportService(polarionServiceExt).processFile(project, List.of(mapOne), generateSettingsForIdImport(true)),
-                    "Expected IllegalArgumentException thrown, but it didn't");
-            assertEquals("If id is used as Link Column, no new Work Items can be created via import.", exception.getMessage());
-
+            assertEquals(new ImportResult(List.of(), List.of(), List.of(), List.of("a1"), "No work item found by ID 'a1'. Since the 'id' is used as the 'Link Column', new work item creation is impossible"),
+                    new ImportService(polarionServiceExt).processFile(project, List.of(mapOne), generateSettingsForIdImport(true)));
 
             Map<String, Object> mapTwo = new HashMap<>(); // imported id cell is empty
             mapTwo.put("A", "");
@@ -254,7 +250,7 @@ class ImportServiceTest {
             mapThree.put("B", "newTitle");
 
             // test importing wi with id as link column and imported wi has same id as existing wi
-            assertEquals(new ImportResult(List.of(), List.of(), List.of("testId")),
+            assertEquals(new ImportResult(List.of(), List.of(), List.of("testId"), List.of(), "No changes were made to 'testId'"),
                     new ImportService(polarionServiceExt).processFile(project, List.of(mapThree), generateSettingsForIdImport(true)));
 
         }
