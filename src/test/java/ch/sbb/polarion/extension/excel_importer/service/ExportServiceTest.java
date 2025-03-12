@@ -15,10 +15,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.mock;
 
 class ExportServiceTest {
 
@@ -49,7 +47,7 @@ class ExportServiceTest {
     @BeforeEach
     void setUp() throws IOException {
         polarionUtilsMockedStatic = mockStatic(PolarionUtils.class);
-        ioUtilsMockedStatic = mockStatic(IOUtils.class);
+        ioUtilsMockedStatic = mockStatic(IOUtils.class, CALLS_REAL_METHODS);
 
         URL imageURL = mock(URL.class);
         when(imageURL.openStream()).thenReturn(mock(InputStream.class));
