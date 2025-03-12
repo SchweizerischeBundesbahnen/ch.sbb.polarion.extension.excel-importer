@@ -11,7 +11,6 @@ Require-Bundle: com.polarion.portal.tomcat,
  slf4j.api,
  org.springframework.spring-core,
  org.springframework.spring-web,
- org.jsoup,
- ch.sbb.polarion.thirdparty.bundles.org.apache.poi;resolution:=optional
+ org.jsoup
 Export-Package: ch.sbb.polarion.extension.excel_importer
-Import-Package: org.apache.poi,org.apache.poi.ooxml,org.apache.poi.openxml4j.exceptions,org.apache.poi.common.usermodel,org.apache.poi.ss.usermodel,org.apache.poi.ss.util,org.apache.poi.xssf.usermodel
+Import-Package: org.osgi.framework

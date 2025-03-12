@@ -50,7 +50,8 @@
 
         <web.app.name>${maven-jar-plugin.Extension-Context}</web.app.name>
 
-        <apache-poi.version>4.1.0</apache-poi.version>
+        <apache-poi.version>5.4.0</apache-poi.version>
+        <org.osgi.framework.version>1.10.0</org.osgi.framework.version>
 
         <!--suppress UnresolvedMavenProperty -->
         <markdown2html-maven-plugin.failOnError>${env.MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR}</markdown2html-maven-plugin.failOnError>
@@ -63,19 +64,34 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi</artifactId>
-            <version>${apache-poi.version}</version>
-            <scope>provided</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.poi</groupId>-->
+<!--            <artifactId>poi</artifactId>-->
+<!--            <version>${apache-poi.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>${apache-poi.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.framework</artifactId>
+            <version>${org.osgi.framework.version}</version>
             <scope>provided</scope>
         </dependency>
 
+<!--        <dependency>-->
+<!--            <groupId>com.polarion.thirdparty</groupId>-->
+<!--            <artifactId>org.apache.commons.commons-io_2.15.1</artifactId>-->
+<!--            <version>${polarion.version}</version>-->
+<!--            <scope>provided</scope>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>com.polarion.thirdparty</groupId>
             <artifactId>org.jsoup_1.15.2</artifactId>

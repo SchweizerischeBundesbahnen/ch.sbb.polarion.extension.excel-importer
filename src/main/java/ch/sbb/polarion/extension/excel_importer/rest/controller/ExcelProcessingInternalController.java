@@ -5,9 +5,12 @@ import ch.sbb.polarion.extension.excel_importer.service.ExportService;
 import ch.sbb.polarion.extension.excel_importer.service.ImportResult;
 import ch.sbb.polarion.extension.excel_importer.service.ImportService;
 import ch.sbb.polarion.extension.excel_importer.service.PolarionServiceExt;
+import ch.sbb.polarion.extension.excel_importer.service.parser.IParser;
 import ch.sbb.polarion.extension.excel_importer.service.parser.impl.XlsxParser;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettings;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettingsModel;
+import ch.sbb.polarion.extension.excel_importer.utils.ClassLoaderUtils;
+import ch.sbb.polarion.extension.excel_importer.utils.IsolatedClassLoader;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import com.polarion.alm.tracker.model.ITrackerProject;
@@ -18,6 +21,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.SneakyThrows;
+import org.apache.commons.io.IOUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import javax.ws.rs.Consumes;
@@ -54,13 +59,28 @@ public class ExcelProcessingInternalController {
                     )
             }
     )
+    @SneakyThrows
     public ImportResult importExcelSheet(@PathParam("projectId") String projectId,
                                          @DefaultValue(NamedSettings.DEFAULT_NAME) @FormDataParam("mappingName") String mappingName,
                                          @Parameter(schema = @Schema(type = "string", format = "binary")) @FormDataParam("file") InputStream inputStream) {
         final ITrackerProject trackerProject = polarionServiceExt.findProject(projectId);
 
         ExcelSheetMappingSettingsModel settings = new ExcelSheetMappingSettings().load(projectId, SettingId.fromName(mappingName));
-        List<Map<String, Object>> xlsxData = new XlsxParser().parseFileStream(inputStream, settings);
+
+        String commonsIoVersion1 = IOUtils.class.getPackage().getImplementationVersion();
+        String commonsIoVersion2 = ClassLoaderUtils.runWithClassLoader(() -> IOUtils.class.getPackage().getImplementationVersion());
+        String commonsIoVersion3 = ClassLoaderUtils.runWithClassLoader(IsolatedClassLoader.createForCurrentBundle(), () -> IOUtils.class.getPackage().getImplementationVersion());
+        IsolatedClassLoader isolatedClassLoader = IsolatedClassLoader.createForCurrentBundle();
+        Class<?> ioUtilsClass = isolatedClassLoader.loadClass("org.apache.commons.io.IOUtils");
+        String commonsIoVersion4 = ioUtilsClass.getPackage().getImplementationVersion();
+
+        Class<? extends IOUtils> ioUtilsClass2 = ClassLoaderUtils.loadClass(IOUtils.class, isolatedClassLoader);
+        String commonsIoVersion5 = ioUtilsClass2.getPackage().getImplementationVersion();
+
+        IParser xlsxParser = ClassLoaderUtils.createInstance(XlsxParser.class, isolatedClassLoader);
+
+//        XlsxParser xlsxParser = new XlsxParser();
+        List<Map<String, Object>> xlsxData = xlsxParser.parseFileStream(inputStream, settings);
         return new ImportService().processFile(trackerProject, xlsxData, settings);
     }
 
