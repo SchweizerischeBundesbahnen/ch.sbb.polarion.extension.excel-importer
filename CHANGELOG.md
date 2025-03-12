@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v3.0.0...v3.1.0) (2025-03-11)
+
+
+### Features
+
+* skip processing of missing work items when ID was used for link… ([#87](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/87)) ([28d076b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/28d076b3f4f46086a1665391dedc2a12992395b8))
+* skip processing of missing work items when ID was used for linking, ability to download import log file ([28d076b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/28d076b3f4f46086a1665391dedc2a12992395b8)), closes [#86](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/86)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v8.1.0 ([4f3e939](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/4f3e93976aefe5ea566b4d0017bf664ef809a710))
+
 ## [3.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v2.8.3...v3.0.0) (2025-02-05)
 
 
