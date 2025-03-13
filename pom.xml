@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.excel-importer</artifactId>
-    <version>3.0.1-SNAPSHOT</version>
+    <version>3.1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Polarion ALM extension to process WorkItems by uploading xlsx-files</name>
@@ -50,6 +50,7 @@
 
         <web.app.name>${maven-jar-plugin.Extension-Context}</web.app.name>
 
+        <!-- this extension is designed for latest version of Apache POI -->
         <apache-poi.version>5.4.0</apache-poi.version>
         <org.osgi.framework.version>1.10.0</org.osgi.framework.version>
 

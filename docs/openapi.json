@@ -596,6 +596,18 @@
             },
             "type": "array"
           },
+          "log": {
+            "description": "Text log generated during import process",
+            "type": "string"
+          },
+          "skippedIds": {
+            "description": "List of IDs that were skipped during the import process",
+            "items": {
+              "description": "List of IDs that were skipped during the import process",
+              "type": "string"
+            },
+            "type": "array"
+          },
           "unchangedIds": {
             "description": "List of IDs that were unchanged during the import process",
             "items": {
