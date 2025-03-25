@@ -255,19 +255,31 @@ class ImportServiceTest {
 
         }
     }
-
     @Test
     void testPreProcessValue() {
         ImportService service = new ImportService(mock(PolarionServiceExt.class));
+        FieldMetadata stringMetadata = FieldMetadata.builder().id("fieldId").type(FieldType.STRING.getType()).build();
+
+        // do not write unnecessary decimal parts into text fields
+        assertEquals("0", service.preProcessValue(0d, stringMetadata));
+        assertEquals("42", service.preProcessValue(42d, stringMetadata));
+        assertEquals("42.3", service.preProcessValue(42.3d, stringMetadata));
+        assertEquals("42.000003", service.preProcessValue(42.000003d, stringMetadata));
+        assertEquals("42", service.preProcessValue(42.00000000003d, stringMetadata)); // max - 10 decimal digits
+    }
+
+    @Test
+    void testPrepareValue() {
+        ImportService service = new ImportService(mock(PolarionServiceExt.class));
 
         FieldMetadata stringMetadata = FieldMetadata.builder().id("fieldId").type(FieldType.STRING.getType()).build();
-        assertEquals("aaa\nbbb", service.preProcessValue("aaa\nbbb", stringMetadata));
+        assertEquals("aaa\nbbb", service.prepareValue("aaa\nbbb", stringMetadata));
 
         // in case of rich text some characters must be converted to their HTML equivalents
         FieldMetadata richMetadata = FieldMetadata.builder().id("fieldId").type(FieldType.RICH.getType()).build();
-        assertEquals("aaa<br/>bbb", service.preProcessValue("aaa\nbbb", richMetadata));
-        assertEquals("aaa&nbsp;&nbsp;&nbsp;&nbsp;bbb", service.preProcessValue("aaa\tbbb", richMetadata));
-        assertEquals("&lt;tag&gt;&amp;", service.preProcessValue("<tag>&", richMetadata));
+        assertEquals("aaa<br/>bbb", service.prepareValue("aaa\nbbb", richMetadata));
+        assertEquals("aaa&nbsp;&nbsp;&nbsp;&nbsp;bbb", service.prepareValue("aaa\tbbb", richMetadata));
+        assertEquals("&lt;tag&gt;&amp;", service.prepareValue("<tag>&", richMetadata));
     }
 
     @Test
