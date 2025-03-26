@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v3.1.0...v3.1.1) (2025-03-25)
+
+
+### Bug Fixes
+
+* ignore unnecessary decimal part for numbers ([#91](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/91)) ([77fadf2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/77fadf2afab8ede54bfce79ccf131f5be414d2c4)), closes [#90](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/90)
+
 ## [3.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v3.0.0...v3.1.0) (2025-03-11)
 
 
