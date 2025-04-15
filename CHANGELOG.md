@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v3.1.1...v3.1.2) (2025-04-15)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v8.1.1 ([cb3a839](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/cb3a839e4545a08f9a1141d96c9e636636f6e138))
+
 ## [3.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v3.1.0...v3.1.1) (2025-03-25)
 
 
