@@ -11,6 +11,7 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
@@ -76,7 +77,8 @@ public class XlsxParser implements IParser {
                     if (DateUtil.isCellDateFormatted(cell)) {
                         map.put(cellLetter, cell.getDateCellValue());
                     } else {
-                        map.put(cellLetter, cell.getNumericCellValue());
+                        // get any numeric as a string, later it will be converted to the desired type using converters
+                        map.put(cellLetter, ((XSSFCell) cell).getRawValue());
                     }
                 }
                 case BOOLEAN -> map.put(cellLetter, cell.getBooleanCellValue());

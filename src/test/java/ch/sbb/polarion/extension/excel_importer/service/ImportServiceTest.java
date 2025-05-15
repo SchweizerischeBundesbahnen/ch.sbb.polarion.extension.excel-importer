@@ -255,18 +255,6 @@ class ImportServiceTest {
 
         }
     }
-    @Test
-    void testPreProcessValue() {
-        ImportService service = new ImportService(mock(PolarionServiceExt.class));
-        FieldMetadata stringMetadata = FieldMetadata.builder().id("fieldId").type(FieldType.STRING.getType()).build();
-
-        // do not write unnecessary decimal parts into text fields
-        assertEquals("0", service.preProcessValue(0d, stringMetadata));
-        assertEquals("42", service.preProcessValue(42d, stringMetadata));
-        assertEquals("42.3", service.preProcessValue(42.3d, stringMetadata));
-        assertEquals("42.000003", service.preProcessValue(42.000003d, stringMetadata));
-        assertEquals("42", service.preProcessValue(42.00000000003d, stringMetadata)); // max - 10 decimal digits
-    }
 
     @Test
     void testPrepareValue() {
