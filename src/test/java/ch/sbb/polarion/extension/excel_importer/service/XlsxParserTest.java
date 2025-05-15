@@ -53,9 +53,9 @@ class XlsxParserTest {
         InputStream fileAttempt2 = getClass().getClassLoader().getResourceAsStream("error.xlsx");
         IParserSettings settingsAttempt2 = generateSettings(SHEET_FIRST, 1, "A", "B", "C", "D");
         assertEquals(
-                List.of(Map.of("A", "id1", "B", 1.5, "C", 3.5, "D", 5.0),
-                        Map.of("A", "id2", "B", 0.0, "C", 12.0, "D", 12.0),
-                        Map.of("A", "id3", "B", 7.0, "C", 2.0, "D", 9.0)),
+                List.of(Map.of("A", "id1", "B", "1.5", "C", "3.5", "D", "5"),
+                        Map.of("A", "id2", "B", "0", "C", "12", "D", "12"),
+                        Map.of("A", "id3", "B", "7", "C", "2", "D", "9")),
                 cleanNulls(xlsxParser.parseFileStream(fileAttempt2, settingsAttempt2)));
     }
 

@@ -15,7 +15,6 @@ import com.polarion.subterra.base.data.model.IType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -141,7 +140,6 @@ public class ImportService {
         // The linkColumn field's value can't change, therefore it doesn't need to be overwritten.
         // However, it must be saved to the newly created work item otherwise sequential imports will produce several objects.
         String fieldId = fieldMetadata.getId();
-        value = preProcessValue(value, fieldMetadata);
         if (!IUniqueObject.KEY_ID.equals(fieldId) && (!linkColumnId.equals(fieldId) || !workItem.isPersisted()) &&
                 (model.isOverwriteWithEmpty() || !isEmpty(value)) &&
                 ensureValidValue(value, fieldMetadata) &&
@@ -151,18 +149,6 @@ public class ImportService {
             // If the work item id is imported, it must be the Link Column. Its value also can't be set by imported data unlike other possible Link Column fields.
             throw new IllegalArgumentException("WorkItem id can only be imported if it is used as Link Column.");
         }
-    }
-
-    @VisibleForTesting
-    Object preProcessValue(Object value, @NotNull FieldMetadata fieldMetadata) {
-        if (Set.of(FieldType.RICH.getType(), FieldType.TEXT.getType(), FieldType.STRING.getType()).contains(fieldMetadata.getType()) && value instanceof Double doubleValue) {
-            // eliminate unnecessary decimal parts for double values
-            NumberFormat numberFormat = NumberFormat.getInstance();
-            numberFormat.setGroupingUsed(false);
-            numberFormat.setMaximumFractionDigits(10);
-            return numberFormat.format(doubleValue);
-        }
-        return value;
     }
 
     @VisibleForTesting
