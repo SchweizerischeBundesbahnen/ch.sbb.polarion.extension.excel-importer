@@ -10,6 +10,7 @@ import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import com.polarion.subterra.base.location.ILocation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -55,16 +56,29 @@ class ExcelSheetMappingSettingsTest {
     }
 
     @Test
+    @SuppressWarnings("unused")
     void testSaveGlobalSettingsRestricted() {
-        ExcelSheetMappingSettings service = mock(ExcelSheetMappingSettings.class);
-        when(service.save(anyString(), any(), any())).thenCallRealMethod();
-        SettingId id = SettingId.fromId("any");
-        ExcelSheetMappingSettingsModel model = mock(ExcelSheetMappingSettingsModel.class);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            service.save("", id, model);
-        });
-        assertEquals("scope value is required", exception.getMessage());
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class);
+             MockedConstruction<SettingsService> settingsServiceMockedConstruction = mockConstruction(SettingsService.class)) {
+
+            SettingId id = SettingId.fromId("any");
+            ExcelSheetMappingSettingsModel model = mock(ExcelSheetMappingSettingsModel.class);
+
+            ExcelSheetMappingSettings settings = new ExcelSheetMappingSettings();
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+                settings.save("", id, model);
+            });
+            assertEquals("scope value is required", exception.getMessage());
+
+            ILocation mockDefaultLocation = mock(ILocation.class);
+            when(mockDefaultLocation.append(anyString())).thenReturn(mockDefaultLocation);
+            mockScopeUtils.when(() -> ScopeUtils.getContextLocation("any")).thenReturn(mockDefaultLocation);
+
+            assertDoesNotThrow(() -> {
+                settings.save("any", id, model);
+            });
+        }
     }
 
     @Test

@@ -10,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class ExcelSheetMappingSettings extends GenericNamedSettings<ExcelSheetMappingSettingsModel> {
 
@@ -27,7 +26,7 @@ public class ExcelSheetMappingSettings extends GenericNamedSettings<ExcelSheetMa
     @Override
     public Collection<SettingName> readNames(@NotNull String scope) {
         Collection<SettingName> names = super.readNames(scope);
-        return names.stream().filter(name -> Objects.equals(name.getScope(), scope)).collect(Collectors.toList());
+        return names.stream().filter(name -> Objects.equals(name.getScope(), scope)).toList();
     }
 
     @Override
