@@ -4,7 +4,8 @@ const SELECTED_CONFIGURATION_COOKIE = 'selected-configuration-';
 
 const ctx = new ExtensionContext({
     extension: 'excel-importer',
-    scopeFieldId: 'scope'
+    scopeFieldId: 'scope',
+    rootComponentSelector: '.excel-importer-admin'
 });
 
 ctx.onChange(
@@ -108,15 +109,19 @@ function readMappingNames() {
         onOk: (responseText) => {
             const previouslySelectedValue = ctx.getCookie(SELECTED_CONFIGURATION_COOKIE + 'mappings');
             const container = ctx.getElementById("mapping-select");
-            for (const item of JSON.parse(responseText)) {
+            let items = JSON.parse(responseText);
+            let hasItems = items.length > 0;
+            for (const item of items) {
                 const option = document.createElement('option');
                 option.value = item.name;
                 option.innerHTML = item.name;
                 container.appendChild(option);
             }
-            if (previouslySelectedValue) {
+            if (hasItems && previouslySelectedValue) {
                 container.value = previouslySelectedValue;
             }
+            ctx.displayIf("no-mapping-note", !hasItems);
+            ctx.displayIf("import-panel", hasItems);
         },
     });
 }
