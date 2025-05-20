@@ -16,8 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -53,6 +52,19 @@ class ExcelSheetMappingSettingsTest {
                 excelSheetMappingSettings.load(projectName, settingId);
             });
         }
+    }
+
+    @Test
+    void testSaveGlobalSettingsRestricted() {
+        ExcelSheetMappingSettings service = mock(ExcelSheetMappingSettings.class);
+        when(service.save(anyString(), any(), any())).thenCallRealMethod();
+        SettingId id = SettingId.fromId("any");
+        ExcelSheetMappingSettingsModel model = mock(ExcelSheetMappingSettingsModel.class);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            service.save("", id, model);
+        });
+        assertEquals("scope value is required", exception.getMessage());
     }
 
     @Test
