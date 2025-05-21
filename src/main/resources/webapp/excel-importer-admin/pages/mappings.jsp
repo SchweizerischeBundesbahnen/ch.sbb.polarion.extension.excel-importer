@@ -58,6 +58,10 @@
         #default-toolbar-button {
             display: none;
         }
+
+        #default-cannot-be-deleted-note {
+            display: none;
+        }
     </style>
 </head>
 

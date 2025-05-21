@@ -10,6 +10,10 @@ const ctx = new ExtensionContext({
 const conf = new ConfigurationsPane({
     ctx: ctx,
     setConfigurationContentCallback: parseAndSetSettings,
+    preDeleteCallback: () => new Promise((resolve) => {
+        ctx.setNewerVersionNotificationVisible(false);
+        resolve();
+    })
 });
 
 ctx.onClick(
@@ -342,9 +346,7 @@ function parseAndSetSettings(text) {
     ctx.setValueById('link-column', settings.linkColumn);
     createAddButton();
 
-    if (settings.bundleTimestamp !== ctx.getValueById('bundle-timestamp')) {
-        ctx.setNewerVersionNotificationVisible(true);
-    }
+    ctx.setNewerVersionNotificationVisible(settings.bundleTimestamp !== ctx.getValueById('bundle-timestamp'));
 }
 
 function getProjectIdFromScope() {

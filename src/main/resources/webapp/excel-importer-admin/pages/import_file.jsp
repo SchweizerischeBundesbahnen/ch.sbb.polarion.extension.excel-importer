@@ -19,6 +19,10 @@
         .styled-upload-button:disabled, .styled-upload-button.disabled {
             color: #999999;
         }
+
+        #no-mapping-note {
+            display: none;
+        }
     </style>
 </head>
 
@@ -27,7 +31,8 @@
     <h1>Import File</h1>
 
     <div class="input-container">
-        <div class="input-block wide">
+        <span id="no-mapping-note"><i>No mapping configurations found. Please create a configuration first.</i></span>
+        <div id="import-panel" class="input-block wide">
             <div class="label-block"><label>Excel File</label></div>
 
             <div style="margin-top: 10px; margin-bottom: 10px;">

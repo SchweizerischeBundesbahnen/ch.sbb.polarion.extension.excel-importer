@@ -10,14 +10,14 @@ import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import com.polarion.subterra.base.location.ILocation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -51,6 +51,32 @@ class ExcelSheetMappingSettingsTest {
             SettingId settingId = SettingId.fromName("Any setting name");
             assertThrows(ObjectNotFoundException.class, () -> {
                 excelSheetMappingSettings.load(projectName, settingId);
+            });
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unused")
+    void testSaveGlobalSettingsRestricted() {
+
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class);
+             MockedConstruction<SettingsService> settingsServiceMockedConstruction = mockConstruction(SettingsService.class)) {
+
+            SettingId id = SettingId.fromId("any");
+            ExcelSheetMappingSettingsModel model = mock(ExcelSheetMappingSettingsModel.class);
+
+            ExcelSheetMappingSettings settings = new ExcelSheetMappingSettings();
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+                settings.save("", id, model);
+            });
+            assertEquals("scope value is required", exception.getMessage());
+
+            ILocation mockDefaultLocation = mock(ILocation.class);
+            when(mockDefaultLocation.append(anyString())).thenReturn(mockDefaultLocation);
+            mockScopeUtils.when(() -> ScopeUtils.getContextLocation("any")).thenReturn(mockDefaultLocation);
+
+            assertDoesNotThrow(() -> {
+                settings.save("any", id, model);
             });
         }
     }
