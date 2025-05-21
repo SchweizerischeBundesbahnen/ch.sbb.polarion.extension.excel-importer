@@ -51,6 +51,7 @@ public class ImportService {
         return TransactionalExecutor.executeInWriteTransaction(transaction -> processWorkItemIds(workItemIds, trackerProject, workItemType, xlsxData, settings));
     }
 
+    @SuppressWarnings("java:S3776") // ignore cognitive complexity complaint
     private ImportResult processWorkItemIds(Set<String> workItemIds, ITrackerProject project, ITypeOpt workItemType, @NotNull List<Map<String, Object>> xlsxData, ExcelSheetMappingSettingsModel settings) {
         List<String> updatedIds = new ArrayList<>();
         List<String> createdIds = new ArrayList<>();
