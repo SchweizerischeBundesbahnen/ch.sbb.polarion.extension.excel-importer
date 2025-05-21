@@ -629,6 +629,9 @@
       },
       "Option": {
         "properties": {
+          "iconUrl": {
+            "type": "string"
+          },
           "key": {
             "type": "string"
           },

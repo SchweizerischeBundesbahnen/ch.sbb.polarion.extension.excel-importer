@@ -87,7 +87,7 @@
             <td colspan="2"><input id="overwrite" type="checkbox"><label for="overwrite" title="Determines whether or not an empty value from the imported excel file should overwrite (and thus delete) an existing value of the work item field.">Overwrite with empty values</label></td>
         </tr>
     </table>
-    <h2 class="align-left">Workitem Type</h2>
+    <h2 class="align-left">Workitem Type To Create</h2>
     <div id="workitem-types-container">
         <label for="wi-types">Import rows as: </label><select class="fs-14" id="wi-types"></select>
     </div>
@@ -112,8 +112,9 @@
             <h3>General Settings</h3>
             <p>This section contains inputs with the Excel sheet name (<code>Sheet1</code> by default) and the row number (1 by default) to import data from.</p>
 
-            <h3>Workitem Type</h3>
+            <h3>Workitem Type To Create</h3>
             <p>This section contains a combobox with workitem types available for the current project.</p>
+            <p>In case if there is no workitem found by given identifier - it will be created using this type. This means that the extension can update any type in the current project (not only the one selected in this combobox).</p>
 
             <h3>Column Name To Workitem Field Mapping</h3>
             <p>This section contains comboboxes for mapping Excel column names to Polarion workitem fields.</p>
