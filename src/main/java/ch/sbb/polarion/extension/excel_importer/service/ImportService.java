@@ -51,6 +51,7 @@ public class ImportService {
         return TransactionalExecutor.executeInWriteTransaction(transaction -> processWorkItemIds(workItemIds, trackerProject, workItemType, xlsxData, settings));
     }
 
+    @SuppressWarnings("java:S3776") // ignore cognitive complexity complaint
     private ImportResult processWorkItemIds(Set<String> workItemIds, ITrackerProject project, ITypeOpt workItemType, @NotNull List<Map<String, Object>> xlsxData, ExcelSheetMappingSettingsModel settings) {
         List<String> updatedIds = new ArrayList<>();
         List<String> createdIds = new ArrayList<>();
@@ -59,38 +60,38 @@ public class ImportService {
         List<String> log = new ArrayList<>();
 
         String identifierFieldId = settings.getColumnsMapping().get(settings.getLinkColumn());
-        List<IWorkItem> foundWorkItems = polarionServiceExt.findWorkItemsById(project.getId(), settings.getDefaultWorkItemType(), identifierFieldId, workItemIds);
+        List<IWorkItem> foundWorkItems = polarionServiceExt.findWorkItemsById(project.getId(), identifierFieldId, workItemIds);
 
         for (Map<String, Object> columnMappingRecord : xlsxData) {
             Object idValue = columnMappingRecord.get(settings.getLinkColumn());
-            IWorkItem workItem = foundWorkItems.stream()
-                    .filter(findWorkItemByFieldValue(identifierFieldId, idValue))
-                    .findFirst()
-                    .orElse(null);
-            boolean createNew = workItem == null;
-            if (createNew) { //WorkItem not found - create a new one
+            String idString = String.valueOf(idValue);
+            List<String> logEntries = new ArrayList<>();
+            List<IWorkItem> workItems = foundWorkItems.stream().filter(findWorkItemByFieldValue(identifierFieldId, idValue)).toList();
+            if (workItems.isEmpty()) { //WorkItem not found - create a new one
                 if (!identifierFieldId.equals("id")) {
-                    workItem = polarionServiceExt.createWorkItem(project, workItemType);
+                    IWorkItem createdWorkItem = polarionServiceExt.createWorkItem(project, workItemType);
+                    fillWorkItemFields(createdWorkItem, columnMappingRecord, settings, identifierFieldId);
+                    createdWorkItem.save();
+                    logEntries.add("new work item '%s' is being created".formatted(createdWorkItem.getId()));
+                    createdIds.add(createdWorkItem.getId());
                 } else {
-                    String idString = String.valueOf(idValue);
                     skippedIds.add(idString);
-                    log.add("No work item found by ID '%s'. Since the 'id' is used as the 'Link Column', new work item creation is impossible".formatted(idString));
-                    continue;
+                    logEntries.add("no work item found by ID '%s'. Since the 'id' is used as the 'Link Column', new work item creation is impossible".formatted(idString));
+                }
+            } else {
+                for (IWorkItem workItem : workItems) {
+                    fillWorkItemFields(workItem, columnMappingRecord, settings, identifierFieldId);
+                    if (!workItem.isModified()) {
+                        logEntries.add("no changes were made to '%s'".formatted(workItem.getId()));
+                        unchangedIds.add(workItem.getId());
+                    } else {
+                        logEntries.add("the data was updated for '%s'".formatted(workItem.getId()));
+                        updatedIds.add(workItem.getId());
+                    }
+                    workItem.save();
                 }
             }
-            fillWorkItemFields(workItem, columnMappingRecord, settings, identifierFieldId); //set fields values
-            boolean isWorkItemUnchanged = !workItem.isModified(); // maybe isModified doesn't work on a new WI before save?
-            workItem.save();
-            if (createNew) {
-                log.add("New work item '%s' is being created".formatted(workItem.getId()));
-                createdIds.add(workItem.getId());
-            } else if (isWorkItemUnchanged) {
-                log.add("No changes were made to '%s'".formatted(workItem.getId()));
-                unchangedIds.add(workItem.getId());
-            } else {
-                log.add("The data was updated for '%s'".formatted(workItem.getId()));
-                updatedIds.add(workItem.getId());
-            }
+            log.add(idString + ": " + String.join(", ", logEntries));
         }
 
         return ImportResult.builder()

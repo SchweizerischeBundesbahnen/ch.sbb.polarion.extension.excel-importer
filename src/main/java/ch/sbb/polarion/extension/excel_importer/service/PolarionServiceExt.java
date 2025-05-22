@@ -16,6 +16,7 @@ import com.polarion.subterra.base.data.identification.IContextId;
 import com.polarion.subterra.base.data.model.internal.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -65,8 +66,8 @@ public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.servic
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public List<IWorkItem> findWorkItemsById(String projectId, String workItemType, String identifierCustomFieldId, Set<String> ids) {
-        String query = "project.id:" + projectId + " AND type:" + workItemType + " AND (" + ids.stream()
+    public List<IWorkItem> findWorkItemsById(String projectId, String identifierCustomFieldId, Collection<String> ids) {
+        String query = "project.id:" + projectId + " AND (" + ids.stream()
                 .map(i -> identifierCustomFieldId + ":" + i)
                 .collect(Collectors.joining(" OR ")) + ")";
 
