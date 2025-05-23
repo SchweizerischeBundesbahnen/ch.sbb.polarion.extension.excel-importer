@@ -62,6 +62,44 @@
         #default-cannot-be-deleted-note {
             display: none;
         }
+
+        .column-input-wrapper {
+            position: relative;
+            width: 60px;
+            display: inline-block;
+            align-items: center;
+        }
+
+        .excel-column-input {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+
+            top: 100%; /* Position right below the input field */
+        }
+
+        .dropdown-item {
+            padding: 0.5rem 0.75rem;
+        }
+
+        .dropdown-item:hover {
+            background-color: #1967D2;
+            color: white;
+        }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 
