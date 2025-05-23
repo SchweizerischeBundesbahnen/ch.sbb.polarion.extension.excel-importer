@@ -1,5 +1,6 @@
 import ExtensionContext from '../../ui/generic/js/modules/ExtensionContext.js';
 import ConfigurationsPane from '../../ui/generic/js/modules/ConfigurationsPane.js';
+import ColumnInput from './ColumnInput.js';
 
 const ctx = new ExtensionContext({
     extension: 'excel-importer',
@@ -24,10 +25,6 @@ ctx.onClick(
     'revisions-toolbar-button', ctx.toggleRevisions,
 );
 
-function getColumnNames() {
-    return ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
-}
-
 const cache = {
     fields: undefined,
     enumsMapping: {}
@@ -41,7 +38,7 @@ function createMappingRow({recreateAddButton, columnValue, fieldValue}) {
     const tableRow = document.createElement('tr');
     tableRow.classList.add('mapping-row');
     createRemoveButtonCell(tableRow);
-    createColumnCell(tableRow, columnValue);
+    createTextColumnCell(tableRow, columnValue);
     createFieldCell(tableRow, fieldValue);
     table.appendChild(tableRow);
     if (recreateAddButton) {
@@ -49,23 +46,24 @@ function createMappingRow({recreateAddButton, columnValue, fieldValue}) {
     }
 }
 
-function createColumnCell(tableRow, columnValue) {
+function createTextColumnCell(tableRow, columnValue) {
     const columnCell = document.createElement('td');
     const columnLabel = document.createElement('label');
     columnLabel.innerHTML = 'Column: ';
     columnCell.appendChild(columnLabel);
-    const columnSelect = document.createElement('select');
-    columnSelect.classList.add('fs-14', 'columns');
-    columnCell.appendChild(columnSelect);
-    columnSelect.addEventListener('change', () => {
-        updateLinkColumnDropdown();
-    });
-    tableRow.appendChild(columnCell)
-    populateColumnDropdown(tableRow, columnValue);
-}
 
-function populateColumnDropdown(container, selectedValue) {
-    populateDropdown(container, 'columns', getColumnNames(), selectedValue);
+    const columnInputContainer = document.createElement('div');
+    columnCell.appendChild(columnInputContainer);
+
+    tableRow.appendChild(columnCell);
+
+    new ColumnInput({
+        containerElement: columnInputContainer,
+        initialValue: columnValue,
+        onValueChange: () => {
+            updateLinkColumnDropdown();
+        }
+    });
 }
 
 function createFieldCell(tableRow, fieldValue) {
@@ -298,10 +296,8 @@ function getColumnToFieldMapping() {
     const rows = container.getElementsByClassName('mapping-row');
     const map = new Map();
     Array.from(rows).forEach(row => {
-        const columns = row.getElementsByClassName('columns')[0];
-        const columnValue = columns.value;
-        const fields = row.getElementsByClassName('fields')[0];
-        const fieldValue = fields.value;
+        const columnValue = row.getElementsByClassName('excel-column-input')[0].value;
+        const fieldValue = row.getElementsByClassName('fields')[0].value;
         map.set(columnValue, fieldValue);
     });
     return map;
@@ -319,10 +315,12 @@ function getOptionsMapping() {
 
 function updateLinkColumnDropdown() {
     const table = ctx.getElementById('mapping-table');
-    const columns = table.getElementsByClassName('columns');
+    const columnInputs = table.getElementsByClassName('excel-column-input');
     const names = new Set();
-    Array.from(columns).forEach((option) => {
-        names.add(option.value);
+    Array.from(columnInputs).forEach((option) => {
+        if (option.value && option.value.trim() !== '') {
+            names.add(option.value);
+        }
     });
     const linkColumnContainer = ctx.getElementById('link-column-container');
     const linkColumnDropdown = ctx.getElementById('link-column');
@@ -398,8 +396,8 @@ function validateBeforeSave() {
         return false;
     }
     const validationResult = validateMapping();
-    if (!validationResult.valid) {
-        showErrorMessage(`Mapping for column ${validationResult.columnName} cannot be empty`);
+    if (validationResult) {
+        showErrorMessage(validationResult);
         return false;
     }
     const linkColumnIsEmpty = checkIfEmptyValue(ctx.getElementById('link-column'));
@@ -413,15 +411,21 @@ function validateBeforeSave() {
 function validateMapping() {
     const mappingTable = ctx.getElementById('mapping-table');
     let mappingRows = mappingTable.getElementsByClassName('mapping-row');
-    let validationResult = {valid: true};
-    Array.from(mappingRows).forEach((row) => {
-        const fieldName = row.getElementsByClassName('fields')[0].value;
-        const columnName = row.getElementsByClassName('columns')[0].value;
-        if (fieldName.trim().length === 0) {
-            validationResult = {columnName: columnName, valid: false};
+    let existingColumns = [];
+    for (const row of Array.from(mappingRows)) {
+        const columnName = row.getElementsByClassName('excel-column-input')[0].value;
+        if (!columnName) {
+            return `Column name cannot be empty`;
+        } else if (existingColumns.includes(columnName)) {
+            return `Cannot have duplicate column name '${columnName}'`;
         }
-    })
-    return validationResult;
+        existingColumns.push(columnName);
+        const fieldName = row.getElementsByClassName('fields')[0].value;
+        if (!fieldName) {
+            return `Mapping for column '${columnName}' cannot be empty`;
+        }
+    }
+    return '';
 }
 
 function checkIfEmptyValue(element) {
