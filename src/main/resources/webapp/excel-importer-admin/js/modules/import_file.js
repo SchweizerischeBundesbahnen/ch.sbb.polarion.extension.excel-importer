@@ -54,7 +54,7 @@ function importFile() {
                     ctx.downloadBlob(new Blob([log], {type: "text/plain"}), ctx.getElementById("download-log-link").dataset.filename);
                 }
             );
-
+            resetFileInput();
             disableAllButtons(false);
         },
         onError: (status, responseText) => {
@@ -63,6 +63,7 @@ function importFile() {
                 message: `Import error (${responseText}).`,
                 hideAlertByTimeout: false
             });
+            resetFileInput();
             disableAllButtons(false);
         }
     });
@@ -99,6 +100,11 @@ function disableAllButtons(disable) {
     }
     ctx.getElementById('file-xlsx').disabled = disable;
     ctx.getElementById('import-button').disabled = disable;
+}
+
+function resetFileInput() {
+    ctx.getElementById('file-xlsx').value = null;
+    ctx.getElementById('file-name').innerText = 'No file chosen';
 }
 
 function readMappingNames() {
