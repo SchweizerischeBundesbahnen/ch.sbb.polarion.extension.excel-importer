@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v3.1.1...v3.2.0) (2025-05-26)
+
+
+### Features
+
+* column dropdown changed to input text ([#104](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/104)) ([e08e3e8](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/e08e3e8a132e0e8402e2f79238be34f872546ee7)), closes [#101](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/101)
+* do not use global configuration ([#102](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/102)) ([a9aa019](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/a9aa019ec256071c108ac3c9b49a2da4e40c8016)), closes [#100](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/100)
+* mapping on different workitem types ([#103](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/103)) ([4667aa6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/4667aa6fe830a22b562707e970977e4a551b7115)), closes [#97](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/97)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v8.1.1 ([cb3a839](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/cb3a839e4545a08f9a1141d96c9e636636f6e138))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v9 ([#96](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/96)) ([7d6d0b5](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/7d6d0b5332b3f66e8071811441132ff964436160))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v9.1.0 ([8482a7f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/8482a7fcc75d6d09d1cc3b52319d9888c60fe2f8))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v9.1.1 ([#105](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/105)) ([3fc2726](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/3fc27264599068c8a5744cb1dd23c3b18aef0fb7))
+* numeric values mapping fix ([#99](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/99)) ([4c49fc3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/4c49fc326346306a56a622a8c2f2bb55f056e0c2)), closes [#98](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/98)
+* reset file input state after upload ([#107](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/107)) ([d9c2129](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/d9c212902ebdaa13db4c1c28c777bb0aafdbf1aa)), closes [#106](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/106)
+
 ## [3.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v3.1.0...v3.1.1) (2025-03-25)
 
 
