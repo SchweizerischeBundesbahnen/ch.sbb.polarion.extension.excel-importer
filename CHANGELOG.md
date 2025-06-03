@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v3.2.0...v3.3.0) (2025-06-03)
+
+
+### Features
+
+* ability to import linkedWorkItems data ([#113](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/113)) ([1944b1e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/1944b1e48216e66f741f99cacc9239fd7d520e9b)), closes [#111](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/111)
+
 ## [3.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v3.1.1...v3.2.0) (2025-05-26)
 
 
