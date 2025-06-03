@@ -30,8 +30,8 @@ public class LinkInfo {
     }
 
     /**
-     * Parses link like {@code 'relates_to:elibrary/EL-123'} or {@code 'duplicates:https://url/to/workitem'}.
-     * Both roleId and projectId are optional - in this case default data will be fetched using pivot workitem.
+     * Parses comma-separated list of links like {@code 'relates_to:elibrary/EL-123'} or {@code 'duplicates:https://url/to/workitem'}.
+     * Both roleId and projectId in a link are optional - in this case default data will be fetched using pivot workitem.
      */
     public static List<LinkInfo> fromString(String value, @NotNull IWorkItem pivotWorkItem) {
         return Stream.of(StringUtils.getEmptyIfNull(value).split(",")).map(String::trim).filter(v -> !StringUtils.isEmpty(v)).map(link -> {
