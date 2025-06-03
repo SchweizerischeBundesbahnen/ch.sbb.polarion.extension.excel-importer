@@ -1,11 +1,13 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettingsModel;
+import ch.sbb.polarion.extension.excel_importer.utils.LinkInfo;
 import ch.sbb.polarion.extension.generic.fields.FieldType;
 import ch.sbb.polarion.extension.generic.fields.model.FieldMetadata;
 import ch.sbb.polarion.extension.generic.util.OptionsMappingUtils;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
+import com.polarion.alm.tracker.model.ILinkRoleOpt;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.ITypeOpt;
 import com.polarion.alm.tracker.model.IWorkItem;
@@ -15,6 +17,7 @@ import com.polarion.subterra.base.data.model.IType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -145,10 +148,28 @@ public class ImportService {
                 (model.isOverwriteWithEmpty() || !isEmpty(value)) &&
                 ensureValidValue(value, fieldMetadata) &&
                 existingValueDiffers(workItem, fieldId, value, fieldMetadata)) {
-            polarionServiceExt.setFieldValue(workItem, fieldId, prepareValue(value, fieldMetadata), model.getEnumsMapping());
+            if (IWorkItem.KEY_LINKED_WORK_ITEMS.equals(fieldId)) {
+                setLinkedWorkItems(workItem, value);
+            } else {
+                polarionServiceExt.setFieldValue(workItem, fieldId, prepareValue(value, fieldMetadata), model.getEnumsMapping());
+            }
         } else if (IUniqueObject.KEY_ID.equals(fieldId) && !linkColumnId.equals(fieldId)) {
             // If the work item id is imported, it must be the Link Column. Its value also can't be set by imported data unlike other possible Link Column fields.
             throw new IllegalArgumentException("WorkItem id can only be imported if it is used as Link Column.");
+        }
+    }
+
+    @VisibleForTesting
+    void setLinkedWorkItems(IWorkItem workItem, Object value) {
+        List<LinkInfo> linkInfos = LinkInfo.fromString((String) value, workItem).stream().filter(link -> !link.containedIn(workItem)).toList();
+        for (LinkInfo linkInfo : linkInfos) {
+            ILinkRoleOpt roleEnum = workItem.getProject().getWorkItemLinkRoleEnum().wrapOption(linkInfo.getRoleId(), workItem.getType());
+            if (linkInfo.isExternal()) {
+                workItem.addExternallyLinkedItem(URI.create(linkInfo.getWorkItemId()), roleEnum);
+            } else {
+                IWorkItem linkedWorkItem = polarionServiceExt.getWorkItem(linkInfo.getProjectId(), linkInfo.getWorkItemId());
+                workItem.addLinkedItem(linkedWorkItem, roleEnum, null, false);
+            }
         }
     }
 
@@ -189,6 +210,13 @@ public class ImportService {
         } else if (FieldType.FLOAT.getType().equals(fieldType)) {
             //WORKAROUND: converting to string helps to find same values even between different types (Float, Double etc.)
             return !Objects.equals(String.valueOf(newValue), String.valueOf(existingValue));
+        } else if (IWorkItem.KEY_LINKED_WORK_ITEMS.equals(fieldId)) {
+            if (newValue instanceof String links) {
+                return LinkInfo.fromString(links, workItem).stream().anyMatch(linkInfo -> !linkInfo.containedIn(workItem));
+            } else if (newValue != null) {
+                throw new IllegalArgumentException(IWorkItem.KEY_LINKED_WORK_ITEMS + " can be set using string value only");
+            }
+            return false;
         } else {
             return !Objects.equals(newValue, existingValue);
         }
