@@ -34,7 +34,7 @@ public class LinkInfo {
      * Both roleId and projectId are optional - in this case default data will be fetched using pivot workitem.
      */
     public static List<LinkInfo> fromString(String value, @NotNull IWorkItem pivotWorkItem) {
-        return Stream.of(StringUtils.getEmptyIfNull(value).split("\\s*,\\s*")).filter(v -> !StringUtils.isEmptyTrimmed(v)).map(link -> {
+        return Stream.of(StringUtils.getEmptyIfNull(value).split(",")).map(String::trim).filter(v -> !StringUtils.isEmpty(v)).map(link -> {
             LinkInfo linkInfo = new LinkInfo();
             int roleDelimiter = link.indexOf(":");
             if (roleDelimiter != -1 && roleDelimiter != link.indexOf("://")) {
