@@ -370,9 +370,9 @@ class ImportServiceTest {
 
         FieldMetadata linkedMetadata = FieldMetadata.builder().id("linkedWorkItems").type(FieldType.LIST.getType()).build();
         LinkInfo link1 = mock(LinkInfo.class);
-        when(link1.containedIn(eq(workItem))).thenReturn(true);
+        when(link1.containedIn(workItem)).thenReturn(true);
         LinkInfo link2 = mock(LinkInfo.class);
-        when(link2.containedIn(eq(workItem))).thenReturn(false);
+        when(link2.containedIn(workItem)).thenReturn(false);
         try (MockedStatic<LinkInfo> linkInfoMockedStatic = mockStatic(LinkInfo.class)) {
             linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("EL-1"), any(IWorkItem.class))).thenReturn(List.of(link1));
             linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("EL-2"), any(IWorkItem.class))).thenReturn(List.of(link2));
