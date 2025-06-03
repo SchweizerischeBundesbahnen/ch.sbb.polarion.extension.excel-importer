@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettingsModel;
+import ch.sbb.polarion.extension.excel_importer.utils.LinkInfo;
 import ch.sbb.polarion.extension.generic.fields.FieldType;
 import ch.sbb.polarion.extension.generic.fields.model.FieldMetadata;
 import com.polarion.alm.projects.IProjectService;
@@ -46,6 +47,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ImportServiceTest {
 
+    private static final String TEST_PROJECT_ID = "test";
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     MockedStatic<PlatformContext> mockPlatformContext;
 
@@ -53,8 +55,6 @@ class ImportServiceTest {
     void cleanup() {
         mockPlatformContext.close();
     }
-
-    private static final String TEST_PROJECT_ID = "test";
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -302,6 +302,25 @@ class ImportServiceTest {
     }
 
     @Test
+    void testSetLinkedWorkItems() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        LinkInfo regularLink = new LinkInfo("relates_to", "elibrary", "EL-123", false);
+        LinkInfo externalLink = new LinkInfo("relates_to", null, "someExternalUrl", true);
+
+        try (MockedStatic<LinkInfo> linkInfoMockedStatic = mockStatic(LinkInfo.class)) {
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("expectedItems"), any(IWorkItem.class))).thenReturn(List.of(regularLink, externalLink));
+
+            IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+            service.setLinkedWorkItems(workItem, "expectedItems");
+
+            verify(workItem, times(1)).addExternallyLinkedItem(any(), any());
+            verify(workItem, times(1)).addLinkedItem(any(), any(), isNull(), anyBoolean());
+        }
+    }
+
+    @Test
     void testExistingValueDiffers() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ImportService service = new ImportService(polarionService);
@@ -348,6 +367,24 @@ class ImportServiceTest {
         assertFalse(service.existingValueDiffers(workItem, "fieldId", "42.0", floatMetadata));
         assertTrue(service.existingValueDiffers(workItem, "fieldId", "42", floatMetadata));
         assertTrue(service.existingValueDiffers(workItem, "fieldId", null, floatMetadata));
+
+        FieldMetadata linkedMetadata = FieldMetadata.builder().id("linkedWorkItems").type(FieldType.LIST.getType()).build();
+        LinkInfo link1 = mock(LinkInfo.class);
+        when(link1.containedIn(workItem)).thenReturn(true);
+        LinkInfo link2 = mock(LinkInfo.class);
+        when(link2.containedIn(workItem)).thenReturn(false);
+        try (MockedStatic<LinkInfo> linkInfoMockedStatic = mockStatic(LinkInfo.class)) {
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("EL-1"), any(IWorkItem.class))).thenReturn(List.of(link1));
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("EL-2"), any(IWorkItem.class))).thenReturn(List.of(link2));
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("EL-1,EL-2"), any(IWorkItem.class))).thenReturn(List.of(link1, link2));
+
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> service.existingValueDiffers(workItem, "linkedWorkItems", 42, linkedMetadata));
+            assertEquals("linkedWorkItems can be set using string value only", exception.getMessage());
+
+            assertFalse(service.existingValueDiffers(workItem, "linkedWorkItems", "EL-1", linkedMetadata));
+            assertTrue(service.existingValueDiffers(workItem, "linkedWorkItems", "EL-2", linkedMetadata));
+            assertTrue(service.existingValueDiffers(workItem, "linkedWorkItems", "EL-1,EL-2", linkedMetadata));
+        }
     }
 
     private ExcelSheetMappingSettingsModel generateSettings(boolean overwriteWithEmpty) {
