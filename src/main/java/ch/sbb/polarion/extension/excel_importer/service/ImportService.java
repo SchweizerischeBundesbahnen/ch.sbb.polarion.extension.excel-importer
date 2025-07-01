@@ -1,9 +1,12 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
+import ch.sbb.polarion.extension.excel_importer.service.parser.impl.XlsxParser;
+import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettings;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettingsModel;
 import ch.sbb.polarion.extension.excel_importer.utils.LinkInfo;
 import ch.sbb.polarion.extension.generic.fields.FieldType;
 import ch.sbb.polarion.extension.generic.fields.model.FieldMetadata;
+import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.util.OptionsMappingUtils;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
@@ -14,9 +17,12 @@ import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.xml.HTMLHelper;
 import com.polarion.subterra.base.data.model.IType;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +35,7 @@ import java.util.stream.Collectors;
 public class ImportService {
 
     private final PolarionServiceExt polarionServiceExt;
+    private final XlsxParser xlsxParser = new XlsxParser();
 
     public ImportService() {
         polarionServiceExt = new PolarionServiceExt();
@@ -38,72 +45,70 @@ public class ImportService {
         this.polarionServiceExt = polarionServiceExt;
     }
 
-    public ImportResult processFile(@NotNull ITrackerProject trackerProject, @NotNull List<Map<String, Object>> xlsxData, @NotNull ExcelSheetMappingSettingsModel settings) {
-        //get & check WorkItem type existence
+    public ImportResult processFile(String projectId, String mappingName, byte[] fileContent) {
+        ITrackerProject trackerProject = polarionServiceExt.findProject(projectId);
+        ExcelSheetMappingSettingsModel settings = new ExcelSheetMappingSettings().load(projectId, SettingId.fromName(mappingName));
         ITypeOpt workItemType = polarionServiceExt.findWorkItemTypeInProject(trackerProject, settings.getDefaultWorkItemType());
+        ImportContext context = new ImportContext(trackerProject, workItemType, settings);
 
-        //extract WorkItem IDs from each row
-        Set<String> workItemIds = xlsxData.stream()
-                .map(dataRow -> getIdentifierValue(dataRow, settings.getLinkColumn()))
-                .collect(Collectors.toSet());
-        if (workItemIds.isEmpty()) {
-            throw new IllegalArgumentException(String.format("File must contain data in the '%s' column as it will be used for linking with the WorkItem.", settings.getLinkColumn()));
-        }
+        List<Map<String, Object>> xlsxData = xlsxParser.parseFileStream(new ByteArrayInputStream(fileContent), settings);
+        context.log("Xlsx file parsed successfully, found %d rows".formatted(xlsxData.size()));
 
-        //find & process WorkItems
-        return TransactionalExecutor.executeInWriteTransaction(transaction -> processWorkItemIds(workItemIds, trackerProject, workItemType, xlsxData, settings));
+        TransactionalExecutor.executeInWriteTransaction(transaction -> processData(xlsxData, context));
+        context.log("Transaction completed");
+        return context.toResult();
     }
 
     @SuppressWarnings("java:S3776") // ignore cognitive complexity complaint
-    private ImportResult processWorkItemIds(Set<String> workItemIds, ITrackerProject project, ITypeOpt workItemType, @NotNull List<Map<String, Object>> xlsxData, ExcelSheetMappingSettingsModel settings) {
-        List<String> updatedIds = new ArrayList<>();
-        List<String> createdIds = new ArrayList<>();
-        List<String> unchangedIds = new ArrayList<>();
-        List<String> skippedIds = new ArrayList<>();
-        List<String> log = new ArrayList<>();
-
-        String identifierFieldId = settings.getColumnsMapping().get(settings.getLinkColumn());
-        List<IWorkItem> foundWorkItems = polarionServiceExt.findWorkItemsById(project.getId(), identifierFieldId, workItemIds);
-
-        for (Map<String, Object> columnMappingRecord : xlsxData) {
-            Object idValue = columnMappingRecord.get(settings.getLinkColumn());
-            String idString = String.valueOf(idValue);
-            List<String> logEntries = new ArrayList<>();
-            List<IWorkItem> workItems = foundWorkItems.stream().filter(findWorkItemByFieldValue(identifierFieldId, idValue)).toList();
-            if (workItems.isEmpty()) { //WorkItem not found - create a new one
-                if (!identifierFieldId.equals("id")) {
-                    IWorkItem createdWorkItem = polarionServiceExt.createWorkItem(project, workItemType);
-                    fillWorkItemFields(createdWorkItem, columnMappingRecord, settings, identifierFieldId);
-                    createdWorkItem.save();
-                    logEntries.add("new work item '%s' is being created".formatted(createdWorkItem.getId()));
-                    createdIds.add(createdWorkItem.getId());
-                } else {
-                    skippedIds.add(idString);
-                    logEntries.add("no work item found by ID '%s'. Since the 'id' is used as the 'Link Column', new work item creation is impossible".formatted(idString));
-                }
-            } else {
-                for (IWorkItem workItem : workItems) {
-                    fillWorkItemFields(workItem, columnMappingRecord, settings, identifierFieldId);
-                    if (!workItem.isModified()) {
-                        logEntries.add("no changes were made to '%s'".formatted(workItem.getId()));
-                        unchangedIds.add(workItem.getId());
-                    } else {
-                        logEntries.add("the data was updated for '%s'".formatted(workItem.getId()));
-                        updatedIds.add(workItem.getId());
-                    }
-                    workItem.save();
-                }
+    private Void processData(@NotNull List<Map<String, Object>> xlsxData, ImportContext context) {
+        String identifierFieldId = context.settings.getColumnsMapping().get(context.settings.getLinkColumn());
+        List<List<Map<String, Object>>> xlsxDataChunked = ListUtils.partition(xlsxData.stream().toList(), 100);
+        for (List<Map<String, Object>> chunk : xlsxDataChunked) {
+            Set<String> workItemIds = chunk.stream()
+                    .map(dataRow -> getIdentifierValue(dataRow, context.settings.getLinkColumn()))
+                    .collect(Collectors.toSet());
+            if (workItemIds.isEmpty()) {
+                throw new IllegalArgumentException(String.format("File must contain data in the '%s' column as it will be used for linking with the WorkItem.", context.settings.getLinkColumn()));
             }
-            log.add(idString + ": " + String.join(", ", logEntries));
-        }
 
-        return ImportResult.builder()
-                .updatedIds(updatedIds)
-                .createdIds(createdIds)
-                .unchangedIds(unchangedIds)
-                .skippedIds(skippedIds)
-                .log(log.stream().collect(Collectors.joining(System.lineSeparator())))
-                .build();
+            List<IWorkItem> foundWorkItems = polarionServiceExt.findWorkItemsById(context.project.getId(), identifierFieldId, workItemIds);
+            for (Map<String, Object> columnMappingRecord : chunk) {
+                Object idValue = columnMappingRecord.get(context.settings.getLinkColumn());
+                String idString = String.valueOf(idValue);
+                List<String> logEntries = new ArrayList<>();
+                List<IWorkItem> workItems = foundWorkItems.stream().filter(findWorkItemByFieldValue(identifierFieldId, idValue)).toList();
+                if (workItems.isEmpty()) { //WorkItem not found - create a new one
+                    if (!identifierFieldId.equals("id")) {
+                        IWorkItem createdWorkItem = polarionServiceExt.createWorkItem(context.project, context.workItemType);
+                        fillWorkItemFields(createdWorkItem, columnMappingRecord, context.settings, identifierFieldId);
+                        createdWorkItem.save();
+                        logEntries.add("new work item '%s' is being created".formatted(createdWorkItem.getId()));
+                        context.createdIds.add(createdWorkItem.getId());
+                    } else {
+                        context.skippedIds.add(idString);
+                        logEntries.add("no work item found by ID '%s'. Since the 'id' is used as the 'Link Column', new work item creation is impossible".formatted(idString));
+                    }
+                } else {
+                    if (workItems.size() > 1) {
+                        context.log("ATTENTION! Found multiple work items for '%s' with value '%s'. Will update all of them.".formatted(idString, idValue));
+                    }
+                    for (IWorkItem workItem : workItems) {
+                        fillWorkItemFields(workItem, columnMappingRecord, context.settings, identifierFieldId);
+                        if (!workItem.isModified()) {
+                            logEntries.add("no changes were made to '%s'".formatted(workItem.getId()));
+                            context.unchangedIds.add(workItem.getId());
+                        } else {
+                            logEntries.add("the data was updated for '%s'".formatted(workItem.getId()));
+                            context.updatedIds.add(workItem.getId());
+                        }
+                        workItem.save();
+                    }
+                }
+                context.log(idString + ": " + String.join(", ", logEntries));
+            }
+        }
+        context.log("Work items processing completed");
+        return null;
     }
 
     // temporary solution: should be clarified how to compare values of fields depending on field types
@@ -233,5 +238,37 @@ public class ImportService {
 
     private boolean isEmpty(Object value) {
         return value == null || (value instanceof String stringValue && StringUtils.isEmptyTrimmed(stringValue));
+    }
+
+    private static class ImportContext {
+        ITrackerProject project;
+        ITypeOpt workItemType;
+        ExcelSheetMappingSettingsModel settings;
+        List<String> logs = new ArrayList<>();
+        List<String> updatedIds = new ArrayList<>();
+        List<String> createdIds = new ArrayList<>();
+        List<String> unchangedIds = new ArrayList<>();
+        List<String> skippedIds = new ArrayList<>();
+        StopWatch stopWatch = StopWatch.createStarted();
+
+        public ImportContext(ITrackerProject project, ITypeOpt workItemType, ExcelSheetMappingSettingsModel settings) {
+            this.project = project;
+            this.workItemType = workItemType;
+            this.settings = settings;
+        }
+
+        void log(String message) {
+            logs.add(stopWatch.formatTime() + " " + message);
+        }
+
+        ImportResult toResult() {
+            return ImportResult.builder()
+                    .updatedIds(updatedIds)
+                    .createdIds(createdIds)
+                    .unchangedIds(unchangedIds)
+                    .skippedIds(skippedIds)
+                    .log(logs.stream().collect(Collectors.joining(System.lineSeparator())))
+                    .build();
+        }
     }
 }

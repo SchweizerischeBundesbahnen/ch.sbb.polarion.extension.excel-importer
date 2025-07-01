@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
+import ch.sbb.polarion.extension.excel_importer.service.parser.impl.XlsxParser;
+import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettings;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettingsModel;
 import ch.sbb.polarion.extension.excel_importer.utils.LinkInfo;
 import ch.sbb.polarion.extension.generic.fields.FieldType;
@@ -23,13 +25,16 @@ import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import com.polarion.subterra.base.data.model.ICustomField;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
+import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,9 +56,28 @@ class ImportServiceTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     MockedStatic<PlatformContext> mockPlatformContext;
 
+    private MockedConstruction<ExcelSheetMappingSettings> settingsMockedConstruction;
+    private MockedConstruction<XlsxParser> xlsxParserMockedConstruction;
+    private ExcelSheetMappingSettingsModel mockedSettings;
+    private List<Map<String, Object>> parsedData;
+
+    @BeforeEach
+    void setUp() {
+        mockedSettings = mock(ExcelSheetMappingSettingsModel.class);
+        settingsMockedConstruction = mockConstruction(ExcelSheetMappingSettings.class,
+                (mock, context) -> when(mock.load(nullable(String.class), any())).thenReturn(mockedSettings)
+        );
+        xlsxParserMockedConstruction = mockConstruction(XlsxParser.class,
+                (mock, context) -> when(mock.parseFileStream(any(), any())).thenReturn(parsedData)
+        );
+        parsedData = new ArrayList<>();
+    }
+
     @AfterEach
     void cleanup() {
         mockPlatformContext.close();
+        settingsMockedConstruction.close();
+        xlsxParserMockedConstruction.close();
     }
 
     @Test
@@ -74,8 +98,9 @@ class ImportServiceTest {
         when(typesEnumeration.wrapOption(anyString())).thenReturn(typeOption);
         when(typeOption.isPhantom()).thenReturn(true);
 
+        when(mockedSettings.getDefaultWorkItemType()).thenReturn("requirement");
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> new ImportService(polarionServiceExt).processFile(project, List.of(Map.of("A", "a1", "B", "b1", "C", "c1")), generateSettings(true)),
+                () -> new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]),
                 "Expected IllegalArgumentException thrown, but it didn't");
         assertEquals(String.format("Cannot find WorkItem type '%s' in scope of the project '%s'", "requirement", TEST_PROJECT_ID), exception.getMessage());
     }
@@ -147,21 +172,26 @@ class ImportServiceTest {
             map.put("B", "b1");
             map.put("C", "false");
             map.put("D", null);
+            parsedData.add(map);
 
             //test using disabled 'overwriteWithEmpty'
-            assertEquals(new ImportResult(List.of(), List.of("testId"), List.of(), List.of(), "b1: new work item 'testId' is being created"),
-                    new ImportService(polarionServiceExt).processFile(project, List.of(map), generateSettings(false)));
+            mockSettings(false);
+            ImportResult result = new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+            assertTrue(result.getUpdatedIds().isEmpty());
+            assertEquals(List.of("testId"), result.getCreatedIds());
+            assertTrue(result.getUnchangedIds().isEmpty());
+            assertTrue(result.getSkippedIds().isEmpty());
+            assertTrue(result.getLog().contains("b1: new work item 'testId' is being created"));
             verify(workItem, times(0)).setCustomField(eq("nullPossible"), eq(null));
 
             //'overwriteWithEmpty' enabled but existing value is null therefore is no update expected
-            assertEquals(new ImportResult(List.of(), List.of("testId"), List.of(), List.of(), "b1: new work item 'testId' is being created"),
-                    new ImportService(polarionServiceExt).processFile(project, List.of(map), generateSettings(true)));
+            mockSettings(true);
+            new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
             verify(workItem, times(0)).setCustomField(eq("nullPossible"), eq(null));
 
             //'overwriteWithEmpty' enabled and existing value differs
-            lenient().when(workItem.getCustomField(eq("nullPossible"))).thenReturn("someExistingValue");
-            assertEquals(new ImportResult(List.of(), List.of("testId"), List.of(), List.of(), "b1: new work item 'testId' is being created"),
-                    new ImportService(polarionServiceExt).processFile(project, List.of(map), generateSettings(true)));
+            when(workItem.getCustomField(eq("nullPossible"))).thenReturn("someExistingValue");
+            new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
             verify(workItem, times(1)).setCustomField(eq("nullPossible"), eq(null));
         }
     }
@@ -224,23 +254,35 @@ class ImportServiceTest {
             Map<String, Object> mapOne = new HashMap<>(); // imported id cell has wrong value
             mapOne.put("A", "a1");
             mapOne.put("B", "b1");
+            parsedData.add(mapOne);
 
             // test importing wi with id but not using id as link column
+            mockSettingsForIdImport(false);
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                    () -> new ImportService(polarionServiceExt).processFile(project, List.of(mapOne), generateSettingsForIdImport(false)),
+                    () -> new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]),
                     "Expected IllegalArgumentException thrown, but it didn't");
             assertEquals("WorkItem id can only be imported if it is used as Link Column.", exception.getMessage());
 
-            assertEquals(new ImportResult(List.of(), List.of(), List.of(), List.of("a1"), "a1: no work item found by ID 'a1'. Since the 'id' is used as the 'Link Column', new work item creation is impossible"),
-                    new ImportService(polarionServiceExt).processFile(project, List.of(mapOne), generateSettingsForIdImport(true)));
+            mockSettingsForIdImport(true);
+//            assertEquals(new ImportResult(List.of(), List.of(), List.of(), List.of("a1"), ),
+//                    new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]));
+
+            ImportResult result = new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+            assertTrue(result.getUpdatedIds().isEmpty());
+            assertTrue(result.getCreatedIds().isEmpty());
+            assertTrue(result.getUnchangedIds().isEmpty());
+            assertEquals(List.of("a1"), result.getSkippedIds());
+            assertTrue(result.getLog().contains("a1: no work item found by ID 'a1'. Since the 'id' is used as the 'Link Column', new work item creation is impossible"));
 
             Map<String, Object> mapTwo = new HashMap<>(); // imported id cell is empty
             mapTwo.put("A", "");
             mapTwo.put("B", "b1");
+            parsedData.clear();
+            parsedData.add(mapTwo);
 
             // test importing wi with id as link column but imported wi has empty id field
             exception = assertThrows(IllegalArgumentException.class,
-                    () -> new ImportService(polarionServiceExt).processFile(project, List.of(mapTwo), generateSettingsForIdImport(true)),
+                    () -> new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]),
                     "Expected IllegalArgumentException thrown, but it didn't");
             assertEquals(String.format("Column '%s' contains empty or unsupported non-string type value", "A"), exception.getMessage());
 
@@ -248,11 +290,16 @@ class ImportServiceTest {
             Map<String, Object> mapThree = new HashMap<>(); // imported id cell has valid value (and title cell has new value)
             mapThree.put("A", "testId");
             mapThree.put("B", "newTitle");
+            parsedData.clear();
+            parsedData.add(mapThree);
 
             // test importing wi with id as link column and imported wi has same id as existing wi
-            assertEquals(new ImportResult(List.of(), List.of(), List.of("testId"), List.of(), "testId: no changes were made to 'testId'"),
-                    new ImportService(polarionServiceExt).processFile(project, List.of(mapThree), generateSettingsForIdImport(true)));
-
+            result = new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+            assertTrue(result.getUpdatedIds().isEmpty());
+            assertTrue(result.getCreatedIds().isEmpty());
+            assertEquals(List.of("testId"), result.getUnchangedIds());
+            assertTrue(result.getSkippedIds().isEmpty());
+            assertTrue(result.getLog().contains("testId: no changes were made to 'testId'"));
         }
     }
 
@@ -387,21 +434,16 @@ class ImportServiceTest {
         }
     }
 
-    private ExcelSheetMappingSettingsModel generateSettings(boolean overwriteWithEmpty) {
-        ExcelSheetMappingSettingsModel model = new ExcelSheetMappingSettingsModel();
-        model.setLinkColumn("B");
-        model.setDefaultWorkItemType("requirement");
-        model.setColumnsMapping(Map.of("B", "excelId", "C", "excelData", "D", "nullPossible"));
-        model.setOverwriteWithEmpty(overwriteWithEmpty);
-        return model;
+    private void mockSettings(boolean overwriteWithEmpty) {
+        when(mockedSettings.getLinkColumn()).thenReturn("B");
+        when(mockedSettings.getDefaultWorkItemType()).thenReturn("requirement");
+        when(mockedSettings.getColumnsMapping()).thenReturn(Map.of("B", "excelId", "C", "excelData", "D", "nullPossible"));
+        when(mockedSettings.isOverwriteWithEmpty()).thenReturn(overwriteWithEmpty);
     }
 
-    private ExcelSheetMappingSettingsModel generateSettingsForIdImport(boolean useIdAsLinkColumn) {
-        ExcelSheetMappingSettingsModel model = new ExcelSheetMappingSettingsModel();
-        String linkColumn = (useIdAsLinkColumn) ? "A" : "B";
-        model.setLinkColumn(linkColumn);
-        model.setDefaultWorkItemType("requirement");
-        model.setColumnsMapping(Map.of("A", "id", "B", "title"));
-        return model;
+    private void mockSettingsForIdImport(boolean useIdAsLinkColumn) {
+        when(mockedSettings.getLinkColumn()).thenReturn((useIdAsLinkColumn) ? "A" : "B");
+        when(mockedSettings.getDefaultWorkItemType()).thenReturn("requirement");
+        when(mockedSettings.getColumnsMapping()).thenReturn(Map.of("A", "id", "B", "title"));
     }
 }
