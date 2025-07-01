@@ -32,13 +32,15 @@ Do not know how something in this project works? Curious if this project can ach
 All extensions provided by SBB Polarion Team can be built, tested and packaged using Maven.
 It is only possible when the dependencies are extract from Polarion installer. The process must be performed by each contributor. Please consider to use https://github.com/SchweizerischeBundesbahnen/polarion-artifacts-deployer to extract the dependencies for your own Polarion installer version.
 
+For detailed information about setting up your development environment, please refer to the [Development Guide](./DEVELOPMENT.md).
+
 ### <a id="design-decisions"></a>Design Decisions
 The generic implementation for extensions provided by SBB Polarion Team is located in [ch.sbb.polarion.extension.generic](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.generic)
 
 ## <a id="how-can-i-contribute"></a>How Can I Contribute?
 
 ### <a id="reporting-bugs"></a>Reporting Bugs
-To report a bug, [submit an issue](../../issues/new) with the label `bug`. Please ensure the bug has not already been reported. **If the bug is a potential security vulnerability, please report it using our [security policy](https://github.com/SchweizerischeBundesbahnen/.github/blob/main/SECURITY.md).**
+To report a bug, [submit an issue](../../issues/new) with the label `bug`. Please ensure the bug has not already been reported. **If the bug is a potential security vulnerability, please report it using our [security policy](https://github.com/SchweizerischeBundesbahnen/.github/blob/main/SECURITY.md).**
 
 Providing the following information will increase the chances of your issue being dealt with quickly:
 
