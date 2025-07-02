@@ -71,12 +71,12 @@ class ImportJobsServiceTest {
         ImportJobParams jobParams = new ImportJobParams("projectId", "mapping", "fileContent".getBytes());
         ImportResult expectedResult = new ImportResult(List.of(), List.of(), List.of(), List.of(), "");
 
-        doAnswer(invocation -> {
+        lenient().doAnswer(invocation -> {
             PrivilegedAction<ImportResult> action = invocation.getArgument(1);
             return action.run();
         }).when(securityService).doAsUser(eq(mockSubject), any(PrivilegedAction.class));
 
-        when(importService.processFile("projectId", "mapping", "fileContent".getBytes())).thenReturn(expectedResult);
+        lenient().when(importService.processFile("projectId", "mapping", "fileContent".getBytes())).thenReturn(expectedResult);
 
         String jobId = importJobsService.startJob(jobParams);
 
