@@ -50,6 +50,8 @@
 
         <web.app.name>${maven-jar-plugin.Extension-Context}</web.app.name>
 
+        <awaitility.version>4.3.0</awaitility.version>
+
         <!-- this extension is designed for latest version of Apache POI -->
         <apache-poi.version>5.4.0</apache-poi.version>
 
@@ -95,6 +97,12 @@
             <groupId>com.polarion.thirdparty</groupId>
             <artifactId>net.htmlparser.jericho_3.1.0</artifactId>
             <version>${polarion.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>${awaitility.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
