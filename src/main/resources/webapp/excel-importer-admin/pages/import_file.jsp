@@ -23,6 +23,11 @@
         #no-mapping-note {
             display: none;
         }
+
+        #import-progress {
+            width: 20px;
+            vertical-align: middle;
+        }
     </style>
 </head>
 
@@ -44,6 +49,11 @@
                 <label id="file-xlsx-label" for="file-xlsx" class="toolbar-button styled-upload-button">Choose xlsx file</label>
                 <input id="file-xlsx" name="file" type="file" accept=".xlsx" onchange="fileChosen()"/>
                 <span id="file-name">No file chosen</span>
+            </div>
+
+            <div id="import-progress-container" style="display: none; margin-top: 10px;">
+                <img id='import-progress' src='/polarion/ria/images/progress_grey.gif' alt=''/>
+                <span style="margin-left: 10px;">Import is in progress. Please wait...</span>
             </div>
 
             <div class="actions-pane" style="margin-top: 20px;">

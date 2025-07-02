@@ -1,6 +1,7 @@
 import ExtensionContext from '../../ui/generic/js/modules/ExtensionContext.js';
 
 const SELECTED_CONFIGURATION_COOKIE = 'selected-configuration-';
+const PULL_INTERVAL = 1000;
 
 const ctx = new ExtensionContext({
     extension: 'excel-importer',
@@ -35,37 +36,34 @@ function importFile() {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('mappingName', ctx.getValueById("mapping-select"));
+    formData.append('projectId', getProjectIdFromScope());
     disableAllButtons(true);
-    ctx.callAsync({
-        method: 'POST',
-        url: `/polarion/${ctx.extension}/rest/internal/projects/${getProjectIdFromScope()}/import`,
-        body: formData,
-        onOk: (response) => {
-            const result = JSON.parse(response);
-            const log = String(result.log);
-            ctx.showActionAlert({
-                containerId: 'action-success',
-                message: `File successfully imported. Created: ${result.createdIds.length}, updated: ${result.updatedIds.length}, unchanged: ${result.unchangedIds.length}, skipped: ${result.skippedIds.length}.
-                &nbsp;<a href="#" data-filename="${generateLogFileName()}" id="download-log-link">(log)</a>`,
-                hideAlertByTimeout: false
-            });
 
-            ctx.onClick('download-log-link', () => {
-                    ctx.downloadBlob(new Blob([log], {type: "text/plain"}), ctx.getElementById("download-log-link").dataset.filename);
-                }
-            );
-            resetFileInput();
-            disableAllButtons(false);
-        },
-        onError: (status, responseText) => {
-            ctx.showActionAlert({
-                containerId: 'action-error',
-                message: `Import error (${responseText}).`,
-                hideAlertByTimeout: false
-            });
-            resetFileInput();
-            disableAllButtons(false);
-        }
+    asyncImport(formData, onSuccess => {
+        const result = JSON.parse(onSuccess.response);
+        const log = String(result.log);
+        ctx.showActionAlert({
+            containerId: 'action-success',
+            message: `File successfully imported. Created: ${result.createdIds.length}, updated: ${result.updatedIds.length}, unchanged: ${result.unchangedIds.length}, skipped: ${result.skippedIds.length}.
+                &nbsp;<a href="#" data-filename="${generateLogFileName()}" id="download-log-link">(log)</a>`,
+            hideAlertByTimeout: false
+        });
+
+        ctx.onClick('download-log-link', () => {
+                ctx.downloadBlob(new Blob([log], {type: "text/plain"}), ctx.getElementById("download-log-link").dataset.filename);
+            }
+        );
+        resetFileInput();
+        disableAllButtons(false);
+    }, errorResponse => {
+
+        ctx.showActionAlert({
+            containerId: 'action-error',
+            message: `Import error ${errorResponse ? "(" + JSON.parse(errorResponse).errorMessage + ")" : ''}`,
+            hideAlertByTimeout: false
+        });
+        resetFileInput();
+        disableAllButtons(false);
     });
 }
 
@@ -75,6 +73,41 @@ function getProjectIdFromScope() {
         return ctx.scope.match(regExp)[1];
     }
     return '';
+}
+
+async function asyncImport(request, successCallback, errorCallback) {
+    ctx.callAsync({
+        method: "POST",
+        url: `/polarion/${ctx.extension}/rest/internal/import/jobs`,
+        body: request,
+        onOk: (responseText, request) => {
+            pullAndGetImportResult(request.getResponseHeader("Location"), successCallback, errorCallback);
+        },
+        onError: (status, errorMessage, request) => {
+            errorCallback(request.response);
+        }
+    });
+}
+
+async function pullAndGetImportResult(url, successCallback, errorCallback) {
+    await new Promise(resolve => setTimeout(resolve, PULL_INTERVAL));
+    ctx.callAsync({
+        method: "GET",
+        url: url,
+        onOk: (responseText, request) => {
+            if (request.status === 202) {
+                console.log('Async import: still in progress, retrying...');
+                pullAndGetImportResult(url, successCallback, errorCallback);
+            } else if (request.status === 200) {
+                successCallback({
+                    response: request.response
+                });
+            }
+        },
+        onError: (status, errorMessage, request) => {
+            errorCallback(request.response);
+        }
+    });
 }
 
 function generateLogFileName() {
@@ -98,6 +131,8 @@ function disableAllButtons(disable) {
     } else {
         chooseLabelClassList.remove("disabled");
     }
+    ctx.displayIf('import-progress-container', disable);
+    ctx.getElementById('mapping-select').disabled = disable;
     ctx.getElementById('file-xlsx').disabled = disable;
     ctx.getElementById('import-button').disabled = disable;
 }

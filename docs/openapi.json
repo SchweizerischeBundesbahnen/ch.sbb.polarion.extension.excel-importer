@@ -65,6 +65,148 @@
         ]
       }
     },
+    "/api/import/jobs": {
+      "get": {
+        "operationId": "getAllImporterJobs",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Import jobs statuses"
+          }
+        },
+        "summary": "Returns all active import jobs statuses",
+        "tags": [
+          "Excel Processing"
+        ]
+      },
+      "post": {
+        "operationId": "startImportJob",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "mappingName": {
+                    "default": "Default",
+                    "type": "string"
+                  },
+                  "projectId": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Import process is started, job URI is returned in Location header"
+          }
+        },
+        "summary": "Starts asynchronous import job",
+        "tags": [
+          "Excel Processing"
+        ]
+      }
+    },
+    "/api/import/jobs/{id}": {
+      "get": {
+        "operationId": "getImportJobStatus",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJobDetails"
+                }
+              }
+            },
+            "description": "Import job is still in progress"
+          },
+          "303": {
+            "content": {
+              "application/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJobDetails"
+                }
+              }
+            },
+            "description": "Import job is finished successfully, Location header contains result URL"
+          },
+          "404": {
+            "description": "Import job id is unknown"
+          },
+          "409": {
+            "description": "Import job is failed or cancelled"
+          }
+        },
+        "summary": "Returns import job status",
+        "tags": [
+          "Excel Processing"
+        ]
+      }
+    },
+    "/api/import/jobs/{id}/result": {
+      "get": {
+        "operationId": "getImportJobResult",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResult"
+                }
+              }
+            },
+            "description": "Import result is ready"
+          },
+          "204": {
+            "description": "Import job is still in progress"
+          },
+          "404": {
+            "description": "Import job id is unknown"
+          },
+          "409": {
+            "description": "Import job is failed, cancelled or result is unreachable"
+          }
+        },
+        "summary": "Returns import job result",
+        "tags": [
+          "Excel Processing"
+        ]
+      }
+    },
     "/api/projects/{projectId}/import": {
       "post": {
         "operationId": "importExcelSheet",
@@ -540,6 +682,9 @@
             "type": "array",
             "uniqueItems": true
           },
+          "readOnly": {
+            "type": "boolean"
+          },
           "required": {
             "type": "boolean"
           },
@@ -581,6 +726,27 @@
           "sequenceNumber": {
             "format": "int32",
             "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ImportJobDetails": {
+        "description": "Details of the import job including status and error message if any",
+        "properties": {
+          "errorMessage": {
+            "description": "Error message if the import failed",
+            "type": "string"
+          },
+          "status": {
+            "description": "Status of the import job",
+            "enum": [
+              "IN_PROGRESS",
+              "SUCCESSFULLY_FINISHED",
+              "FAILED",
+              "CANCELLED"
+            ],
+            "example": "IN_PROGRESS",
+            "type": "string"
           }
         },
         "type": "object"
