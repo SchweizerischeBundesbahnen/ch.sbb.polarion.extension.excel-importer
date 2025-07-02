@@ -7,7 +7,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class PropertiesUtility {
-    private static final String JOBS_PROPERTIES_FILE = "/import-jobs.properties";
+    public static final String JOBS_PROPERTIES_FILE = "/import-jobs.properties";
     private static final String TIMEOUT_FINISHED_JOBS = "jobs.timeout.finished.minutes";
     private static final String TIMEOUT_IN_PROGRESS_JOBS = "jobs.timeout.in-progress.minutes";
 
@@ -44,7 +44,7 @@ public class PropertiesUtility {
             props.load(propsInputStream);
             return props;
         } catch (IOException e) {
-            throw new IllegalStateException("Cannot load properties file: " + JOBS_PROPERTIES_FILE, e);
+            throw new IllegalArgumentException("Cannot load properties file: " + JOBS_PROPERTIES_FILE, e);
         }
     }
 }
