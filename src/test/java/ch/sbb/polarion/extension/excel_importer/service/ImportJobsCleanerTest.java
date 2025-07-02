@@ -9,6 +9,9 @@ class ImportJobsCleanerTest {
     @Test
     void testStartCleaningJob() {
         assertDoesNotThrow(ImportJobsCleaner::startCleaningJob);
+
+        // Ensure that the method can be called multiple times without throwing an exception
+        assertDoesNotThrow(ImportJobsCleaner::startCleaningJob);
     }
 
 }
