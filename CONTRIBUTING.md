@@ -14,7 +14,7 @@ These are mostly guidelines, not rules. Use your best judgment, and feel free to
 [How Can I Contribute?](#how-can-i-contribute)
 * [Reporting Bugs](#reporting-bugs)
 * [Suggesting Enhancements](#suggesting-enhancements)
-* [Submitting Changes](#submitting-changes)
+* [Submitting Changes](#submit-changes)
 * [Commit Message Guidelines](#commit-message-guidelines)
 * [Coding Rules](#coding-rules)
 
@@ -56,7 +56,7 @@ Providing the following information will increase the chances of your issue bein
 You can help the team even more by [submitting changes](#submitting-changes) with a fix.
 
 ### <a id="suggesting-enhancements"></a>Suggesting Enhancements
-To suggest a feature or enhancement, please [submit an issue](../../issues/new) with the label `enhancement`. Please ensure the feature or enhancement has not already been suggested.
+To suggest a feature or enhancement, please [submit an issue](../../issues/new) with the label `enhancement`. Please ensure the feature or enhancement has not already been suggested.
 
 Please consider what kind of change it is:
 
