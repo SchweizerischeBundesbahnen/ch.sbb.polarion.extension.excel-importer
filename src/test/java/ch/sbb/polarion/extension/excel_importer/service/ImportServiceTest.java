@@ -264,9 +264,6 @@ class ImportServiceTest {
             assertEquals("WorkItem id can only be imported if it is used as Link Column.", exception.getMessage());
 
             mockSettingsForIdImport(true);
-//            assertEquals(new ImportResult(List.of(), List.of(), List.of(), List.of("a1"), ),
-//                    new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]));
-
             ImportResult result = new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
             assertTrue(result.getUpdatedIds().isEmpty());
             assertTrue(result.getCreatedIds().isEmpty());
