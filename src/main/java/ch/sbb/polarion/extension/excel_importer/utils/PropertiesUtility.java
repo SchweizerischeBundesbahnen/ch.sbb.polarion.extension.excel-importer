@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.excel_importer.utils;
 
+import org.jetbrains.annotations.VisibleForTesting;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -23,18 +25,20 @@ public class PropertiesUtility {
         return getIntProperty(TIMEOUT_FINISHED_JOBS);
     }
 
-    private int getIntProperty(String propName) {
+    @VisibleForTesting
+    int getIntProperty(String propName) {
         String propValue = jobsProps.getProperty(propName);
         if (propValue == null) {
-            throw new IllegalStateException("Missing property: " + propName);
+            throw new IllegalArgumentException("Missing property: " + propName);
         }
         return Integer.parseInt(propValue);
     }
 
-    private Properties loadProperties(String resourcePath) {
+    @VisibleForTesting
+    Properties loadProperties(String resourcePath) {
         try (InputStream propsInputStream = PropertiesUtility.class.getResourceAsStream(resourcePath)) {
             if (propsInputStream == null) {
-                throw new IllegalStateException("Properties file is not found: " + JOBS_PROPERTIES_FILE);
+                throw new IllegalArgumentException("Properties file is not found: " + resourcePath);
             }
             Properties props = new Properties();
             props.load(propsInputStream);
