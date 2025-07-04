@@ -65,7 +65,7 @@ public class ImportService {
         List<List<Map<String, Object>>> xlsxDataChunked = ListUtils.partition(xlsxData.stream().toList(), 100);
         for (List<Map<String, Object>> chunk : xlsxDataChunked) {
             Set<String> workItemIds = chunk.stream()
-                    .map(dataRow -> getIdentifierValue(dataRow, context.settings.getLinkColumn()))
+                    .map(dataRow -> getIdentifierValue(dataRow, context.settings.getLinkColumn(), identifierFieldId))
                     .collect(Collectors.toSet());
             if (workItemIds.isEmpty()) {
                 throw new IllegalArgumentException(String.format("File must contain data in the '%s' column as it will be used for linking with the WorkItem.", context.settings.getLinkColumn()));
@@ -76,17 +76,17 @@ public class ImportService {
                 Object idValue = columnMappingRecord.get(context.settings.getLinkColumn());
                 String idString = String.valueOf(idValue);
                 List<String> logEntries = new ArrayList<>();
-                List<IWorkItem> workItems = foundWorkItems.stream().filter(findWorkItemByFieldValue(identifierFieldId, idValue)).toList();
+                List<IWorkItem> workItems = isEmpty(idValue) ? List.of() : foundWorkItems.stream().filter(findWorkItemByFieldValue(identifierFieldId, idValue)).toList();
                 if (workItems.isEmpty()) { //WorkItem not found - create a new one
-                    if (!identifierFieldId.equals("id")) {
+                    if (IUniqueObject.KEY_ID.equals(identifierFieldId) && !isEmpty(idValue)) {
+                        context.skippedIds.add(idString);
+                        logEntries.add("no work item found by ID '%s'. Since the 'id' is used as the 'Link Column', new work item creation is impossible".formatted(idString));
+                    } else {
                         IWorkItem createdWorkItem = polarionServiceExt.createWorkItem(context.project, context.workItemType);
                         fillWorkItemFields(createdWorkItem, columnMappingRecord, context.settings, identifierFieldId);
                         createdWorkItem.save();
                         logEntries.add("new work item '%s' is being created".formatted(createdWorkItem.getId()));
                         context.createdIds.add(createdWorkItem.getId());
-                    } else {
-                        context.skippedIds.add(idString);
-                        logEntries.add("no work item found by ID '%s'. Since the 'id' is used as the 'Link Column', new work item creation is impossible".formatted(idString));
                     }
                 } else {
                     if (workItems.size() > 1) {
@@ -104,7 +104,7 @@ public class ImportService {
                         workItem.save();
                     }
                 }
-                context.log(idString + ": " + String.join(", ", logEntries));
+                context.log((isEmpty(idValue) ? "" : idString + ": ") + String.join(", ", logEntries));
             }
         }
         context.log("Work items processing completed");
@@ -124,12 +124,14 @@ public class ImportService {
         };
     }
 
-    private String getIdentifierValue(Map<String, Object> recordMap, String columnLetter) {
+    private String getIdentifierValue(Map<String, Object> recordMap, String columnLetter, String identifierFieldId) {
         Object idValue = recordMap.get(columnLetter);
-        if (!(idValue instanceof String stringIdValue) || StringUtils.isEmptyTrimmed(stringIdValue)) {
+        if (IUniqueObject.KEY_ID.equals(identifierFieldId) && isEmpty(idValue)) {
+            return null; // in case of 'id' column we allow empty values, so that a new work items can be created using standard way
+        } else if (!(idValue instanceof String stringIdValue) || StringUtils.isEmptyTrimmed(stringIdValue)) {
             throw new IllegalArgumentException(String.format("Column '%s' contains empty or unsupported non-string type value", columnLetter));
         }
-        return stringIdValue;
+        return (String) idValue;
     }
 
     private void fillWorkItemFields(@NotNull IWorkItem workItem, Map<String, Object> mappingRecord, ExcelSheetMappingSettingsModel model, @NotNull String linkColumnId) {
