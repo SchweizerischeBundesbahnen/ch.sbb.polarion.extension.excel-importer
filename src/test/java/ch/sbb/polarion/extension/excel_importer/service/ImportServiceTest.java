@@ -256,6 +256,15 @@ class ImportServiceTest {
             mapOne.put("B", "b1");
             parsedData.add(mapOne);
 
+            IWorkItem createdWorkItem = mock(IWorkItem.class);
+            when(createdWorkItem.getProjectId()).thenReturn("test");
+            when(trackerService.createWorkItem(any())).thenReturn(createdWorkItem);
+
+            when(createdWorkItem.getId()).thenReturn("testId");
+            when(createdWorkItem.getPrototype()).thenReturn(prototype);
+            ICustomField customField = mock(ICustomField.class);
+            lenient().when(createdWorkItem.getCustomFieldPrototype(any())).thenReturn(customField);
+
             // test importing wi with id but not using id as link column
             mockSettingsForIdImport(false);
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -278,11 +287,22 @@ class ImportServiceTest {
             parsedData.add(mapTwo);
 
             // test importing wi with id as link column but imported wi has empty id field
-            exception = assertThrows(IllegalArgumentException.class,
-                    () -> new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]),
-                    "Expected IllegalArgumentException thrown, but it didn't");
-            assertEquals(String.format("Column '%s' contains empty or unsupported non-string type value", "A"), exception.getMessage());
+            result = new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+            assertTrue(result.getUpdatedIds().isEmpty());
+            assertTrue(result.getSkippedIds().isEmpty());
+            assertTrue(result.getUnchangedIds().isEmpty());
+            assertEquals(List.of("testId"), result.getCreatedIds());
+            assertTrue(result.getLog().contains("new work item 'testId' is being created"));
 
+            // same using null
+            mapTwo.put("A", null);
+            result = new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+            assertTrue(result.getLog().contains("new work item 'testId' is being created"));
+
+            // or empty trimmed string
+            mapTwo.put("A", "     ");
+            result = new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+            assertTrue(result.getLog().contains("new work item 'testId' is being created"));
 
             Map<String, Object> mapThree = new HashMap<>(); // imported id cell has valid value (and title cell has new value)
             mapThree.put("A", "testId");
