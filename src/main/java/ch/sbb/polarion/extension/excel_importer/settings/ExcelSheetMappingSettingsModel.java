@@ -68,6 +68,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
         linkColumn = deserializeEntry(LINK_COLUMN, serializedString);
     }
 
+    @JsonIgnore
     @Override
     public Set<String> getUsedColumnsLetters() {
         return (columnsMapping != null)? columnsMapping.keySet() : Set.of();
