@@ -19,6 +19,7 @@ class XlsxParserTest {
 
     private static final String SHEET_FIRST = "first";
     private static final String SHEET_EMPTY = "empty";
+    private static final String SHEET_WIDE = "wide";
     private static final String SHEET_BAD = "bad";
 
     @Test
@@ -65,9 +66,16 @@ class XlsxParserTest {
     }
 
     @Test
-    void testEmptyFile() {
+    void testEmptyRows() {
         assertEquals(List.of(), new XlsxParser().parseFileStream(getClass().getClassLoader().getResourceAsStream("test.xlsx"), generateSettings(SHEET_FIRST, 4)));
         assertEquals(List.of(), new XlsxParser().parseFileStream(getClass().getClassLoader().getResourceAsStream("test.xlsx"), generateSettings(SHEET_EMPTY, 1)));
+    }
+
+    @Test
+    void testWideTable() {
+        assertEquals(List.of(
+                Map.of("A", "a1", "AA", "aa1", "AAA", "aaa1")
+        ), cleanNulls(new XlsxParser().parseFileStream(getClass().getClassLoader().getResourceAsStream("test.xlsx"), generateSettings(SHEET_WIDE, 1, "A", "AA", "AAA"))));
     }
 
     @Test

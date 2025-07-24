@@ -21,12 +21,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 public class XlsxParser implements IParser {
-
-    private static final String LAST_COLUMN_LITERAL = "Z";
 
     @Override
     @SneakyThrows
@@ -52,9 +49,10 @@ public class XlsxParser implements IParser {
             if (++rowNumber < parserSettings.getStartFromRow()) {
                 continue;
             }
-            Map<String, Object> map = parseCellValue(row, usedColumnsLetters);
-            if (map.values().stream().anyMatch(Objects::nonNull)) {
-                //sometimes we get a row full of nulls - we have to skip it
+            Map<String, Object> map = parseRow(row, usedColumnsLetters);
+            // sometimes we get a row full of nulls - we have to skip it
+            // also we skip rows with empty (or visually empty) strings
+            if (!map.values().stream().allMatch(v -> v == null || (v instanceof String s && StringUtils.isEmptyTrimmed(s)))) {
                 result.add(map);
             }
         }
@@ -64,10 +62,10 @@ public class XlsxParser implements IParser {
     }
 
     @NotNull
-    private Map<String, Object> parseCellValue(Row row, Set<String> usedColumnsLetters) {
+    private Map<String, Object> parseRow(Row row, Set<String> usedColumnsLetters) {
         Map<String, Object> map = new HashMap<>();
-        for (int i = 0; i < CellReference.convertColStringToIndex(LAST_COLUMN_LITERAL); i++) {
-            Cell cell = row.getCell(i, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+        for (String currentLetter : usedColumnsLetters) {
+            Cell cell = row.getCell(CellReference.convertColStringToIndex(currentLetter), Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
             String cellLetter = CellReference.convertNumToColString(cell.getColumnIndex());
             if (!usedColumnsLetters.contains(cellLetter)) {
                 continue;
