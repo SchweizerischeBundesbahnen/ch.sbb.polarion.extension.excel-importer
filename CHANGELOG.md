@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.0.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v4.0.0...v4.0.1) (2025-07-25)
+
+
+### Bug Fixes
+
+* cannot import data from 'Z' and subsequent columns ([#130](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/130)) ([08891ed](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/08891ed72ae3bdb67ee521913394a97b0019b910)), closes [#129](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/129)
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v11.0.2 ([ccdb6cf](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/ccdb6cff0f28a2093e5ede90ba095b2f57b3d9e2))
+
 ## [4.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v3.3.0...v4.0.0) (2025-07-10)
 
 
