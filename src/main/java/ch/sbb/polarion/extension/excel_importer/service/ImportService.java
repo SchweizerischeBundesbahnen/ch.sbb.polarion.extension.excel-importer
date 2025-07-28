@@ -113,11 +113,12 @@ public class ImportService {
 
     // temporary solution: should be clarified how to compare values of fields depending on field types
     @NotNull
-    private static Predicate<IWorkItem> findWorkItemByFieldValue(String fieldId, Object value) {
+    @VisibleForTesting
+    static Predicate<IWorkItem> findWorkItemByFieldValue(String fieldId, Object value) {
         return workItem -> {
             Object workItemFieldValue = workItem.getValue(fieldId);
             boolean equals = Objects.equals(workItemFieldValue, value);
-            if (!equals) {
+            if (!equals && workItemFieldValue != null && value != null) {
                 equals = workItemFieldValue.toString().contains(value.toString());
             }
             return equals;

@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -449,6 +450,26 @@ class ImportServiceTest {
             assertTrue(service.existingValueDiffers(workItem, "linkedWorkItems", "EL-2", linkedMetadata));
             assertTrue(service.existingValueDiffers(workItem, "linkedWorkItems", "EL-1,EL-2", linkedMetadata));
         }
+    }
+
+    @Test
+    void testFindWorkItemByFieldValue() {
+        Predicate<IWorkItem> predicate = ImportService.findWorkItemByFieldValue("someFieldId", "someValue");
+        IWorkItem workItem = mock(IWorkItem.class);
+        when(workItem.getValue("someFieldId")).thenReturn("someValue");
+        assertTrue(predicate.test(workItem));
+        when(workItem.getValue("someFieldId")).thenReturn("");
+        assertFalse(predicate.test(workItem));
+        when(workItem.getValue("someFieldId")).thenReturn(null);
+        assertFalse(predicate.test(workItem));
+
+        predicate = ImportService.findWorkItemByFieldValue("someFieldId", null);
+        when(workItem.getValue("someFieldId")).thenReturn("someValue");
+        assertFalse(predicate.test(workItem));
+        when(workItem.getValue("someFieldId")).thenReturn("");
+        assertFalse(predicate.test(workItem));
+        when(workItem.getValue("someFieldId")).thenReturn(null);
+        assertTrue(predicate.test(workItem));
     }
 
     private void mockSettings(boolean overwriteWithEmpty) {
