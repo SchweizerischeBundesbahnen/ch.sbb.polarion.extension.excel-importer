@@ -16,22 +16,29 @@ import java.util.stream.Collectors;
 
 public class StyleContext {
     private final XSSFWorkbook workbook;
+    private final short textFormat;
     private final Map<String, XSSFCellStyle> styleCache = new HashMap<>();
 
     public StyleContext(XSSFWorkbook workbook) {
         this.workbook = workbook;
+        this.textFormat = workbook.createDataFormat().getFormat("@");
     }
 
     public void applyStyle(Cell cell, CellData cellData) {
         Map<String, String> styles = cellData.getStyles().merged();
-        String styleKey = getCacheKeyForStyle(styles);
-        CellStyle cellStyle = styleCache.computeIfAbsent(styleKey, key -> constructStyle(styles));
+        String styleKey = getCacheKey(styles, cellData);
+        CellStyle cellStyle = styleCache.computeIfAbsent(styleKey, key -> constructStyle(styles, cellData));
         cell.setCellStyle(cellStyle);
     }
 
-    private XSSFCellStyle constructStyle(Map<String, String> styles) {
+    private XSSFCellStyle constructStyle(Map<String, String> styles, CellData cellData) {
         XSSFCellStyle cellStyle = workbook.createCellStyle();
         cellStyle.setWrapText(true);
+
+        // disable Excel's auto-formatting, e.g. '001' -> '1'
+        if (CellData.DataType.TEXT.equals(cellData.getType())) {
+            cellStyle.setDataFormat(textFormat);
+        }
 
         String bgColor = styles.get(StyleUtil.CSS_PROPERTY_BG_COLOR);
         if (bgColor != null) {
@@ -53,8 +60,8 @@ public class StyleContext {
         return cellStyle;
     }
 
-    private String getCacheKeyForStyle(Map<String, String> styles) {
-        return styles.entrySet().stream()
+    private String getCacheKey(Map<String, String> styles, CellData cellData) {
+        return cellData.getType().name() + ":" + styles.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())  // sort keys
                 .map(entry -> "%s=%s".formatted(entry.getKey(), entry.getValue()))
                 .collect(Collectors.joining(","));
