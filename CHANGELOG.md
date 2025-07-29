@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v4.0.1...v4.1.0) (2025-07-28)
+
+
+### Features
+
+* usage of 'TEXT' data format by default ([#137](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/137)) ([0a498ff](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/0a498ffdb6fe2c24b4c58692e0e13386cda5851c)), closes [#134](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/134)
+
+
+### Bug Fixes
+
+* cannot invoke "Object.toString()" because link column id is null ([#135](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/135)) ([607f953](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/607f95309d2568da2e44692490a04129073d6c93)), closes [#133](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/133)
+
 ## [4.0.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v4.0.0...v4.0.1) (2025-07-25)
 
 
