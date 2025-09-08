@@ -28,6 +28,8 @@ import static org.mockito.Mockito.*;
 @SuppressWarnings({"unchecked", "rawtypes"})
 class ImportJobsServiceTest {
 
+    private static final String TEST_USER = "testUser";
+
     @Mock
     private ImportService importService;
 
@@ -50,6 +52,7 @@ class ImportJobsServiceTest {
                 (mock, context) -> when(mock.getInProgressJobTimeout()).thenReturn(30)
         );
 
+        lenient().when(securityService.getCurrentUser()).thenReturn(TEST_USER);
         lenient().when(securityService.getCurrentSubject()).thenReturn(mockSubject);
 
         Field jobsField = ImportJobsService.class.getDeclaredField("jobs");
@@ -92,13 +95,6 @@ class ImportJobsServiceTest {
     }
 
     @Test
-    void testGetJobParams_unknownJob() {
-        String nonExistingJobId = "non-existing-job";
-
-        assertThrows(NoSuchElementException.class, () -> importJobsService.getJobParams(nonExistingJobId));
-    }
-
-    @Test
     void testGetJobResult_unknownJob() {
         String nonExistingJobId = "non-existing-job";
 
@@ -129,6 +125,7 @@ class ImportJobsServiceTest {
 
         await().atMost(Durations.ONE_SECOND)
                 .until(() -> importJobsService.getJobState(jobId).isDone());
+        assertEquals(1, importJobsService.getAllJobsStates().size());
 
         ImportJobsService.JobState jobState = importJobsService.getJobState(jobId);
         assertTrue(jobState.isDone());
@@ -137,6 +134,23 @@ class ImportJobsServiceTest {
         Optional<ImportResult> result = importJobsService.getJobResult(jobId);
         assertTrue(result.isPresent());
         assertEquals(expectedResult, result.get());
+
+        // check unknown job ID
+        assertThrows(NoSuchElementException.class, () -> importJobsService.getJobResult("unknownJobId"));
+
+        // check job is not accessible for other users
+        when(securityService.getCurrentUser()).thenReturn("other_" + TEST_USER);
+        assertThrows(NoSuchElementException.class, () -> importJobsService.getJobResult(jobId));
+        assertThrows(NoSuchElementException.class, () -> importJobsService.getJobState(jobId));
+        assertThrows(NoSuchElementException.class, () -> importJobsService.getJobDetails(jobId));
+        assertTrue(importJobsService.getAllJobsStates().isEmpty());
+
+        // double check that job is still accessible for the user who started it
+        when(securityService.getCurrentUser()).thenReturn(TEST_USER);
+        assertDoesNotThrow(() -> importJobsService.getJobResult(jobId));
+        assertDoesNotThrow(() -> importJobsService.getJobState(jobId));
+        assertDoesNotThrow(() -> importJobsService.getJobDetails(jobId));
+        assertEquals(1, importJobsService.getAllJobsStates().size());
     }
 
     @Test

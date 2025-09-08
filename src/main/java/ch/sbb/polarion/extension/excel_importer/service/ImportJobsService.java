@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -24,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ImportJobsService {
@@ -80,6 +80,7 @@ public class ImportJobsService {
                 });
         JobDetails jobDetails = JobDetails.builder()
                 .future(asyncImportJob)
+                .user(securityService.getCurrentUser())
                 .jobParams(jobParams)
                 .startingTime(Instant.now()).build();
         jobs.put(jobId, jobDetails);
@@ -87,11 +88,7 @@ public class ImportJobsService {
     }
 
     public JobState getJobState(String jobId) {
-        JobDetails jobDetails = jobs.get(jobId);
-        if (jobDetails == null) {
-            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
-        }
-        CompletableFuture<ImportResult> future = jobDetails.future();
+        CompletableFuture<ImportResult> future = getJobDetails(jobId).future();
         return JobState.builder()
                 .isDone(future.isDone())
                 .isCompletedExceptionally(future.isCompletedExceptionally())
@@ -100,11 +97,7 @@ public class ImportJobsService {
     }
 
     public Optional<ImportResult> getJobResult(String jobId) {
-        JobDetails jobDetails = jobs.get(jobId);
-        if (jobDetails == null) {
-            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
-        }
-        CompletableFuture<ImportResult> future = jobDetails.future();
+        CompletableFuture<ImportResult> future = getJobDetails(jobId).future();
         if (!future.isDone()) {
             return Optional.empty();
         }
@@ -121,17 +114,10 @@ public class ImportJobsService {
         }
     }
 
-    public ImportJobParams getJobParams(String jobId) {
-        JobDetails jobDetails = jobs.get(jobId);
-        if (jobDetails == null) {
-            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
-        }
-        return jobDetails.jobParams;
-    }
-
     public Map<String, JobState> getAllJobsStates() {
-        return jobs.keySet().stream()
-                .collect(Collectors.toMap(Function.identity(), this::getJobState));
+        return jobs.entrySet().stream()
+                .filter(entry -> Objects.equals(entry.getValue().user, securityService.getCurrentUser()))
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> getJobState(entry.getKey())));
     }
 
     public static void cleanupExpiredJobs(int timeout) {
@@ -158,6 +144,7 @@ public class ImportJobsService {
     @Builder
     public record JobDetails(
             CompletableFuture<ImportResult> future,
+            String user,
             ImportJobParams jobParams,
             Instant startingTime) {
     }
@@ -168,6 +155,15 @@ public class ImportJobsService {
             boolean isCompletedExceptionally,
             boolean isCancelled,
             String errorMessage) {
+    }
+
+    @VisibleForTesting
+    JobDetails getJobDetails(String jobId) {
+        JobDetails jobDetails = jobs.get(jobId);
+        if (jobDetails == null || !Objects.equals(jobDetails.user, securityService.getCurrentUser())) {
+            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
+        }
+        return jobDetails;
     }
 
     private boolean isJobLogoutRequired() {
