@@ -39,7 +39,7 @@ class ExportXlsRunnableTest {
             assertEquals(expectedResult, result.get(PARAM_RESULT));
             assertEquals(1, exportServiceMock.constructed().size());
             ExportService constructedService = exportServiceMock.constructed().get(0);
-            verify(constructedService).exportHtmlTable(eq(sheetName), eq(content));
+            verify(constructedService).exportHtmlTable(sheetName, content);
         }
     }
 }
