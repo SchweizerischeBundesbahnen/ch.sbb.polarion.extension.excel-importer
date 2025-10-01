@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettin
 import ch.sbb.polarion.extension.excel_importer.utils.LinkInfo;
 import ch.sbb.polarion.extension.generic.fields.FieldType;
 import ch.sbb.polarion.extension.generic.fields.model.FieldMetadata;
+import ch.sbb.polarion.extension.generic.test_extensions.BundleJarsPrioritizingRunnableMockExtension;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.shared.api.transaction.RunnableInWriteTransaction;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
@@ -50,7 +51,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @SuppressWarnings("squid:S5778") //ignore assertThrows single invocation requirement
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class})
 class ImportServiceTest {
 
     private static final String TEST_PROJECT_ID = "test";

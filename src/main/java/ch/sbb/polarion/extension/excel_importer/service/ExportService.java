@@ -16,6 +16,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
@@ -24,6 +25,7 @@ import java.util.List;
 public class ExportService {
 
     @SneakyThrows
+    @NotNull
     public String exportHtmlTable(String sheetName, String htmlTableContentBase64Encoded) {
 
         List<List<CellData>> cellsData = new HtmlTableParser().parse(htmlTableContentBase64Encoded);
