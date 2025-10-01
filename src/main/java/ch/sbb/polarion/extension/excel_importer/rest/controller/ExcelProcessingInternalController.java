@@ -3,13 +3,14 @@ package ch.sbb.polarion.extension.excel_importer.rest.controller;
 import ch.sbb.polarion.extension.excel_importer.rest.model.jobs.ImportJobDetails;
 import ch.sbb.polarion.extension.excel_importer.rest.model.jobs.ImportJobStatus;
 import ch.sbb.polarion.extension.excel_importer.service.ExportHtmlTableResult;
-import ch.sbb.polarion.extension.excel_importer.service.ExportService;
 import ch.sbb.polarion.extension.excel_importer.service.ImportJobParams;
 import ch.sbb.polarion.extension.excel_importer.service.ImportResult;
 import ch.sbb.polarion.extension.excel_importer.service.ImportService;
 import ch.sbb.polarion.extension.excel_importer.service.ImportJobsService;
 import ch.sbb.polarion.extension.excel_importer.service.PolarionServiceExt;
+import ch.sbb.polarion.extension.excel_importer.utils.ExportXlsRunnable;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
+import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import com.polarion.platform.core.PlatformContext;
 import com.polarion.platform.security.ISecurityService;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -41,6 +42,8 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static ch.sbb.polarion.extension.excel_importer.utils.ExportXlsRunnable.*;
 
 @Tag(name = "Excel Processing")
 @Hidden
@@ -210,9 +213,14 @@ public class ExcelProcessingInternalController {
             }
     )
     public ExportHtmlTableResult exportHtmlTable(
-            @Parameter(schema = @Schema(type = "string", format = "")) @FormDataParam("sheetName") String sheetName,
+            @Parameter(schema = @Schema(type = "string")) @FormDataParam("sheetName") String sheetName,
             @Parameter(schema = @Schema(type = "string", format = "byte")) @FormDataParam("tableHtml") String tableHtml) {
-        return new ExportHtmlTableResult(new ExportService().exportHtmlTable(sheetName, tableHtml));
+        String content = (String) BundleJarsPrioritizingRunnable.execute(
+                ExportXlsRunnable.class, Map.of(
+                        PARAM_SHEET_NAME, sheetName,
+                        PARAM_CONTENT, tableHtml
+                ), true).get(PARAM_RESULT);
+        return new ExportHtmlTableResult(content);
     }
 
     private ImportJobStatus convertToJobStatus(ImportJobsService.JobState jobState) {

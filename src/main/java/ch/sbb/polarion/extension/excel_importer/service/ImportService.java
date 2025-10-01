@@ -1,12 +1,13 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
-import ch.sbb.polarion.extension.excel_importer.service.parser.impl.XlsxParser;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettings;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettingsModel;
 import ch.sbb.polarion.extension.excel_importer.utils.LinkInfo;
+import ch.sbb.polarion.extension.excel_importer.utils.ParseXlsRunnable;
 import ch.sbb.polarion.extension.generic.fields.FieldType;
 import ch.sbb.polarion.extension.generic.fields.model.FieldMetadata;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
+import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import ch.sbb.polarion.extension.generic.util.OptionsMappingUtils;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
@@ -22,7 +23,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,10 +32,11 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static ch.sbb.polarion.extension.excel_importer.utils.ParseXlsRunnable.*;
+
 public class ImportService {
 
     private final PolarionServiceExt polarionServiceExt;
-    private final XlsxParser xlsxParser = new XlsxParser();
 
     public ImportService() {
         polarionServiceExt = new PolarionServiceExt();
@@ -45,13 +46,18 @@ public class ImportService {
         this.polarionServiceExt = polarionServiceExt;
     }
 
+    @SuppressWarnings("unchecked")
     public ImportResult processFile(String projectId, String mappingName, byte[] fileContent) {
         ITrackerProject trackerProject = polarionServiceExt.findProject(projectId);
         ExcelSheetMappingSettingsModel settings = new ExcelSheetMappingSettings().load(projectId, SettingId.fromName(mappingName));
         ITypeOpt workItemType = polarionServiceExt.findWorkItemTypeInProject(trackerProject, settings.getDefaultWorkItemType());
         ImportContext context = new ImportContext(trackerProject, workItemType, settings);
 
-        List<Map<String, Object>> xlsxData = xlsxParser.parseFileStream(new ByteArrayInputStream(fileContent), settings);
+        List<Map<String, Object>> xlsxData = (List<Map<String, Object>>) BundleJarsPrioritizingRunnable.execute(
+                ParseXlsRunnable.class, Map.of(
+                        PARAM_FILE_CONTENT, fileContent,
+                        PARAM_SETTINGS, settings
+                ), true).get(PARAM_RESULT);
         context.log("Xlsx file parsed successfully, found %d rows".formatted(xlsxData.size()));
 
         TransactionalExecutor.executeInWriteTransaction(transaction -> processData(xlsxData, context));
