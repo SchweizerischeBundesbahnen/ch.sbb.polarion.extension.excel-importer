@@ -47,11 +47,6 @@ For automated installation with maven env variable `POLARION_HOME` should be def
 
 Changes only take effect after restart of Polarion.
 
-## Apache POI Polarion Bundle
-
-Latest Polarion installations have relatively old version of Apache POI, so it is recommended to use Apache POI Polarion Bundle (for more information please check [ch.sbb.polarion.thirdparty.bundles](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.thirdparty.bundles)):
-its artifact must be placed to `<polarion_home>/polarion/extensions/ch.sbb.polarion.thirdparty.bundles.org.apache.poi/eclipse/plugins/org.apache.poi-<version>.jar`
-
 ## Polarion configuration
 
 ### Import for non-admin users
