@@ -25,6 +25,7 @@ public class CssColorMapper {
      * All color names are in lowercase for case-insensitive lookup.
      * Based on CSS Color Module Level 3 specification.
      */
+    @SuppressWarnings("java:S1192") // "transparent" is used as both map key (CSS color name) and value (marker)
     private static final Map<String, String> COLOR_MAP = Map.ofEntries(
             // Basic colors (HTML 4.01)
             Map.entry("black", "#000000"),
