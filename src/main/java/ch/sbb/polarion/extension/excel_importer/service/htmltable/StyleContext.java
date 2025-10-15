@@ -40,18 +40,17 @@ public class StyleContext {
             cellStyle.setDataFormat(textFormat);
         }
 
-        String bgColor = styles.get(StyleUtil.CSS_PROPERTY_BG_COLOR);
-        if (bgColor != null) {
-            if (bgColor.matches("^#[0-9A-Fa-f]{6}$")) {
-                cellStyle.setFillForegroundColor(new XSSFColor(Color.decode(bgColor), new DefaultIndexedColorMap()));
-            }
+        String bgColorHex = CssColorMapper.toHex(styles.get(StyleUtil.CSS_PROPERTY_BG_COLOR));
+        if (bgColorHex != null) {
+            cellStyle.setFillForegroundColor(new XSSFColor(Color.decode(bgColorHex), new DefaultIndexedColorMap()));
             cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         }
 
         if (styles.containsKey(StyleUtil.CSS_PROPERTY_FONT_WEIGHT) || styles.containsKey(StyleUtil.CSS_PROPERTY_COLOR)) {
             XSSFFont font = workbook.createFont();
-            if (styles.getOrDefault(StyleUtil.CSS_PROPERTY_COLOR, "").matches("^#[0-9A-Fa-f]{6}$")) {
-                font.setColor(new XSSFColor(Color.decode(styles.get(StyleUtil.CSS_PROPERTY_COLOR)), new DefaultIndexedColorMap()));
+            String fontColorHex = CssColorMapper.toHex(styles.get(StyleUtil.CSS_PROPERTY_COLOR));
+            if (fontColorHex != null) {
+                font.setColor(new XSSFColor(Color.decode(fontColorHex), new DefaultIndexedColorMap()));
             }
             font.setBold(StyleUtil.isBold(styles.get(StyleUtil.CSS_PROPERTY_FONT_WEIGHT)));
             cellStyle.setFont(font);

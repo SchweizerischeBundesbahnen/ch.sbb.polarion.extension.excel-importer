@@ -108,4 +108,63 @@ class StyleContextTest {
         verify(font).setBold(true);
         verify(cellStyle).setFont(font);
     }
+
+    @Test
+    void constructStyle_setsBackgroundColorWithNamedColor() {
+        StyleContext ctx = new StyleContext(workbook);
+        CellData cellData = mock(CellData.class);
+        when(cellData.getStyles()).thenReturn(new CellConfig(Map.of(StyleUtil.CSS_PROPERTY_BG_COLOR, "red"), Map.of(), Map.of()));
+        when(cellData.getType()).thenReturn(CellData.DataType.TEXT);
+
+        ctx.applyStyle(cell, cellData);
+
+        verify(cellStyle).setFillForegroundColor(any(XSSFColor.class));
+        verify(cellStyle).setFillPattern(FillPatternType.SOLID_FOREGROUND);
+    }
+
+    @Test
+    void constructStyle_setsFontColorWithNamedColor() {
+        StyleContext ctx = new StyleContext(workbook);
+        CellData cellData = mock(CellData.class);
+        when(cellData.getStyles()).thenReturn(new CellConfig(
+                Map.of(StyleUtil.CSS_PROPERTY_COLOR, "blue"),
+                Map.of(),
+                Map.of()));
+        when(cellData.getType()).thenReturn(CellData.DataType.TEXT);
+
+        ctx.applyStyle(cell, cellData);
+
+        verify(font).setColor(any(XSSFColor.class));
+        verify(cellStyle).setFont(font);
+    }
+
+    @Test
+    void constructStyle_handlesInvalidNamedColor() {
+        StyleContext ctx = new StyleContext(workbook);
+        CellData cellData = mock(CellData.class);
+        when(cellData.getStyles()).thenReturn(new CellConfig(Map.of(StyleUtil.CSS_PROPERTY_BG_COLOR, "notacolor"), Map.of(), Map.of()));
+        when(cellData.getType()).thenReturn(CellData.DataType.TEXT);
+
+        ctx.applyStyle(cell, cellData);
+
+        // Should not set fill color for invalid color
+        verify(cellStyle, never()).setFillForegroundColor(any(XSSFColor.class));
+        verify(cellStyle, never()).setFillPattern(any());
+    }
+
+    @Test
+    void constructStyle_handlesCaseInsensitiveNamedColors() {
+        StyleContext ctx = new StyleContext(workbook);
+        CellData cellData = mock(CellData.class);
+        when(cellData.getStyles()).thenReturn(new CellConfig(
+                Map.of(StyleUtil.CSS_PROPERTY_COLOR, "DarkSlateGray"),
+                Map.of(),
+                Map.of()));
+        when(cellData.getType()).thenReturn(CellData.DataType.TEXT);
+
+        ctx.applyStyle(cell, cellData);
+
+        verify(font).setColor(any(XSSFColor.class));
+        verify(cellStyle).setFont(font);
+    }
 }
