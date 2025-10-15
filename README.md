@@ -102,11 +102,17 @@ Supported custom attributes:
 
 Supported style properties:
 
-| Property         | Description                                           |
-|------------------|-------------------------------------------------------|
-| color            | Font color (supported format: #RRGGBB)                |
-| background-color | Cell background color (supported format: #RRGGBB)     |
-| font-weight      | Bold font when value = 'bold' or integer value >= 700 |
+| Property         | Description                                                                                                                                                                                        |
+|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| color            | Font color. Supported formats: hex (#RRGGBB) or [CSS named colors](https://www.w3.org/TR/css-color-3/#svg-color) (e.g., 'red', 'blue', 'darkslategray'). Color names are case-insensitive.         |
+| background-color | Cell background color. Supported formats: hex (#RRGGBB) or [CSS named colors](https://www.w3.org/TR/css-color-3/#svg-color) (e.g., 'red', 'blue', 'lightgreen'). Color names are case-insensitive. |
+| font-weight      | Bold font when value = 'bold' or integer value >= 700                                                                                                                                              |
+
+Color support details:
+- All 147 [CSS Color Module Level 3](https://www.w3.org/TR/css-color-3/) named colors are supported
+- Color names are case-insensitive (e.g., 'Red', 'RED', and 'red' are all valid)
+- Both hex format (#RRGGBB) and named colors can be used interchangeably
+- Includes all [HTML 4.01 color keywords](https://www.w3.org/TR/css-color-3/#html4) and [SVG color keywords](https://www.w3.org/TR/css-color-3/#svg-color)
 
 ## Known issues
 
