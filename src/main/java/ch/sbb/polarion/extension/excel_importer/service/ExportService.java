@@ -64,15 +64,15 @@ public class ExportService {
 
     private void setCellValue(Cell cell, CellData data, XSSFWorkbook workbook, Sheet sheet) {
         switch (data.getType()) {
-            case TEXT -> cell.setCellValue((String) data.getValue());
+            case TEXT -> cell.setCellValue(data.getValue().getText());
             case LINK -> {
-                cell.setCellValue((String) data.getValue());
+                cell.setCellValue(data.getValue().getText());
                 Hyperlink hyperlink = workbook.getCreationHelper().createHyperlink(HyperlinkType.URL);
-                hyperlink.setAddress(data.getLink());
+                hyperlink.setAddress(data.getValue().getLink());
                 cell.setHyperlink(hyperlink);
             }
             case IMAGE -> {
-                int pictureIdx = workbook.addPicture((byte[]) data.getValue(), Workbook.PICTURE_TYPE_PNG);
+                int pictureIdx = workbook.addPicture(data.getValue().getImage(), Workbook.PICTURE_TYPE_PNG);
                 Drawing<?> drawing = sheet.createDrawingPatriarch();
                 ClientAnchor anchor = workbook.getCreationHelper().createClientAnchor();
 

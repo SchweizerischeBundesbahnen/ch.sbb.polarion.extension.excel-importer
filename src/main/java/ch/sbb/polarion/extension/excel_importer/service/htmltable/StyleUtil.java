@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.excel_importer.service.htmltable;
 
 import com.polarion.core.util.StringUtils;
+import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.jsoup.nodes.Node;
@@ -8,6 +9,7 @@ import org.jsoup.nodes.Node;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -29,13 +31,18 @@ public class StyleUtil {
 
     public static final String CUSTOM_ATTR_COLUMN_WIDTH = "xlsx-width";
     public static final String CUSTOM_ATTR_ROW_HEIGHT = "xlsx-height";
+    public static final String CUSTOM_ATTR_CELL_TYPE = "xlsx-cell-type";
 
     public static final short COLUMN_WIDTH_AUTO = -1; // we do not use this value, we call autoSizeColumn() method instead
     public static final short ROW_HEIGHT_AUTO = (short) -1; // '-1' leads to auto size height
+    public static final String CELL_TYPE_AUTO = "AUTO";
+
+    private static final Logger logger = Logger.getLogger(StyleUtil.class);
 
     public static final List<String> CUSTOM_ATTRS = List.of(
             CUSTOM_ATTR_COLUMN_WIDTH,
-            CUSTOM_ATTR_ROW_HEIGHT
+            CUSTOM_ATTR_ROW_HEIGHT,
+            CUSTOM_ATTR_CELL_TYPE
     );
 
     public Map<String, String> parseStyleAttribute(String attrValue) {
@@ -94,6 +101,16 @@ public class StyleUtil {
     public short getRowHeightForCell(CellData data) {
         String rowHeightAttrValue = data.getAttrs().row().get(StyleUtil.CUSTOM_ATTR_ROW_HEIGHT);
         return (short) (!StringUtils.isEmpty(rowHeightAttrValue) ? (POINT_TO_PX_MULTIPLIER * Short.parseShort(rowHeightAttrValue)) : ROW_HEIGHT_AUTO);
+    }
+
+    public CellData.DataType getTypeForCell(CellData data) {
+        String typeAttrValue = Optional.ofNullable(data.getAttrs().merged().get(CUSTOM_ATTR_CELL_TYPE)).orElse(CELL_TYPE_AUTO).toUpperCase();
+        try {
+            return CELL_TYPE_AUTO.equals(typeAttrValue) ? data.getValue().detectType() : CellData.DataType.valueOf(typeAttrValue);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Unsupported cell type '%s', using '%s'".formatted(typeAttrValue, CELL_TYPE_AUTO), e);
+            return data.getValue().detectType();
+        }
     }
 
 }

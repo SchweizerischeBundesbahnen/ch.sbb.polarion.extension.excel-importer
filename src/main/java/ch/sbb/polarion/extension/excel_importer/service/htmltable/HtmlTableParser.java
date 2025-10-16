@@ -65,9 +65,7 @@ public class HtmlTableParser {
                 CellValue cellValue = extractTextWithLineBreaks(cellElement);
                 rowData.add(CellData.builder()
                         .header(cellElement.is(HTML_TAG_TH))
-                        .type(cellValue.getType())
-                        .value(cellValue.getValue())
-                        .link(cellValue.getLink())
+                        .value(cellValue)
                         .styles(new CellConfig(tableStyles, rowStyles, StyleUtil.parseStyleAttribute(cellElement.attr(HTML_ATTR_STYLE))))
                         .attrs(new CellConfig(tableAttrs, rowAttrs, StyleUtil.parseCustomAttributes(cellElement)))
                         .build()
