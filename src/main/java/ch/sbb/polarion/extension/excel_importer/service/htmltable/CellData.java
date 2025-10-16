@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.excel_importer.service.htmltable;
 
+import ch.sbb.polarion.extension.excel_importer.service.CellValue;
 import lombok.Builder;
 import lombok.Data;
 
@@ -8,9 +9,8 @@ import lombok.Data;
 public class CellData {
 
     private boolean header;
-    private DataType type;
-    private Object value;
-    private String link;
+    @Builder.Default
+    private CellValue value = new CellValue();
     private CellConfig styles;
     private CellConfig attrs;
 
@@ -18,6 +18,10 @@ public class CellData {
         TEXT,
         LINK,
         IMAGE
+    }
+
+    public DataType getType() {
+        return StyleUtil.getTypeForCell(this);
     }
 
 }

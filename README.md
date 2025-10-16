@@ -95,10 +95,13 @@ In the above case extension generates the file `UsersData.xlsx` with the data fr
 
 Supported custom attributes:
 
-| Attribute   | Description                                                                   |
-|-------------|-------------------------------------------------------------------------------|
-| xlsx-width  | Width for the column (approx. value in pixels). Can be put on 'th' tags only. |
-| xlsx-height | Height for the row (approx. value in pixels). Can be put on 'tr' tags only.   |
+| Attribute      | Description                                                                   |
+|----------------|-------------------------------------------------------------------------------|
+| xlsx-width     | Width for the column (approx. value in pixels). Can be put on 'th' tags only. |
+| xlsx-height    | Height for the row (approx. value in pixels). Can be put on 'tr' tags only.   |
+| xlsx-cell-type | Cell type. Supported values: 'auto' (default), 'text', 'link', 'image'.       |
+
+Cell type details: cells default to the 'auto' type, letting the extension automatically identify the correct type. For complex content, like nested or multiple HTML tags, specifying the type explicitly is recommended.
 
 Supported style properties:
 

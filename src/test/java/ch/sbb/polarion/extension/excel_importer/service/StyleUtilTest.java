@@ -111,4 +111,154 @@ class StyleUtilTest {
         NumberFormatException exception = assertThrows(NumberFormatException.class, () -> StyleUtil.getRowHeightForCell(badCellData));
         assertEquals("For input string: \"bad\"", exception.getMessage());
     }
+
+    @Test
+    void testGetTypeForCellWithAutoType() {
+        // When xlsx-cell-type is "auto", should return the original data type
+        CellData cellData = CellData.builder()
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "auto")))
+                .build();
+        assertEquals(CellData.DataType.TEXT, StyleUtil.getTypeForCell(cellData));
+
+        cellData = CellData.builder()
+                .value(new CellValue().setLink("https://some.link"))
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "auto")))
+                .build();
+        assertEquals(CellData.DataType.LINK, StyleUtil.getTypeForCell(cellData));
+
+        cellData = CellData.builder()
+                .value(new CellValue().setImage(new byte[0]))
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "auto")))
+                .build();
+        assertEquals(CellData.DataType.IMAGE, StyleUtil.getTypeForCell(cellData));
+    }
+
+    @Test
+    void testGetTypeForCellWithAutoTypeCaseInsensitive() {
+        // Test that "AUTO" in various cases is recognized
+        CellData cellData = CellData.builder()
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "AUTO")))
+                .build();
+        assertEquals(CellData.DataType.TEXT, StyleUtil.getTypeForCell(cellData));
+
+        cellData = CellData.builder()
+                .value(new CellValue().setLink("https://some.link"))
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "Auto")))
+                .build();
+        assertEquals(CellData.DataType.LINK, StyleUtil.getTypeForCell(cellData));
+    }
+
+    @Test
+    void testGetTypeForCellWithNoAttribute() {
+        // When no xlsx-cell-type attribute is provided, should return the original data type
+        CellData cellData = CellData.builder()
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of()))
+                .build();
+        assertEquals(CellData.DataType.TEXT, StyleUtil.getTypeForCell(cellData));
+
+        cellData = CellData.builder()
+                .value(new CellValue().setLink("https://some.link"))
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of()))
+                .build();
+        assertEquals(CellData.DataType.LINK, StyleUtil.getTypeForCell(cellData));
+
+        cellData = CellData.builder()
+                .value(new CellValue().setImage(new byte[0]))
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of()))
+                .build();
+        assertEquals(CellData.DataType.IMAGE, StyleUtil.getTypeForCell(cellData));
+    }
+
+    @Test
+    void testGetTypeForCellWithExplicitType() {
+        // When xlsx-cell-type is explicitly set to a valid type, should override the original type
+        CellData cellData = CellData.builder()
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "LINK")))
+                .build();
+        assertEquals(CellData.DataType.LINK, StyleUtil.getTypeForCell(cellData));
+
+        cellData = CellData.builder()
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "TEXT")))
+                .build();
+        assertEquals(CellData.DataType.TEXT, StyleUtil.getTypeForCell(cellData));
+
+        cellData = CellData.builder()
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "IMAGE")))
+                .build();
+        assertEquals(CellData.DataType.IMAGE, StyleUtil.getTypeForCell(cellData));
+    }
+
+    @Test
+    void testGetTypeForCellWithExplicitTypeCaseInsensitive() {
+        // Test that explicit types are case insensitive (converted to uppercase)
+        CellData cellData = CellData.builder()
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "link")))
+                .build();
+        assertEquals(CellData.DataType.LINK, StyleUtil.getTypeForCell(cellData));
+
+        cellData = CellData.builder()
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "text")))
+                .build();
+        assertEquals(CellData.DataType.TEXT, StyleUtil.getTypeForCell(cellData));
+
+        cellData = CellData.builder()
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "iMaGe")))
+                .build();
+        assertEquals(CellData.DataType.IMAGE, StyleUtil.getTypeForCell(cellData));
+    }
+
+    @Test
+    void testGetTypeForCellWithInvalidType() {
+        // When xlsx-cell-type is set to an invalid value, should fall back to the original type
+        CellData cellData = CellData.builder()
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "INVALID")))
+                .build();
+        assertEquals(CellData.DataType.TEXT, StyleUtil.getTypeForCell(cellData));
+
+        cellData = CellData.builder()
+                .value(new CellValue().setLink("https://some.link"))
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "UNKNOWN")))
+                .build();
+        assertEquals(CellData.DataType.LINK, StyleUtil.getTypeForCell(cellData));
+
+        cellData = CellData.builder()
+                .value(new CellValue().setImage(new byte[0]))
+                .attrs(new CellConfig(Map.of(), Map.of(), Map.of("xlsx-cell-type", "bad_type")))
+                .build();
+        assertEquals(CellData.DataType.IMAGE, StyleUtil.getTypeForCell(cellData));
+    }
+
+    @Test
+    void testGetTypeForCellWithMergedAttributes() {
+        // Test that merged attributes are used (table -> row -> self priority)
+        // Self attribute should take precedence
+        CellData cellData = CellData.builder()
+                .attrs(new CellConfig(
+                        Map.of("xlsx-cell-type", "IMAGE"),
+                        Map.of("xlsx-cell-type", "LINK"),
+                        Map.of("xlsx-cell-type", "TEXT")
+                ))
+                .build();
+        assertEquals(CellData.DataType.TEXT, StyleUtil.getTypeForCell(cellData));
+
+        // Row attribute should be used if self is not present
+        cellData = CellData.builder()
+                .attrs(new CellConfig(
+                        Map.of("xlsx-cell-type", "IMAGE"),
+                        Map.of("xlsx-cell-type", "LINK"),
+                        Map.of()
+                ))
+                .build();
+        assertEquals(CellData.DataType.LINK, StyleUtil.getTypeForCell(cellData));
+
+        // Table attribute should be used if row and self are not present
+        cellData = CellData.builder()
+                .attrs(new CellConfig(
+                        Map.of("xlsx-cell-type", "IMAGE"),
+                        Map.of(),
+                        Map.of()
+                ))
+                .build();
+        assertEquals(CellData.DataType.IMAGE, StyleUtil.getTypeForCell(cellData));
+    }
 }
