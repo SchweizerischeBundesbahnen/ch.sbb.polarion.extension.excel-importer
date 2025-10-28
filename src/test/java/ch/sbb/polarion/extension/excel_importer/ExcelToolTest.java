@@ -13,6 +13,7 @@ import com.polarion.platform.persistence.model.IPObject;
 import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.persistence.spi.PObjectList;
 import com.polarion.subterra.base.data.identification.IContextId;
+import lombok.SneakyThrows;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.*;
 class ExcelToolTest {
 
     public static final String TABLE_XLSX = "table.xlsx";
+    public static final String TABLE_WITHOUT_EXTENSION = "tableWithoutExtension";
     public static final String SHEET_1 = "Sheet1";
     public static final String TABLE_HTML = "table.html";
     public static final String EXCEL_TABLE = "Excel Table";
@@ -116,10 +118,12 @@ class ExcelToolTest {
     }
 
     @Test
+    @SneakyThrows
     void testAttachTable() {
         IWorkItem workitem = mock(IWorkItem.class);
         IAttachment attachment = mock(IAttachment.class);
         when(workitem.createAttachment(eq(TABLE_XLSX), eq(EXCEL_TABLE), any())).thenReturn(attachment);
+        when(workitem.createAttachment(eq(TABLE_WITHOUT_EXTENSION + ".xlsx"), eq(EXCEL_TABLE), any())).thenReturn(attachment);
 
         try (MockedStatic<PlatformContext> platformContextMockedStatic = mockStatic(PlatformContext.class)) {
             IPlatform platform = mock(IPlatform.class);
@@ -130,12 +134,18 @@ class ExcelToolTest {
             try (InputStream inputStream = ExcelToolTest.class.getClassLoader().getResourceAsStream(TABLE_HTML)) {
                 assertNotNull(inputStream);
                 String htmlTable = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-                boolean created = ExcelTool.attachTable(htmlTable, workitem, TABLE_XLSX, EXCEL_TABLE);
 
+                boolean created = ExcelTool.attachTable(htmlTable, workitem, TABLE_XLSX, EXCEL_TABLE);
                 assertTrue(created);
                 verify(workitem, times(1)).createAttachment(eq(TABLE_XLSX), eq(EXCEL_TABLE), any());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+
+                when(workitem.createAttachment(eq(TABLE_XLSX), eq(EXCEL_TABLE), any())).thenThrow(new RuntimeException("Attachment creation failed"));
+                created = ExcelTool.attachTable(htmlTable, workitem, TABLE_XLSX, EXCEL_TABLE);
+                assertFalse(created);
+
+                created = ExcelTool.attachTable(htmlTable, workitem, TABLE_WITHOUT_EXTENSION, EXCEL_TABLE);
+                assertTrue(created);
+                verify(workitem, times(1)).createAttachment(eq(TABLE_WITHOUT_EXTENSION + ".xlsx"), eq(EXCEL_TABLE), any());
             }
         }
     }

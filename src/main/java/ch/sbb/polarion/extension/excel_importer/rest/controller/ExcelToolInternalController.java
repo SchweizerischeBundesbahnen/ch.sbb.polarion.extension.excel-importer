@@ -6,7 +6,6 @@ import ch.sbb.polarion.extension.excel_importer.service.ExportHtmlTableResult;
 import ch.sbb.polarion.extension.excel_importer.service.PolarionServiceExt;
 import com.polarion.alm.tracker.exporter.IExport;
 import com.polarion.alm.tracker.exporter.IExportManager;
-import com.polarion.alm.tracker.model.IAttachment;
 import com.polarion.alm.tracker.model.IAttachmentBase;
 import com.polarion.alm.tracker.model.IWithAttachments;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -46,7 +45,7 @@ public class ExcelToolInternalController {
             @Parameter(description = "Project ID", required = true) @PathParam("projectId") String projectId,
             @Parameter(description = "Parameters to attach table", required = true) AttachTableParams params) {
         IWithAttachments<? extends IAttachmentBase> objectAttachments = polarionService.getObjectAttachments(projectId, params.getObjectType(), params.getObjectId());
-        return ExcelTool.attachTable(params.getHtmlTable(), (IWithAttachments<IAttachment>) objectAttachments, params.getFileName(), params.getFileTitle());
+        return ExcelTool.attachTable(params.getHtmlTable(), objectAttachments, params.getFileName(), params.getFileTitle());
     }
 
     @POST

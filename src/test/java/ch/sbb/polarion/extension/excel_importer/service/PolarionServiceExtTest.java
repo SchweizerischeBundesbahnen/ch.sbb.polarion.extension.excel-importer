@@ -5,7 +5,6 @@ import ch.sbb.polarion.extension.generic.test_extensions.PlatformContextMockExte
 import ch.sbb.polarion.extension.generic.util.PObjectListStub;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
-import com.polarion.alm.tracker.model.IAttachmentBase;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRun;
@@ -45,13 +44,16 @@ class PolarionServiceExtTest {
     }
 
     @Test
+    @SuppressWarnings("rawtypes")
     void testGetObjectAttachments() {
         PolarionServiceExt service = spy(new PolarionServiceExt());
 
         IModule module = mock(IModule.class);
         doReturn(module).when(service).getModule("testProjectId", "testSpace", "testObjectId");
-        IWithAttachments<? extends IAttachmentBase> result = service.getObjectAttachments("testProjectId", "MODULE", "testSpace/testObjectId");
+        IWithAttachments result = service.getObjectAttachments("testProjectId", "MODULE", "testSpace/testObjectId");
         assertEquals(module, result);
+
+        assertThrows(IllegalArgumentException.class, () -> service.getObjectAttachments("testProjectId", "MODULE", "invalidObjectId"));
 
         IRichPage richPage = mock(IRichPage.class);
         when(trackerService.getRichPageManager().getRichPage().path("testSpace/testObjectId")).thenReturn(richPage);

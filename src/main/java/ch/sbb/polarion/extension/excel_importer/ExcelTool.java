@@ -8,7 +8,6 @@ import com.polarion.alm.tracker.exporter.IExport;
 import com.polarion.alm.tracker.exporter.IExportTemplate;
 import com.polarion.alm.tracker.exporter.ITableExportConfiguration;
 import com.polarion.alm.tracker.exporter.TableExportConfiguration;
-import com.polarion.alm.tracker.model.IAttachment;
 import com.polarion.alm.tracker.model.IAttachmentBase;
 import com.polarion.alm.tracker.model.IWithAttachments;
 import com.polarion.core.util.StringUtils;
@@ -92,16 +91,16 @@ public class ExcelTool {
     }
 
     /**
-     * Converts HTML table to Excel fila and creates an attachment from this Excel file.
+     * Converts HTML table to Excel file and creates an attachment from this Excel file.
      *
-     * @param <T>             Any Object implementing IWithAttachments
      * @param htmlTable       A String containing exactly one HTML table
      * @param withAttachments Reference to the Object to add the attachment
      * @param fileName        The name of the created Excel file
      * @param fileTitle       The name of the attachment
      * @return Whether the operation was successful
      */
-    public static <T extends IWithAttachments<IAttachment>> boolean attachTable(@NotNull String htmlTable, @NotNull T withAttachments, @NotNull String fileName, @NotNull String fileTitle) {
+    @SuppressWarnings("rawtypes")
+    public static boolean attachTable(@NotNull String htmlTable, @NotNull IWithAttachments withAttachments, @NotNull String fileName, @NotNull String fileTitle) {
         try {
             String excelFileName = fileName.toLowerCase().endsWith(DOT_XLSX) ? fileName : (fileName + DOT_XLSX);
 

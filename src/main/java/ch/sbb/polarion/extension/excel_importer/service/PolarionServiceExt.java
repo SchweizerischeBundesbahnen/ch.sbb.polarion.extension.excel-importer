@@ -5,7 +5,6 @@ import ch.sbb.polarion.extension.generic.fields.model.Option;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
-import com.polarion.alm.tracker.model.IAttachmentBase;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.ITypeOpt;
 import com.polarion.alm.tracker.model.IWithAttachments;
@@ -95,12 +94,17 @@ public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.servic
         return trackerProject;
     }
 
-    public IWithAttachments<? extends IAttachmentBase> getObjectAttachments(String projectId, String objectType, String objectId) {
+    @SuppressWarnings("rawtypes")
+    public IWithAttachments getObjectAttachments(String projectId, String objectType, String objectId) {
         switch (objectType.toUpperCase()) {
             case "MODULE" -> {
                 String delimiter = "/";
-                String spaceId = objectId.split(delimiter)[0];
-                String documentName = objectId.split(delimiter)[1];
+                String[] parts = objectId.split(delimiter, 2);
+                if (parts.length != 2) {
+                    throw new IllegalArgumentException(String.format("Invalid objectId format for MODULE: '%s'. Expected format: 'spaceId/documentName'", objectId));
+                }
+                String spaceId = parts[0];
+                String documentName = parts[1];
                 return getModule(projectId, spaceId, documentName);
             }
             case "RICHPAGE" -> {
