@@ -201,6 +201,7 @@ class ExcelToolTest {
     }
 
     @Test
+    @SneakyThrows
     void testWaitForExport() {
         IExport export1 = mock(IExport.class);
         when(export1.isFinished()).thenReturn(false, false, false, true);
@@ -212,9 +213,11 @@ class ExcelToolTest {
         IExport export2 = mock(IExport.class);
         when(export2.isFinished()).thenReturn(false, false);
 
-        boolean finished2 = ExcelTool.waitForExport(export2, 1);
+        boolean finished2 = ExcelTool.waitForExport(export2, -3);
         assertFalse(finished2);
         verify(export2, times(1)).isFinished();
+
+        assertThrows(IllegalArgumentException.class, () -> ExcelTool.waitForExport(export2, 10000));
     }
 
     private @NotNull String prepareForComparison(@NotNull String input) {

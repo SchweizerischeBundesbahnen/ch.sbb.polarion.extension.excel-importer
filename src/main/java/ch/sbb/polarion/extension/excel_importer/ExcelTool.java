@@ -39,6 +39,7 @@ public class ExcelTool {
     public static final String DOT_XLSX = ".xlsx";
 
     private static final Logger logger = Logger.getLogger(ExcelTool.class);
+    private static final Integer MAX_TIMEOUT_SECONDS = 3600;
 
     @SneakyThrows
     public static String init() {
@@ -205,12 +206,16 @@ public class ExcelTool {
      */
     @SneakyThrows
     public static boolean waitForExport(@NotNull IExport export, int timeoutSeconds) {
-        int timer = timeoutSeconds;
+        int timer = Math.max(1, timeoutSeconds);
+
+        if (timeoutSeconds > MAX_TIMEOUT_SECONDS) {
+            throw new IllegalArgumentException("Wrong timeout value: %d seconds. Maximum allowed timeout is %d seconds.".formatted(timeoutSeconds, MAX_TIMEOUT_SECONDS));
+        }
 
         while (!export.isFinished()) {
             TimeUnit.SECONDS.sleep(1);
             timer--;
-            if (timer == 0) {
+            if (timer <= 0) {
                 return false;
             }
         }
