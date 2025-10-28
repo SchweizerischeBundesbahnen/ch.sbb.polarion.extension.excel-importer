@@ -117,6 +117,34 @@ Color support details:
 - Both hex format (#RRGGBB) and named colors can be used interchangeably
 - Includes all [HTML 4.01 color keywords](https://www.w3.org/TR/css-color-3/#html4) and [SVG color keywords](https://www.w3.org/TR/css-color-3/#svg-color)
 
+### Attach a table to an entity
+```velocity
+$excelTool.attachTable($tableHtml, $workItem, 'attached_table.xlsx', 'Test table')
+```
+
+### Create html table from the given data
+```velocity
+#set($testData = [
+    ["ID", "Title", "Status", "Priority", "Assignee"],
+    ["WI-001", "Implement login feature", "In Progress", "High", "John Doe"],
+    ["WI-002", "Fix navigation bug", "Open", "Critical", "Jane Smith"],
+    ["WI-003", "Update documentation", "Done", "Low", "Bob Johnson"],
+    ["WI-004", "Performance optimization", "In Progress", "Medium", "Alice Williams"],
+    ["WI-005", "Add unit tests", "Open", "High", "Charlie Brown"]
+])
+$excelTool.getHTMLTable($testData)
+```
+
+### Creates the export configuration for a table
+```velocity
+#set(configuration = $excelTool.getTableExportConfiguration($workItems, $query, $charset, $fields, $template, $params, $contextId))
+```
+
+### Waits until IExport has status finished
+```velocity
+$excelTool.waitForExport($export, $timeoutSeconds)
+```
+
 ## Known issues
 
 All good so far.

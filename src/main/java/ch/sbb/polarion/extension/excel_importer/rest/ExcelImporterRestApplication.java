@@ -2,6 +2,8 @@ package ch.sbb.polarion.extension.excel_importer.rest;
 
 import ch.sbb.polarion.extension.excel_importer.rest.controller.ExcelProcessingApiController;
 import ch.sbb.polarion.extension.excel_importer.rest.controller.ExcelProcessingInternalController;
+import ch.sbb.polarion.extension.excel_importer.rest.controller.ExcelToolApiController;
+import ch.sbb.polarion.extension.excel_importer.rest.controller.ExcelToolInternalController;
 import ch.sbb.polarion.extension.excel_importer.rest.controller.WorkItemsApiController;
 import ch.sbb.polarion.extension.excel_importer.rest.controller.WorkItemsInternalController;
 import ch.sbb.polarion.extension.excel_importer.service.ImportJobsCleaner;
@@ -34,6 +36,8 @@ public class ExcelImporterRestApplication extends GenericRestApplication {
         return Set.of(
                 new ExcelProcessingApiController(),
                 new ExcelProcessingInternalController(),
+                new ExcelToolInternalController(),
+                new ExcelToolApiController(),
                 new WorkItemsApiController(),
                 new WorkItemsInternalController()
         );
