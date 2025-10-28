@@ -2,15 +2,12 @@ package ch.sbb.polarion.extension.excel_importer.rest.controller;
 
 import ch.sbb.polarion.extension.excel_importer.rest.model.jobs.ImportJobDetails;
 import ch.sbb.polarion.extension.excel_importer.rest.model.jobs.ImportJobStatus;
-import ch.sbb.polarion.extension.excel_importer.service.ExportHtmlTableResult;
 import ch.sbb.polarion.extension.excel_importer.service.ImportJobParams;
 import ch.sbb.polarion.extension.excel_importer.service.ImportResult;
 import ch.sbb.polarion.extension.excel_importer.service.ImportService;
 import ch.sbb.polarion.extension.excel_importer.service.ImportJobsService;
 import ch.sbb.polarion.extension.excel_importer.service.PolarionServiceExt;
-import ch.sbb.polarion.extension.excel_importer.utils.ExportXlsRunnable;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
-import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import com.polarion.platform.core.PlatformContext;
 import com.polarion.platform.security.ISecurityService;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -42,8 +39,6 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static ch.sbb.polarion.extension.excel_importer.utils.ExportXlsRunnable.*;
 
 @Tag(name = "Excel Processing")
 @Hidden
@@ -194,33 +189,6 @@ public class ExcelProcessingInternalController {
                                 .errorMessage(entry.getValue().errorMessage())
                                 .build()));
         return Response.ok(jobsDetails).build();
-    }
-
-    @POST
-    @Path("/exportHtmlTable")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Export html table as excel sheet",
-            responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "Successful export",
-                            content = @Content(
-                                    mediaType = MediaType.APPLICATION_JSON,
-                                    schema = @Schema(implementation = ExportHtmlTableResult.class)
-                            )
-                    )
-            }
-    )
-    public ExportHtmlTableResult exportHtmlTable(
-            @Parameter(schema = @Schema(type = "string")) @FormDataParam("sheetName") String sheetName,
-            @Parameter(schema = @Schema(type = "string", format = "byte")) @FormDataParam("tableHtml") String tableHtml) {
-        String content = (String) BundleJarsPrioritizingRunnable.execute(
-                ExportXlsRunnable.class, Map.of(
-                        PARAM_SHEET_NAME, sheetName,
-                        PARAM_CONTENT, tableHtml
-                ), true).get(PARAM_RESULT);
-        return new ExportHtmlTableResult(content);
     }
 
     private ImportJobStatus convertToJobStatus(ImportJobsService.JobState jobState) {

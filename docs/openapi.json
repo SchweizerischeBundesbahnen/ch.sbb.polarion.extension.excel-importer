@@ -26,7 +26,7 @@
         ]
       }
     },
-    "/api/exportHtmlTable": {
+    "/api/excel-tool/export-html-table": {
       "post": {
         "operationId": "exportHtmlTable",
         "requestBody": {
@@ -61,7 +61,123 @@
         },
         "summary": "Export html table as excel sheet",
         "tags": [
-          "Excel Processing"
+          "Excel Tool"
+        ]
+      }
+    },
+    "/api/excel-tool/exports/{exportId}/wait": {
+      "get": {
+        "operationId": "waitForExport",
+        "parameters": [
+          {
+            "description": "ID of the export",
+            "in": "path",
+            "name": "exportId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Timeout in seconds",
+            "in": "query",
+            "name": "timeout",
+            "required": true,
+            "schema": {
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "summary": "Wait for export completion",
+        "tags": [
+          "Excel Tool"
+        ]
+      }
+    },
+    "/api/excel-tool/html-table-from-list": {
+      "post": {
+        "operationId": "getHTMLTable",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "description": "List of data to be converted into HTML table",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "HTML content"
+          }
+        },
+        "summary": "Generate HTML table",
+        "tags": [
+          "Excel Tool"
+        ]
+      }
+    },
+    "/api/excel-tool/projects/{projectId}/attach-table": {
+      "post": {
+        "operationId": "attachTable",
+        "parameters": [
+          {
+            "description": "Project ID",
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachTableParams"
+              }
+            }
+          },
+          "description": "Parameters to attach table",
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "summary": "Attach table to project",
+        "tags": [
+          "Excel Tool"
         ]
       }
     },
@@ -629,6 +745,32 @@
   },
   "components": {
     "schemas": {
+      "AttachTableParams": {
+        "description": "Parameters required to attach a table to a project",
+        "properties": {
+          "fileName": {
+            "description": "Name of the file to be created",
+            "type": "string"
+          },
+          "fileTitle": {
+            "description": "Title of the file to be displayed",
+            "type": "string"
+          },
+          "htmlTable": {
+            "description": "HTML representation of the table to attach",
+            "type": "string"
+          },
+          "objectId": {
+            "description": "Unique identifier of the object",
+            "type": "string"
+          },
+          "objectType": {
+            "description": "Type of the object (e.g., Work Item, Attachment)",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "Context": {
         "description": "Represents the context for building URLs related to Polarion services",
         "properties": {

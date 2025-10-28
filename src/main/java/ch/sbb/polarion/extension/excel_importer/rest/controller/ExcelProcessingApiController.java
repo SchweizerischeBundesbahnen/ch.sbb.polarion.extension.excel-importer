@@ -1,6 +1,5 @@
 package ch.sbb.polarion.extension.excel_importer.rest.controller;
 
-import ch.sbb.polarion.extension.excel_importer.service.ExportHtmlTableResult;
 import ch.sbb.polarion.extension.excel_importer.service.ImportResult;
 import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 
@@ -37,8 +36,4 @@ public class ExcelProcessingApiController extends ExcelProcessingInternalControl
         return polarionServiceExt.callPrivileged(super::getAllImporterJobs);
     }
 
-    @Override
-    public ExportHtmlTableResult exportHtmlTable(String sheetName, String tableHtml) {
-        return polarionServiceExt.callPrivileged(() -> super.exportHtmlTable(sheetName, tableHtml));
-    }
 }

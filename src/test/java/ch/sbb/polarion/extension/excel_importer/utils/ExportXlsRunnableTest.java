@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedConstruction;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import static ch.sbb.polarion.extension.excel_importer.utils.ExportXlsRunnable.*;
@@ -20,7 +21,7 @@ class ExportXlsRunnableTest {
         // Given
         String sheetName = "TestSheet";
         String content = "<table><tr><td>Test Content</td></tr></table>";
-        String expectedResult = "exported-excel-content";
+        byte[] expectedResult = "exported-excel-content".getBytes(StandardCharsets.UTF_8);
 
         Map<String, Object> params = Map.of(
                 PARAM_SHEET_NAME, sheetName,

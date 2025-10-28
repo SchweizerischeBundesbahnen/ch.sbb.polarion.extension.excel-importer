@@ -13,7 +13,7 @@ public class ExportXlsRunnable implements BundleJarsPrioritizingRunnable {
 
     @Override
     public Map<String, Object> run(Map<String, Object> params) {
-        String result = new ExportService().exportHtmlTable(
+        byte[] result = new ExportService().exportHtmlTable(
                 (String) params.get(PARAM_SHEET_NAME),
                 (String) params.get(PARAM_CONTENT)
         );

@@ -66,19 +66,18 @@ class ExportServiceTest {
         String sheetName = "TestSheet";
         String encodedHtml = Base64.getEncoder().encodeToString(VALID_TABLE_HTML.getBytes(StandardCharsets.UTF_8));
 
-        String result = exportService.exportHtmlTable(sheetName, encodedHtml);
+        byte[] result = exportService.exportHtmlTable(sheetName, encodedHtml);
         assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertDoesNotThrow(() -> Base64.getDecoder().decode(result));
+        assertTrue(result.length > 0);
     }
 
     @Test
     void exportHtmlTableEmptySheetTest() {
         String encodedHtml = Base64.getEncoder().encodeToString(VALID_TABLE_HTML.getBytes(StandardCharsets.UTF_8));
-        String result = exportService.exportHtmlTable("", encodedHtml);
+        byte[] result = exportService.exportHtmlTable("", encodedHtml);
 
         assertNotNull(result);
-        assertFalse(result.isEmpty());
+        assertTrue(result.length > 0);
     }
 
     @Test
@@ -139,20 +138,18 @@ class ExportServiceTest {
                 """;
         String encodedHtml = Base64.getEncoder().encodeToString(complexTable.getBytes(StandardCharsets.UTF_8));
 
-        String result = exportService.exportHtmlTable("ComplexSheet", encodedHtml);
+        byte[] result = exportService.exportHtmlTable("ComplexSheet", encodedHtml);
         assertNotNull(result);
-        assertFalse(result.isEmpty());
-        byte[] decodedBytes = Base64.getDecoder().decode(result);
-        assertTrue(decodedBytes.length > 0);
+        assertTrue(result.length > 0);
     }
 
     @Test
     void exportHtmlTableNullSheetNameTest() {
         String encodedHtml = Base64.getEncoder().encodeToString(VALID_TABLE_HTML.getBytes(StandardCharsets.UTF_8));
 
-        String result = exportService.exportHtmlTable(null, encodedHtml);
+        byte[] result = exportService.exportHtmlTable(null, encodedHtml);
         assertNotNull(result);
-        assertFalse(result.isEmpty());
+        assertTrue(result.length > 0);
     }
 
     @Test
