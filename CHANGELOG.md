@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v4.2.0...v4.3.0) (2025-11-05)
+
+
+### Features
+
+* ability to set desired cell type on excel export ([#156](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/156)) ([124d279](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/124d279767e5258d410cbba2c132d6eced3f2b15)), closes [#152](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/152)
+* additional velocity functions ([#158](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/158)) ([ef57026](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/ef5702672cf5a67703ef3293134057b3af72c634)), closes [#157](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/157)
+* CSS named colors support for excel export ([#154](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/154)) ([2d885c8](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/2d885c8f5830c4588fe6e7e7849a34dbd4a55f3f)), closes [#153](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/153)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v11.3.0 ([4e033f1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/4e033f1e04bb9c6fd5d803956d9d3785ac131db7))
+
 ## [4.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v4.1.1...v4.2.0) (2025-10-07)
 
 
