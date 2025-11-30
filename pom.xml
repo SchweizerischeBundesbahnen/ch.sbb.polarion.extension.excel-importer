@@ -53,7 +53,7 @@
         <awaitility.version>4.3.0</awaitility.version>
 
         <!-- this extension is designed for latest version of Apache POI -->
-        <apache-poi.version>5.5.0</apache-poi.version>
+        <apache-poi.version>5.5.1</apache-poi.version>
 
         <!--suppress UnresolvedMavenProperty -->
         <markdown2html-maven-plugin.failOnError>${env.MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR}</markdown2html-maven-plugin.failOnError>
