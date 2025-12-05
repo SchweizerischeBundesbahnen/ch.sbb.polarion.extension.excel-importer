@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.3.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v4.3.0...v4.3.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* **deps:** update apache-poi monorepo to v5.5.0 ([7967d14](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/7967d14bc9dc312667bfc04026c7f6903487ff4c))
+* **deps:** update apache-poi monorepo to v5.5.1 ([d2e52ea](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/d2e52eaa79bd1629219b29b9ec474f7140549ad8))
+
 ## [4.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v4.2.0...v4.3.0) (2025-11-05)
 
 
