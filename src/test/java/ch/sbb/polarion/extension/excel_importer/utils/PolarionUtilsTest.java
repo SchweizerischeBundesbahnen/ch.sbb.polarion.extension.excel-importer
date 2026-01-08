@@ -11,6 +11,7 @@ import org.mockito.Answers;
 import org.mockito.MockedStatic;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.stream.Stream;
 
@@ -62,7 +63,7 @@ class PolarionUtilsTest {
     void testGetAbsoluteUrl_withAbsoluteUrl() throws MalformedURLException {
         String relativeUrl = "http://polarion.url/some/path";
         URL absoluteUrl = PolarionUtils.getAbsoluteUrl(relativeUrl);
-        assertEquals(new URL("http://polarion.url/some/path"), absoluteUrl);
+        assertEquals(URI.create("http://polarion.url/some/path").toURL(), absoluteUrl);
     }
 
     @Test
