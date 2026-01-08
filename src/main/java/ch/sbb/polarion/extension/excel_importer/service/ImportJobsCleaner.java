@@ -31,7 +31,16 @@ public final class ImportJobsCleaner {
     public static synchronized void stopCleaningJob() {
         if (executorService != null) {
             executorService.shutdown();
-            executorService = null;
+            try {
+                if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                executorService.shutdownNow();
+            } finally {
+                executorService = null;
+            }
         }
     }
 }

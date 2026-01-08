@@ -84,11 +84,12 @@ class PolarionUtilsTest {
 
     @Test
     void testGetAbsoluteUrl_withAbsoluteUrlWithoutHost() throws MalformedURLException {
-        // URI that is absolute (has scheme) but no host - should be treated as relative
+        // file:/// URI is absolute (has scheme) but getHost() returns null
+        // Since condition requires both isAbsolute AND host != null, it falls through to resolve()
+        // However, resolve() with an absolute URI returns the absolute URI unchanged
         String urlWithSchemeNoHost = "file:///local/path";
         String baseUrl = "http://polarion.url";
         String absoluteUrl = PolarionUtils.getAbsoluteUrl(urlWithSchemeNoHost, baseUrl);
-        // file:/// URIs have null host, so they get resolved against base
         assertEquals("file:///local/path", absoluteUrl);
     }
 
