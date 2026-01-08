@@ -81,4 +81,23 @@ class PolarionUtilsTest {
             PolarionUtils.getAbsoluteUrl(invalidUrl);
         });
     }
+
+    @Test
+    void testGetAbsoluteUrl_withAbsoluteUrlWithoutHost() throws MalformedURLException {
+        // URI that is absolute (has scheme) but no host - should be treated as relative
+        String urlWithSchemeNoHost = "file:///local/path";
+        String baseUrl = "http://polarion.url";
+        String absoluteUrl = PolarionUtils.getAbsoluteUrl(urlWithSchemeNoHost, baseUrl);
+        // file:/// URIs have null host, so they get resolved against base
+        assertEquals("file:///local/path", absoluteUrl);
+    }
+
+    @Test
+    void testGetAbsoluteUrl_withInvalidBaseUrl() {
+        String relativeUrl = "/some/path";
+        String invalidBaseUrl = "not a valid url with spaces";
+        assertThrows(MalformedURLException.class, () -> {
+            PolarionUtils.getAbsoluteUrl(relativeUrl, invalidBaseUrl);
+        });
+    }
 }
