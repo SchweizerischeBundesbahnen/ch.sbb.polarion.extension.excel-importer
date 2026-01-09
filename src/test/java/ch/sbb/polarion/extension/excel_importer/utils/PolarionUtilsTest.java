@@ -11,6 +11,7 @@ import org.mockito.Answers;
 import org.mockito.MockedStatic;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.stream.Stream;
 
@@ -62,7 +63,7 @@ class PolarionUtilsTest {
     void testGetAbsoluteUrl_withAbsoluteUrl() throws MalformedURLException {
         String relativeUrl = "http://polarion.url/some/path";
         URL absoluteUrl = PolarionUtils.getAbsoluteUrl(relativeUrl);
-        assertEquals(new URL("http://polarion.url/some/path"), absoluteUrl);
+        assertEquals(URI.create("http://polarion.url/some/path").toURL(), absoluteUrl);
     }
 
     @Test
@@ -78,6 +79,26 @@ class PolarionUtilsTest {
         String invalidUrl = "invalid:url";
         assertThrows(MalformedURLException.class, () -> {
             PolarionUtils.getAbsoluteUrl(invalidUrl);
+        });
+    }
+
+    @Test
+    void testGetAbsoluteUrl_withAbsoluteUrlWithoutHost() throws MalformedURLException {
+        // file:/// URI is absolute (has scheme) but getHost() returns null
+        // Since condition requires both isAbsolute AND host != null, it falls through to resolve()
+        // However, resolve() with an absolute URI returns the absolute URI unchanged
+        String urlWithSchemeNoHost = "file:///local/path";
+        String baseUrl = "http://polarion.url";
+        String absoluteUrl = PolarionUtils.getAbsoluteUrl(urlWithSchemeNoHost, baseUrl);
+        assertEquals("file:///local/path", absoluteUrl);
+    }
+
+    @Test
+    void testGetAbsoluteUrl_withInvalidBaseUrl() {
+        String relativeUrl = "/some/path";
+        String invalidBaseUrl = "not a valid url with spaces";
+        assertThrows(MalformedURLException.class, () -> {
+            PolarionUtils.getAbsoluteUrl(relativeUrl, invalidBaseUrl);
         });
     }
 }

@@ -38,16 +38,16 @@ public class PolarionUtils {
     @SneakyThrows
     public static URL getAbsoluteUrl(String relativeUrl) {
         String absoluteUrl = getAbsoluteUrl(relativeUrl, getBaseUrl());
-        return new URL(absoluteUrl);
+        return URI.create(absoluteUrl).toURL();
     }
 
     public static String getAbsoluteUrl(String relativeUrl, String baseUrl) throws MalformedURLException {
         try {
-            URL url = new URL(relativeUrl);
-            if (url.getProtocol() != null && url.getHost() != null) {
+            URI uri = new URI(relativeUrl);
+            if (uri.isAbsolute() && uri.getHost() != null) {
                 return relativeUrl; // if URL is absolute, then return it as is
             }
-        } catch (MalformedURLException e) {
+        } catch (URISyntaxException e) {
             // looks like relative URL
         }
 
