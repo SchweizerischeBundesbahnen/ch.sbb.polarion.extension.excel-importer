@@ -129,7 +129,7 @@ public class ExcelTool {
      * @return byte array representing the Excel file
      */
     public static byte[] convertHtmlTableToXlsx(@NotNull String tableHtmlBase64Encoded, @Nullable String sheetName) {
-        return (byte[]) BundleJarsPrioritizingRunnable.execute(
+        return (byte[]) BundleJarsPrioritizingRunnable.executeCached(
                 ExportXlsRunnable.class, Map.of(
                         PARAM_SHEET_NAME, StringUtils.getEmptyIfNull(sheetName),
                         PARAM_CONTENT, tableHtmlBase64Encoded
