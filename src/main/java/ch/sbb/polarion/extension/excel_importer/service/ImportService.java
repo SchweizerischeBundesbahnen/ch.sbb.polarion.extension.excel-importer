@@ -53,7 +53,7 @@ public class ImportService {
         ITypeOpt workItemType = polarionServiceExt.findWorkItemTypeInProject(trackerProject, settings.getDefaultWorkItemType());
         ImportContext context = new ImportContext(trackerProject, workItemType, settings);
 
-        List<Map<String, Object>> xlsxData = (List<Map<String, Object>>) BundleJarsPrioritizingRunnable.execute(
+        List<Map<String, Object>> xlsxData = (List<Map<String, Object>>) BundleJarsPrioritizingRunnable.executeCached(
                 ParseXlsRunnable.class, Map.of(
                         PARAM_FILE_CONTENT, fileContent,
                         PARAM_SETTINGS, settings
