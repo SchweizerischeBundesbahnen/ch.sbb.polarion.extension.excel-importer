@@ -6,17 +6,23 @@ import ch.sbb.polarion.extension.excel_importer.utils.LinkInfo;
 import ch.sbb.polarion.extension.excel_importer.utils.ParseXlsRunnable;
 import ch.sbb.polarion.extension.generic.fields.FieldType;
 import ch.sbb.polarion.extension.generic.fields.model.FieldMetadata;
+import ch.sbb.polarion.extension.generic.fields.model.Option;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import ch.sbb.polarion.extension.generic.util.OptionsMappingUtils;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
+import com.polarion.alm.tracker.internal.model.TestSteps;
 import com.polarion.alm.tracker.model.ILinkRoleOpt;
+import com.polarion.alm.tracker.model.ITestStep;
+import com.polarion.alm.tracker.model.ITestSteps;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.ITypeOpt;
 import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.core.util.StringUtils;
+import com.polarion.core.util.types.Text;
 import com.polarion.core.util.xml.HTMLHelper;
+import com.polarion.platform.persistence.model.IStructure;
 import com.polarion.subterra.base.data.model.IType;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -25,6 +31,8 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -141,16 +149,57 @@ public class ImportService {
         return (String) idValue;
     }
 
-    private void fillWorkItemFields(@NotNull IWorkItem workItem, Map<String, Object> mappingRecord, ExcelSheetMappingSettingsModel model, @NotNull String linkColumnId) {
+    @VisibleForTesting
+    void fillWorkItemFields(@NotNull IWorkItem workItem, Map<String, Object> mappingRecord, ExcelSheetMappingSettingsModel model, @NotNull String linkColumnId) {
         Set<FieldMetadata> fieldMetadataSet = polarionServiceExt.getWorkItemsFields(workItem.getProjectId(), workItem.getType() == null ? "" : workItem.getType().getId());
+        constructTestStepsFields(mappingRecord, model, workItem, fieldMetadataSet);
         mappingRecord.forEach((columnId, value) -> {
             String fieldId = model.getColumnsMapping().get(columnId);
+            if (fieldId == null && columnId.startsWith(ExcelSheetMappingSettingsModel.TEST_STEPS_COLUMN_FILLER_PREFIX)) {
+                fieldId = columnId.substring(ExcelSheetMappingSettingsModel.TEST_STEPS_COLUMN_FILLER_PREFIX.length());
+            }
             if (fieldId != null) {
                 // we need to know possible mapped value asap because some types (at least boolean) need it to check value for modification
                 String mappedOption = OptionsMappingUtils.getMappedOptionKey(fieldId, value, model.getEnumsMapping());
                 value = mappedOption != null ? mappedOption : value;
                 setFieldValue(value, getFieldMetadataForField(fieldMetadataSet, fieldId), workItem, model, linkColumnId);
             }
+        });
+    }
+
+    /**
+     * Data for TestSteps table scattered over several columns so we have to collect them into the proper structure
+     */
+    @SuppressWarnings("rawtypes")
+    private void constructTestStepsFields(Map<String, Object> dataMap, ExcelSheetMappingSettingsModel model, @NotNull IWorkItem workItem, Set<FieldMetadata> fieldMetadataSet) {
+        model.getStepsMapping().forEach((mappingKey, mappingValue) -> {
+            Map<String, Object> structureMap = new HashMap<>();
+
+            List<String> keys = mappingValue.keySet().stream().toList();
+            FieldMetadata fieldMetadata = fieldMetadataSet.stream().filter(f -> f.getId().equals(mappingKey)).findFirst().orElse(null);
+            if (fieldMetadata == null) {
+                return; // fields was probably removed
+            }
+            if (!new HashSet<>(keys).containsAll(fieldMetadata.getOptions().stream().map(Option::getKey).toList())) {
+                throw new IllegalArgumentException("Test steps keys mismatch for the field '%s'. Check fields mapping.".formatted(mappingKey));
+            }
+            structureMap.put(ITestSteps.KEY_KEYS, keys);
+
+            List<Map<String, List<Text>>> steps = new ArrayList<>();
+            for (int i = 0; i < ((List) dataMap.get(mappingValue.get(keys.getFirst()))).size(); i++) {
+                final int index = i;
+                List<Text> values = keys.stream().map(mappingValue::get).map(dataMap::get)
+                        .map(columnValue -> ((List) columnValue).get(index))
+                        .map(nextRowValue -> Text.html(nextRowValue == null ? "" : String.valueOf(nextRowValue))).toList();
+                steps.add(Map.of(ITestStep.KEY_VALUES, values));
+            }
+            structureMap.put(ITestSteps.KEY_STEPS, steps);
+
+            // remove separate step items from mapping, from now we need only the structure we build
+            keys.forEach(key -> dataMap.remove(mappingValue.get(key)));
+
+            IStructure testSteps = polarionServiceExt.getTrackerService().getDataService().createStructureForTypeId(workItem, TestSteps.STRUCTURE_ID, structureMap);
+            dataMap.put(ExcelSheetMappingSettingsModel.TEST_STEPS_COLUMN_FILLER_PREFIX + mappingKey, testSteps);
         });
     }
 

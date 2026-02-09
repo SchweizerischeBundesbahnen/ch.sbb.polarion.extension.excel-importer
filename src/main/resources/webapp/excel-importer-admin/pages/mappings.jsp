@@ -75,6 +75,11 @@
             box-sizing: border-box;
         }
 
+        .field-name, .field-name-select {
+            width: 250px;
+            box-sizing: border-box;
+        }
+
         .dropdown-menu {
             position: absolute;
             background-color: white;

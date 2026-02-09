@@ -6,17 +6,20 @@ import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettin
 import ch.sbb.polarion.extension.excel_importer.utils.LinkInfo;
 import ch.sbb.polarion.extension.generic.fields.FieldType;
 import ch.sbb.polarion.extension.generic.fields.model.FieldMetadata;
+import ch.sbb.polarion.extension.generic.fields.model.Option;
 import ch.sbb.polarion.extension.generic.test_extensions.BundleJarsPrioritizingRunnableMockExtension;
+import ch.sbb.polarion.extension.generic.test_extensions.PlatformContextMockExtension;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.shared.api.transaction.RunnableInWriteTransaction;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.shared.api.transaction.WriteTransaction;
 import com.polarion.alm.tracker.ITrackerService;
+import com.polarion.alm.tracker.internal.model.TestSteps;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.ITypeOpt;
 import com.polarion.alm.tracker.model.IWorkItem;
+import com.polarion.platform.persistence.model.IStructure;
 import com.polarion.platform.IPlatformService;
-import com.polarion.platform.core.PlatformContext;
 import com.polarion.platform.persistence.ICustomFieldsService;
 import com.polarion.platform.persistence.IDataService;
 import com.polarion.platform.persistence.IEnumeration;
@@ -29,8 +32,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
-import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -51,12 +52,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @SuppressWarnings("squid:S5778") //ignore assertThrows single invocation requirement
-@ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class})
+@ExtendWith({MockitoExtension.class, PlatformContextMockExtension.class, BundleJarsPrioritizingRunnableMockExtension.class})
 class ImportServiceTest {
 
     private static final String TEST_PROJECT_ID = "test";
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    MockedStatic<PlatformContext> mockPlatformContext;
 
     private MockedConstruction<ExcelSheetMappingSettings> settingsMockedConstruction;
     private MockedConstruction<XlsxParser> xlsxParserMockedConstruction;
@@ -77,7 +76,6 @@ class ImportServiceTest {
 
     @AfterEach
     void cleanup() {
-        mockPlatformContext.close();
         settingsMockedConstruction.close();
         xlsxParserMockedConstruction.close();
     }
@@ -365,6 +363,194 @@ class ImportServiceTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> service.getFieldMetadataForField(Set.of(), "unknownFieldId"));
         assertEquals("Cannot find field metadata for ID 'unknownFieldId'", exception.getMessage());
+    }
+
+    @Test
+    void testFillWorkItemFields() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        FieldMetadata titleField = FieldMetadata.builder().id("title").type(FieldType.STRING.getType()).build();
+        FieldMetadata priorityField = FieldMetadata.builder().id("priority").type(FieldType.STRING.getType()).build();
+        when(polarionService.getWorkItemsFields("projectId", "requirement")).thenReturn(Set.of(titleField, priorityField));
+
+        IWorkItem workItem = mock(IWorkItem.class);
+        when(workItem.getProjectId()).thenReturn("projectId");
+        ITypeOpt typeOpt = mock(ITypeOpt.class);
+        when(typeOpt.getId()).thenReturn("requirement");
+        when(workItem.getType()).thenReturn(typeOpt);
+
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .columnsMapping(Map.of("A", "title", "B", "priority"))
+                .stepsMapping(Map.of())
+                .enumsMapping(Map.of("priority", Map.of("high", "High")))
+                .overwriteWithEmpty(true)
+                .build();
+
+        Map<String, Object> mappingRecord = new HashMap<>();
+        mappingRecord.put("A", "Test Title");
+        mappingRecord.put("B", "High");
+        mappingRecord.put("C", "unmapped");
+
+        service.fillWorkItemFields(workItem, mappingRecord, model, "linkField");
+
+        // title: normal mapping, no option mapping → value unchanged
+        verify(polarionService).setFieldValue(eq(workItem), eq("title"), eq("Test Title"), any());
+        // priority: option mapped from "High" to "high"
+        verify(polarionService).setFieldValue(eq(workItem), eq("priority"), eq("high"), any());
+        // column C has no mapping and no prefix → skipped, so exactly 2 calls total
+        verify(polarionService, times(2)).setFieldValue(any(IWorkItem.class), anyString(), any(), any());
+    }
+
+    @Test
+    void testFillWorkItemFieldsNullTypeAndTestStepsPrefix() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        FieldMetadata stepsField = FieldMetadata.builder().id("mySteps").type(FieldType.STRING.getType()).build();
+        when(polarionService.getWorkItemsFields("projectId", "")).thenReturn(Set.of(stepsField));
+
+        IWorkItem workItem = mock(IWorkItem.class);
+        when(workItem.getProjectId()).thenReturn("projectId");
+        // workItem.getType() returns null by default → getWorkItemsFields called with ""
+
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .columnsMapping(Map.of())
+                .stepsMapping(Map.of())
+                .overwriteWithEmpty(true)
+                .build();
+
+        // Key with testSteps| prefix, not present in columnsMapping → fieldId extracted from prefix
+        Map<String, Object> mappingRecord = new HashMap<>();
+        mappingRecord.put("testSteps|mySteps", "stepsData");
+
+        service.fillWorkItemFields(workItem, mappingRecord, model, "linkField");
+
+        verify(polarionService).getWorkItemsFields("projectId", "");
+        verify(polarionService).setFieldValue(eq(workItem), eq("mySteps"), eq("stepsData"), any());
+    }
+
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    void testFillWorkItemFieldsWithConstructTestSteps() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ITrackerService trackerService = mock(ITrackerService.class, RETURNS_DEEP_STUBS);
+        when(polarionService.getTrackerService()).thenReturn(trackerService);
+        ImportService service = new ImportService(polarionService);
+
+        FieldMetadata titleField = FieldMetadata.builder().id("title").type(FieldType.STRING.getType()).build();
+        // stepsField must have options matching the mapping keys so validation passes
+        FieldMetadata stepsField = FieldMetadata.builder().id("testSteps").type(FieldType.STRING.getType())
+                .options(Set.of(new Option("step", "Step", null), new Option("expectedResult", "Expected Result", null)))
+                .build();
+        when(polarionService.getWorkItemsFields("projectId", "requirement")).thenReturn(Set.of(titleField, stepsField));
+
+        IWorkItem workItem = mock(IWorkItem.class);
+        when(workItem.getProjectId()).thenReturn("projectId");
+        ITypeOpt typeOpt = mock(ITypeOpt.class);
+        when(typeOpt.getId()).thenReturn("requirement");
+        when(workItem.getType()).thenReturn(typeOpt);
+
+        IStructure mockStructure = mock(IStructure.class);
+        when(trackerService.getDataService().createStructureForTypeId(any(), eq(TestSteps.STRUCTURE_ID), any())).thenReturn(mockStructure);
+
+        // stepsMapping: "testSteps" -> {"step" -> "B", "expectedResult" -> "C"}
+        Map<String, Map<String, String>> stepsMapping = new HashMap<>();
+        Map<String, String> stepFields = new HashMap<>();
+        stepFields.put("step", "B");
+        stepFields.put("expectedResult", "C");
+        stepsMapping.put("testSteps", stepFields);
+
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .columnsMapping(Map.of("A", "title"))
+                .stepsMapping(stepsMapping)
+                .overwriteWithEmpty(true)
+                .build();
+
+        // dataMap: columns B and C contain lists of step data
+        Map<String, Object> mappingRecord = new HashMap<>();
+        mappingRecord.put("A", "Test Title");
+        mappingRecord.put("B", List.of("step1", "step2"));
+        mappingRecord.put("C", List.of("result1", "result2"));
+
+        service.fillWorkItemFields(workItem, mappingRecord, model, "linkField");
+
+        // constructTestStepsFields should have called createStructureForTypeId
+        verify(trackerService.getDataService()).createStructureForTypeId(eq(workItem), eq(TestSteps.STRUCTURE_ID), any());
+        // title field should still be set via normal mapping
+        verify(polarionService).setFieldValue(eq(workItem), eq("title"), eq("Test Title"), any());
+        // The constructed structure is placed with key "testSteps|testSteps" which gets resolved to fieldId "testSteps"
+        verify(polarionService).setFieldValue(eq(workItem), eq("testSteps"), eq(mockStructure), any());
+    }
+
+    @Test
+    void testConstructTestStepsFieldsSkipsUnknownField() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        FieldMetadata titleField = FieldMetadata.builder().id("title").type(FieldType.STRING.getType()).build();
+        // No "testSteps" field in metadata → constructTestStepsFields should skip (early return)
+        when(polarionService.getWorkItemsFields("projectId", "req")).thenReturn(Set.of(titleField));
+
+        IWorkItem workItem = mock(IWorkItem.class);
+        when(workItem.getProjectId()).thenReturn("projectId");
+        ITypeOpt typeOpt = mock(ITypeOpt.class);
+        when(typeOpt.getId()).thenReturn("req");
+        when(workItem.getType()).thenReturn(typeOpt);
+
+        Map<String, Map<String, String>> stepsMapping = new HashMap<>();
+        stepsMapping.put("testSteps", Map.of("step", "B"));
+
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .columnsMapping(Map.of("A", "title"))
+                .stepsMapping(stepsMapping)
+                .overwriteWithEmpty(true)
+                .build();
+
+        Map<String, Object> mappingRecord = new HashMap<>();
+        mappingRecord.put("A", "Test Title");
+        mappingRecord.put("B", List.of("step1"));
+
+        // Should not throw - unknown field is silently skipped
+        service.fillWorkItemFields(workItem, mappingRecord, model, "linkField");
+
+        verify(polarionService).setFieldValue(eq(workItem), eq("title"), eq("Test Title"), any());
+        // No testSteps structure should be created
+        verify(polarionService, never()).getTrackerService();
+    }
+
+    @Test
+    void testConstructTestStepsFieldsKeysMismatch() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        // Field options require keys "step" and "expectedResult", but mapping only provides "step"
+        FieldMetadata stepsField = FieldMetadata.builder().id("testSteps").type(FieldType.STRING.getType())
+                .options(Set.of(new Option("step", "Step", null), new Option("expectedResult", "Expected Result", null)))
+                .build();
+        when(polarionService.getWorkItemsFields("projectId", "req")).thenReturn(Set.of(stepsField));
+
+        IWorkItem workItem = mock(IWorkItem.class);
+        when(workItem.getProjectId()).thenReturn("projectId");
+        ITypeOpt typeOpt = mock(ITypeOpt.class);
+        when(typeOpt.getId()).thenReturn("req");
+        when(workItem.getType()).thenReturn(typeOpt);
+
+        Map<String, Map<String, String>> stepsMapping = new HashMap<>();
+        stepsMapping.put("testSteps", Map.of("step", "B")); // missing "expectedResult"
+
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .columnsMapping(Map.of())
+                .stepsMapping(stepsMapping)
+                .overwriteWithEmpty(true)
+                .build();
+
+        Map<String, Object> mappingRecord = new HashMap<>();
+        mappingRecord.put("B", List.of("step1"));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.fillWorkItemFields(workItem, mappingRecord, model, "linkField"));
+        assertTrue(ex.getMessage().contains("testSteps"));
     }
 
     @Test

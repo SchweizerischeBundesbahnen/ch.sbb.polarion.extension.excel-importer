@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -189,5 +190,28 @@ class ExcelSheetMappingSettingsTest {
             assertEquals(1, loadedTwoModel.getStartFromRow());
             assertEquals("setting_two", loadedTwoModel.getBundleTimestamp());
         }
+    }
+
+    @Test
+    void testGetUsedColumnsLetters() {
+        // Regular columns + prefix keys filtered out + stepsMapping values included
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .columnsMapping(Map.of("A", "title", "B", "priority", "testSteps|testSteps", "testSteps"))
+                .stepsMapping(Map.of("testSteps", Map.of("step", "C", "expectedResult", "D")))
+                .build();
+        assertEquals(Set.of("A", "B", "C", "D"), model.getUsedColumnsLetters());
+
+        // Null columnsMapping, empty stepsMapping
+        ExcelSheetMappingSettingsModel nullModel = ExcelSheetMappingSettingsModel.builder()
+                .stepsMapping(Map.of())
+                .build();
+        assertEquals(Set.of(), nullModel.getUsedColumnsLetters());
+
+        // Only columnsMapping, empty stepsMapping
+        ExcelSheetMappingSettingsModel noStepsModel = ExcelSheetMappingSettingsModel.builder()
+                .columnsMapping(Map.of("A", "title"))
+                .stepsMapping(Map.of())
+                .build();
+        assertEquals(Set.of("A"), noStepsModel.getUsedColumnsLetters());
     }
 }

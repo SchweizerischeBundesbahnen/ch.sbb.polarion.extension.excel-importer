@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +22,9 @@ class XlsxParserTest {
     private static final String SHEET_EMPTY = "empty";
     private static final String SHEET_WIDE = "wide";
     private static final String SHEET_BAD = "bad";
+    private static final String SHEET_MERGED_FAIL = "merged_fail";
+    private static final String SHEET_MERGED_OK = "merged_ok";
+    private static final String SHEET_MERGED_MIXED = "merged_mixed";
 
     @Test
     void testSuccessfulParse() {
@@ -40,14 +44,17 @@ class XlsxParserTest {
     }
 
     @Test
+    @SneakyThrows
     void testFormulaError() {
         XlsxParser xlsxParser = new XlsxParser();
-        InputStream fileAttempt1 = getClass().getClassLoader().getResourceAsStream("error.xlsx");
-        IParserSettings settingsAttempt1 = generateSettings(SHEET_FIRST, 1);
+        IllegalArgumentException exception;
+        try (InputStream fileAttempt1 = getClass().getClassLoader().getResourceAsStream("error.xlsx")) {
+            IParserSettings settingsAttempt1 = generateSettings(SHEET_FIRST, 1);
 
-        // one of the columns has error
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> xlsxParser.parseFileStream(fileAttempt1, settingsAttempt1));
+            // one of the columns has error
+            exception = assertThrows(IllegalArgumentException.class,
+                    () -> xlsxParser.parseFileStream(fileAttempt1, settingsAttempt1));
+        }
         assertEquals("E1 contains bad/error value", exception.getMessage());
 
         // narrow columns mapping usage - this time column with error is ignored
@@ -76,6 +83,35 @@ class XlsxParserTest {
         assertEquals(List.of(
                 Map.of("A", "a1", "AA", "aa1", "AAA", "aaa1")
         ), cleanNulls(new XlsxParser().parseFileStream(getClass().getClassLoader().getResourceAsStream("test.xlsx"), generateSettings(SHEET_WIDE, 1, "A", "AA", "AAA"))));
+    }
+
+    @Test
+    @SneakyThrows
+    void testOverlappingRowsOk() {
+        try (InputStream fileStream = getClass().getClassLoader().getResourceAsStream("test.xlsx")) {
+            IParserSettings settings = generateSettings(SHEET_MERGED_OK, 6, "A", "B", "C");
+            assertDoesNotThrow(() -> new XlsxParser().parseFileStream(fileStream, settings));
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testOverlappingRowsFail() {
+        try (InputStream fileStream = getClass().getClassLoader().getResourceAsStream("test.xlsx")) {
+            IParserSettings settings = generateSettings(SHEET_MERGED_FAIL, 2, "A", "B", "C");
+            IllegalArgumentException exception =  assertThrows(IllegalArgumentException.class, () -> new XlsxParser().parseFileStream(fileStream, settings));
+            assertEquals("Merged regions A2:A4 and B3:B4 have partially overlapping row ranges which is not allowed", exception.getMessage());
+        }
+    }
+
+    @Test
+    void testMixed() {
+        List<Map<String, Object>> result = new XlsxParser().parseFileStream(getClass().getClassLoader().getResourceAsStream("test.xlsx"), generateSettings(SHEET_MERGED_MIXED, 1, "A", "B", "C", "D"));
+        assertEquals(List.of(
+                Map.of("A", "A1-3", "B", List.of("B11", "B12", "B13"), "C", "C1-3+D1-3", "D", "C1-3+D1-3"),
+                Map.of("A", "A4", "B", "B4", "C", "C4", "D", "D4"),
+                Map.of("A", "A5-6", "B", "B5-6", "C", Arrays.asList("C5", null), "D", Arrays.asList(null, null))
+        ), result);
     }
 
     @Test
