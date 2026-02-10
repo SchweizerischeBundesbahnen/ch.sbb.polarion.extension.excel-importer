@@ -431,7 +431,6 @@ class ImportServiceTest {
     }
 
     @Test
-    @SuppressWarnings({"rawtypes", "unchecked"})
     void testFillWorkItemFieldsWithConstructTestSteps() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ITrackerService trackerService = mock(ITrackerService.class, RETURNS_DEEP_STUBS);
@@ -479,6 +478,52 @@ class ImportServiceTest {
         // title field should still be set via normal mapping
         verify(polarionService).setFieldValue(eq(workItem), eq("title"), eq("Test Title"), any());
         // The constructed structure is placed with key "testSteps|testSteps" which gets resolved to fieldId "testSteps"
+        verify(polarionService).setFieldValue(eq(workItem), eq("testSteps"), eq(mockStructure), any());
+    }
+
+    @Test
+    void testFillWorkItemFieldsWithConstructTestStepsSingleRow() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ITrackerService trackerService = mock(ITrackerService.class, RETURNS_DEEP_STUBS);
+        when(polarionService.getTrackerService()).thenReturn(trackerService);
+        ImportService service = new ImportService(polarionService);
+
+        FieldMetadata titleField = FieldMetadata.builder().id("title").type(FieldType.STRING.getType()).build();
+        FieldMetadata stepsField = FieldMetadata.builder().id("testSteps").type(FieldType.STRING.getType())
+                .options(Set.of(new Option("step", "Step", null), new Option("expectedResult", "Expected Result", null)))
+                .build();
+        when(polarionService.getWorkItemsFields("projectId", "requirement")).thenReturn(Set.of(titleField, stepsField));
+
+        IWorkItem workItem = mock(IWorkItem.class);
+        when(workItem.getProjectId()).thenReturn("projectId");
+        ITypeOpt typeOpt = mock(ITypeOpt.class);
+        when(typeOpt.getId()).thenReturn("requirement");
+        when(workItem.getType()).thenReturn(typeOpt);
+
+        IStructure mockStructure = mock(IStructure.class);
+        when(trackerService.getDataService().createStructureForTypeId(any(), eq(TestSteps.STRUCTURE_ID), any())).thenReturn(mockStructure);
+
+        Map<String, Map<String, String>> stepsMapping = new HashMap<>();
+        Map<String, String> stepFields = new HashMap<>();
+        stepFields.put("step", "B");
+        stepFields.put("expectedResult", "C");
+        stepsMapping.put("testSteps", stepFields);
+
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .columnsMapping(Map.of("A", "title"))
+                .stepsMapping(stepsMapping)
+                .overwriteWithEmpty(true)
+                .build();
+
+        // Single-row table: values are plain strings, not lists
+        Map<String, Object> mappingRecord = new HashMap<>();
+        mappingRecord.put("A", "Test Title");
+        mappingRecord.put("B", "singleStep");
+        mappingRecord.put("C", "singleResult");
+
+        service.fillWorkItemFields(workItem, mappingRecord, model, "linkField");
+
+        verify(trackerService.getDataService()).createStructureForTypeId(eq(workItem), eq(TestSteps.STRUCTURE_ID), any());
         verify(polarionService).setFieldValue(eq(workItem), eq("testSteps"), eq(mockStructure), any());
     }
 

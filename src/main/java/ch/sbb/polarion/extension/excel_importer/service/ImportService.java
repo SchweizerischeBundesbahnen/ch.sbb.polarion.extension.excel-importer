@@ -186,10 +186,14 @@ public class ImportService {
             structureMap.put(ITestSteps.KEY_KEYS, keys);
 
             List<Map<String, List<Text>>> steps = new ArrayList<>();
-            for (int i = 0; i < ((List) dataMap.get(mappingValue.get(keys.getFirst()))).size(); i++) {
+            // we take the number of rows in the table from the first column, assuming that all columns have the same number of rows as they are part of the same table
+            Object firstKeyValue = dataMap.get(mappingValue.get(keys.getFirst()));
+            // if the value is not a list, it means that the table has only one row
+            int tableLength = firstKeyValue instanceof List ? ((List) firstKeyValue).size() : 1;
+            for (int i = 0; i < tableLength; i++) {
                 final int index = i;
                 List<Text> values = keys.stream().map(mappingValue::get).map(dataMap::get)
-                        .map(columnValue -> ((List) columnValue).get(index))
+                        .map(columnValue -> columnValue instanceof List list ? list.get(index) : columnValue)
                         .map(nextRowValue -> Text.html(nextRowValue == null ? "" : String.valueOf(nextRowValue))).toList();
                 steps.add(Map.of(ITestStep.KEY_VALUES, values));
             }
