@@ -10,11 +10,12 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -42,17 +43,21 @@ public class XlsxParser implements IParser {
         if (!StringUtils.isEmpty(sheetName) && (sheetIndex = workbook.getSheetIndex(sheetName)) == -1) {
             throw new IllegalArgumentException(String.format("File doesn't contain sheet '%s'", sheetName));
         }
+        int startFromRow = parserSettings.getStartFromRow();
         XSSFSheet sheet = workbook.getSheetAt(sheetIndex);
+        List<CellRangeAddress> mergedRegions = sheet.getMergedRegions();
+        validateMergedRegions(mergedRegions, startFromRow);
         Set<String> usedColumnsLetters = parserSettings.getUsedColumnsLetters();
         int rowNumber = 0;
         for (Row row : sheet) {
-            if (++rowNumber < parserSettings.getStartFromRow()) {
+            if (++rowNumber < startFromRow) {
                 continue;
             }
-            Map<String, Object> map = parseRow(row, usedColumnsLetters);
+            Map<String, Object> map = parseRow(row, usedColumnsLetters, mergedRegions);
             // sometimes we get a row full of nulls - we have to skip it
             // also we skip rows with empty (or visually empty) strings
-            if (!map.values().stream().allMatch(v -> v == null || (v instanceof String s && StringUtils.isEmptyTrimmed(s)))) {
+            if (map != null && !map.values().stream().allMatch(v -> v == null || (v instanceof String s && StringUtils.isEmptyTrimmed(s))
+                    || v instanceof List<?> l && l.stream().allMatch(i -> i == null || (i instanceof String str && StringUtils.isEmptyTrimmed(str))))) {
                 result.add(map);
             }
         }
@@ -61,29 +66,74 @@ public class XlsxParser implements IParser {
         return result;
     }
 
-    @NotNull
-    private Map<String, Object> parseRow(Row row, Set<String> usedColumnsLetters) {
+    @Nullable
+    private Map<String, Object> parseRow(Row row, Set<String> usedColumnsLetters, List<CellRangeAddress> mergedRegions) {
         Map<String, Object> map = new HashMap<>();
+        CellRangeAddress nearestMergedRegion = mergedRegions.stream().filter(r -> r.containsRow(row.getRowNum())).findFirst().orElse(null);
+        if (nearestMergedRegion != null && nearestMergedRegion.getFirstRow() != row.getRowNum()) {
+            // skip cells that are part of a merged region but not the first row of it
+            return null;
+        }
         for (String currentLetter : usedColumnsLetters) {
-            Cell cell = row.getCell(CellReference.convertColStringToIndex(currentLetter), Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
-            String cellLetter = CellReference.convertNumToColString(cell.getColumnIndex());
-            if (!usedColumnsLetters.contains(cellLetter)) {
-                continue;
-            }
-            switch (cell.getCellType().equals(CellType.FORMULA) ? cell.getCachedFormulaResultType(): cell.getCellType()) {
-                case NUMERIC -> {
-                    if (DateUtil.isCellDateFormatted(cell)) {
-                        map.put(cellLetter, cell.getDateCellValue());
-                    } else {
-                        // get any numeric as a string, later it will be converted to the desired type using converters
-                        map.put(cellLetter, ((XSSFCell) cell).getRawValue());
-                    }
+            int currentColumnIndex = CellReference.convertColStringToIndex(currentLetter);
+            Cell cell = row.getCell(currentColumnIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+
+            CellRangeAddress enclosingMergedRegion = mergedRegions.stream().filter(r -> r.isInRange(cell)).findFirst().orElse(null);
+            if (enclosingMergedRegion != null) {
+                // get value from the first cell of the merged region
+                Cell regionValueCell = cell.getSheet().getRow(enclosingMergedRegion.getFirstRow()).getCell(enclosingMergedRegion.getFirstColumn(), Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                map.put(currentLetter, getCellValue(regionValueCell, currentLetter));
+            } else if (nearestMergedRegion != null) {
+                // collect values from all rows of the merged region into a list for the current column
+                List<Object> valuesList = new ArrayList<>();
+                for (int r = nearestMergedRegion.getFirstRow(); r <= nearestMergedRegion.getLastRow(); r++) {
+                    Cell nextCell = row.getSheet().getRow(r).getCell(currentColumnIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                    valuesList.add(getCellValue(nextCell, currentLetter));
                 }
-                case BOOLEAN -> map.put(cellLetter, cell.getBooleanCellValue());
-                case ERROR -> throw new IllegalArgumentException("%s%s contains bad/error value".formatted(cellLetter, (cell.getRowIndex() + 1)));
-                default -> map.put(cellLetter, StringUtils.getNullIfEmpty(cell.getStringCellValue()));
+                map.put(currentLetter, valuesList);
+            } else {
+                // normal cell, just get its value
+                map.put(currentLetter, getCellValue(cell, currentLetter));
             }
         }
         return map;
     }
+
+    private Object getCellValue(Cell cell, String cellLetter) {
+        switch (cell.getCellType().equals(CellType.FORMULA) ? cell.getCachedFormulaResultType() : cell.getCellType()) {
+            case NUMERIC -> {
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue();
+                } else {
+                    // get any numeric as a string, later it will be converted to the desired type using converters
+                    return ((XSSFCell) cell).getRawValue();
+                }
+            }
+            case BOOLEAN -> {
+                return cell.getBooleanCellValue();
+            }
+            case ERROR -> throw new IllegalArgumentException("%s%s contains bad/error value".formatted(cellLetter, (cell.getRowIndex() + 1)));
+            default -> {
+                return StringUtils.getNullIfEmpty(cell.getStringCellValue());
+            }
+        }
+    }
+
+    private void validateMergedRegions(List<CellRangeAddress> mergedRegions, int startFromRow) {
+        List<CellRangeAddress> dataAreaRegions = mergedRegions.stream().filter(r -> r.getLastRow() >= startFromRow - 1).toList();
+        for (int i = 0; i < dataAreaRegions.size(); i++) {
+            for (int j = i + 1; j < dataAreaRegions.size(); j++) {
+                CellRangeAddress region1 = dataAreaRegions.get(i);
+                CellRangeAddress region2 = dataAreaRegions.get(j);
+                boolean rowsOverlap = region1.getFirstRow() <= region2.getLastRow() && region2.getFirstRow() <= region1.getLastRow();
+                boolean sameRowRange = region1.getFirstRow() == region2.getFirstRow() && region1.getLastRow() == region2.getLastRow();
+                if (rowsOverlap && !sameRowRange) {
+                    throw new IllegalArgumentException(String.format(
+                            "Merged regions %s and %s have partially overlapping row ranges which is not allowed",
+                            region1.formatAsString(), region2.formatAsString()));
+                }
+            }
+        }
+    }
+
 }

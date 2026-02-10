@@ -5,17 +5,20 @@ import ch.sbb.polarion.extension.generic.fields.model.Option;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
+import com.polarion.alm.tracker.model.ITestStepKeyOpt;
+import com.polarion.alm.tracker.model.ITestSteps;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.ITypeOpt;
 import com.polarion.alm.tracker.model.IWithAttachments;
 import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.platform.IPlatformService;
-import com.polarion.platform.core.PlatformContext;
 import com.polarion.platform.persistence.IEnumeration;
 import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
+import com.polarion.portal.internal.server.navigation.TestManagementServiceAccessor;
 import com.polarion.subterra.base.data.identification.IContextId;
+import com.polarion.subterra.base.data.model.IStructType;
 import com.polarion.subterra.base.data.model.internal.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,6 +31,7 @@ import java.util.stream.Collectors;
 public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.service.PolarionService {
 
     private static final Set<Option> BOOLEAN_OPTIONS_MAPPING = Set.of(new Option("True", "true"), new Option("False", "false"));
+    private final ITestManagementService testManagementService = new TestManagementServiceAccessor().getTestingService();
 
     public PolarionServiceExt() {
     }
@@ -50,7 +54,19 @@ public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.servic
         fields.addAll(getCustomFields(IWorkItem.PROTO, contextId, null)); // get custom fields for WorkItem with any type in the project (-- All Types --)
         fields.addAll(getCustomFields(IWorkItem.PROTO, contextId, typeOpt.getId())); // get custom fields for WorkItem with specific type in the project
         fillBooleanOptionMappings(fields); // set mappings for booleans
+        fillTestStepsFieldsOptions(fields, projectId, workItemType); // set mappings for test steps fields
         return fields;
+    }
+
+    private void fillTestStepsFieldsOptions(Set<FieldMetadata> fields, String projectId, String workItemType) {
+        for (FieldMetadata field : fields) {
+            if (field.getType() instanceof IStructType structType && ITestSteps.STRUCTURE_ID.equals(structType.getStructTypeId())) {
+                List<ITestStepKeyOpt> testStepsKeys = testManagementService.getTestStepsKeys(projectId, workItemType);
+                field.setOptions(testStepsKeys.stream()
+                        .map(tsk -> new Option(tsk.getId(), tsk.getName(), null))
+                        .collect(Collectors.toSet()));
+            }
+        }
     }
 
     public List<ITypeOpt> getWorkItemTypes(@NotNull String projectId) {
@@ -111,7 +127,6 @@ public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.servic
                 return getTrackerService().getRichPageManager().getRichPage().path(objectId);
             }
             case "TESTRUN" -> {
-                ITestManagementService testManagementService = PlatformContext.getPlatform().lookupService(ITestManagementService.class);
                 return testManagementService.getTestRun(projectId, objectId);
             }
             case "WORKITEM" -> {

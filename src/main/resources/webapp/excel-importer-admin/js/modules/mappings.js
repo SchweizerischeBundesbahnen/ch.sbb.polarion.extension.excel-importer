@@ -37,6 +37,7 @@ function createMappingRow({recreateAddButton, columnValue, fieldValue}) {
     const table = ctx.getElementById('mapping-table');
     const tableRow = document.createElement('tr');
     tableRow.classList.add('mapping-row');
+    tableRow.dataset.uid = self.crypto.randomUUID();
     createRemoveButtonCell(tableRow);
     createTextColumnCell(tableRow, columnValue);
     createFieldCell(tableRow, fieldValue);
@@ -73,7 +74,7 @@ function createFieldCell(tableRow, fieldValue) {
     fieldCell.appendChild(fieldLabel);
 
     const fieldSelect = document.createElement('select');
-    fieldSelect.classList.add('fs-14', 'fields');
+    fieldSelect.classList.add('fs-14', 'fields', 'field-name-select');
     fieldCell.appendChild(fieldSelect);
 
     const mappingButton = document.createElement('button');
@@ -134,20 +135,81 @@ function createFieldCell(tableRow, fieldValue) {
     fieldCell.appendChild(mappingButton);
 
     fieldSelect.addEventListener('change', () => {
-        updateOptionsComponents(fieldSelect.value, mappingButton);
+        // deselect the same field in other rows to avoid duplicate selection
+        if (!fieldSelect.deselecting) { // prevent infinite loop of change events when deselecting other selects
+            ctx.querySelectorAll('.field-name-select').forEach(select => {
+                if (select !== fieldSelect && select.value === fieldSelect.value) {
+                    select.deselecting = true;
+                    select.value = '';
+                    select.dispatchEvent(new Event('change'));
+                    select.deselecting = false;
+                }
+            });
+        }
+        updateAuxiliaryComponents(fieldSelect.value, mappingButton, tableRow.dataset.uid);
     });
 
     tableRow.appendChild(fieldCell);
     populateFieldDropdown(tableRow, fieldValue);
 }
 
-function updateOptionsComponents(selectedField, mappingButton) {
-    mappingButton.style.display = hasOptions(selectedField) ? 'inline-block' : 'none';
+function updateAuxiliaryComponents(selectedField, mappingButton, uid) {
+    mappingButton.style.display = isEnum(selectedField) ? 'inline-block' : 'none';
+
+    const targetRow = document.querySelector(`[data-uid="${uid}"]`);
+    let columnInput = targetRow.querySelector(".excel-column-input");
+    columnInput.disabled = false;
+
+    const elements = document.querySelectorAll(`[data-parent_uid="${uid}"]`);
+    elements.forEach(el => el.remove());
+    if (isTestSteps(selectedField)) {
+
+        columnInput.disabled = true;
+        columnInput.value = "";
+        const field = getField(selectedField);
+        for (const option of field.options) {
+
+            const subRow = document.createElement('tr');
+            subRow.classList.add('mapping-row');
+            subRow.dataset.parent_uid = uid;
+            subRow.dataset.parent_field_id = selectedField;
+            subRow.dataset.option_key = option.key;
+
+            subRow.appendChild(document.createElement('td')); // no delete button for sub rows
+
+            let columnValue = '';
+            let existingMapping = cache.stepsMapping[selectedField];
+            if (existingMapping) {
+                columnValue = existingMapping[option.key] ?? '';
+            }
+            createTextColumnCell(subRow, columnValue);
+
+            let fieldCell = document.createElement('td');
+            let fieldLabel = document.createElement('label');
+            fieldLabel.innerHTML = ' Field Name: ';
+            fieldCell.appendChild(fieldLabel);
+
+            let input = document.createElement('input');
+            input.setAttribute('type', 'text');
+            input.disabled = true;
+            input.value = option.name;
+            input.classList.add('fs-14', 'stepName', 'field-name');
+            fieldCell.appendChild(input);
+            subRow.appendChild(fieldCell);
+
+            targetRow.after(subRow);
+        }
+    }
 }
 
-function hasOptions(fieldId) {
+function isEnum(fieldId) {
     const field = getField(fieldId);
-    return field && field.options != null && field.options.length > 0;
+    return field && field.options != null && field.options.length > 0 && field.type.structTypeId !== 'TestSteps';
+}
+
+function isTestSteps(fieldId) {
+    const field = getField(fieldId);
+    return field && field.options != null && field.options.length > 0 && field.type.structTypeId === 'TestSteps';
 }
 
 function getField(fieldId) {
@@ -178,7 +240,7 @@ function saveOptionsMapping() {
     cache.enumsMapping[fieldId] = Object.fromEntries(getOptionsMapping());
 }
 
-function populateFieldDropdown(container, selectedValue) {
+function populateFieldDropdown(row, selectedValue) {
     ctx.callAsync({
         method: 'GET',
         url: `/polarion/${ctx.extension}/rest/internal/projects/${getProjectIdFromScope()}/workitem_types/${ctx.getValueById('wi-types')}/fields`,
@@ -189,10 +251,10 @@ function populateFieldDropdown(container, selectedValue) {
             for (const field of cache.fields) {
                 ids.push(field.id);
             }
-            populateDropdown(container, 'fields', ids, selectedValue);
+            populateDropdown(row, 'fields', ids, selectedValue, true);
 
-            const mappingButton = container.getElementsByClassName('options-mapping-button')[0];
-            updateOptionsComponents(selectedValue, mappingButton);
+            const mappingButton = row.getElementsByClassName('options-mapping-button')[0];
+            updateAuxiliaryComponents(selectedValue, mappingButton, row.dataset.uid);
         },
         onError: () => ctx.setLoadingErrorNotificationVisible(true)
     });
@@ -277,9 +339,15 @@ function updateFieldDropdowns() {
     }
 }
 
-function populateDropdown(container, className, data, selectedValue) {
+function populateDropdown(container, className, data, selectedValue, allowEmpty = false) {
     const select = container.getElementsByClassName(className)[0];
     select.innerHTML = '';
+    if (allowEmpty) {
+        const emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.innerHTML = '';
+        select.appendChild(emptyOption);
+    }
     data.forEach((value) => {
         const option = document.createElement('option');
         option.value = value;
@@ -292,15 +360,29 @@ function populateDropdown(container, className, data, selectedValue) {
 }
 
 function getColumnToFieldMapping() {
-    const container = ctx.getElementById('mapping-table');
-    const rows = container.getElementsByClassName('mapping-row');
+    const rows = ctx.querySelectorAll('#mapping-table .mapping-row[data-uid]');
     const map = new Map();
     Array.from(rows).forEach(row => {
         const columnValue = row.getElementsByClassName('excel-column-input')[0].value;
         const fieldValue = row.getElementsByClassName('fields')[0].value;
-        map.set(columnValue, fieldValue);
+        // skip empty column values (e.g. test steps root rows)
+        map.set(columnValue || `testSteps|${fieldValue}`, fieldValue);
     });
     return map;
+}
+
+function getTestStepsMapping() {
+    const rows = ctx.querySelectorAll('[data-parent_field_id]');
+    const stepsMap = {};
+    Array.from(rows).forEach(row => {
+        const columnValue = row.getElementsByClassName('excel-column-input')[0].value;
+        let testStepsFieldId = row.dataset.parent_field_id;
+        if (!stepsMap[testStepsFieldId]) {
+            stepsMap[testStepsFieldId] = {};
+        }
+        stepsMap[testStepsFieldId][row.dataset.option_key] = columnValue;
+    });
+    return stepsMap;
 }
 
 function getOptionsMapping() {
@@ -339,6 +421,7 @@ function parseAndSetSettings(text) {
     Object.entries(settings.columnsMapping).forEach(entry => {
         createMappingRow({columnValue: entry[0], fieldValue: entry[1]});
     })
+    cache.stepsMapping = settings.stepsMapping == null ? {} : settings.stepsMapping;
     cache.enumsMapping = settings.enumsMapping == null ? {} : settings.enumsMapping;
     updateLinkColumnDropdown();
     ctx.setValueById('link-column', settings.linkColumn);
@@ -371,6 +454,7 @@ function saveSettings() {
             'startFromRow': ctx.getValueById('start-from-row'),
             'overwriteWithEmpty': ctx.getCheckboxValueById('overwrite'),
             'columnsMapping': Object.fromEntries(getColumnToFieldMapping()),
+            'stepsMapping': getTestStepsMapping(),
             'enumsMapping': cache.enumsMapping,
             'defaultWorkItemType': ctx.getValueById('wi-types'),
             'linkColumn': ctx.getValueById('link-column')
@@ -413,16 +497,18 @@ function validateMapping() {
     let mappingRows = mappingTable.getElementsByClassName('mapping-row');
     let existingColumns = [];
     for (const row of Array.from(mappingRows)) {
-        const columnName = row.getElementsByClassName('excel-column-input')[0].value;
-        if (!columnName) {
-            return `Column name cannot be empty`;
-        } else if (existingColumns.includes(columnName)) {
-            return `Cannot have duplicate column name '${columnName}'`;
-        }
-        existingColumns.push(columnName);
-        const fieldName = row.getElementsByClassName('fields')[0].value;
-        if (!fieldName) {
-            return `Mapping for column '${columnName}' cannot be empty`;
+        let columnInput = row.querySelector('.excel-column-input');
+        let columnName = columnInput.value;
+        if (!columnInput.disabled) { // skip disabled inputs (Test Steps sub-rows)
+            if (!columnName) {
+                return `Column name cannot be empty`;
+            } else if (existingColumns.includes(columnName)) {
+                return `Cannot have duplicate column name '${columnName}'`;
+            }
+            existingColumns.push(columnName);
+            if (row.dataset.uid && !row.querySelector('.fields').value) {
+                return `Mapping for column '${columnName}' cannot be empty`;
+            }
         }
     }
     return '';

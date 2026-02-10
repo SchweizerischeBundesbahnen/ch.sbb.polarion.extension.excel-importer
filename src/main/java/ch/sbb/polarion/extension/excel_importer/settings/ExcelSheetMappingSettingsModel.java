@@ -12,9 +12,11 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -30,14 +32,25 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
 
     public static final String COLUMNS_MAPPING = "COLUMNS_MAPPING";
     public static final String ENUMS_MAPPING = "ENUMS_MAPPING";
+    public static final String STEPS_MAPPING = "STEPS_MAPPING";
     public static final String DEFAULT_WI_TYPE = "DEFAULT_WI_TYPE";
     public static final String LINK_COLUMN = "LINK_COLUMN";
+
+    /**
+     * Prefix for columns mapping keys which are used as fillers for test steps items.
+     * The part after the prefix is considered as a name of the step field to fill:
+     * e.g. "testSteps|stageStandTestSteps" means that the column is filler for "stageStandTestSteps" but even in this
+     * case it's basically not needed because no business logic relays on this. The only reason for
+     * filling this value is that 1) we must have unique keys in columns mapping and 2) we want to maintain items order.
+     */
+    public static final String TEST_STEPS_COLUMN_FILLER_PREFIX = "testSteps|";
 
     private String sheetName;
     private int startFromRow;
     private boolean overwriteWithEmpty;
     private Map<String, String> columnsMapping;
     private Map<String, Map<String, String>> enumsMapping;
+    private Map<String, Map<String, String>> stepsMapping;
     private String defaultWorkItemType;
     private String linkColumn;
 
@@ -51,6 +64,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
                 serializeEntry(OVERWRITE_WITH_EMPTY, overwriteWithEmpty) +
                 serializeEntry(COLUMNS_MAPPING, columnsMapping) +
                 serializeEntry(ENUMS_MAPPING, enumsMapping) +
+                serializeEntry(STEPS_MAPPING, stepsMapping) +
                 serializeEntry(DEFAULT_WI_TYPE, defaultWorkItemType) +
                 serializeEntry(LINK_COLUMN, linkColumn);
     }
@@ -64,6 +78,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
         overwriteWithEmpty = !Objects.equals(Boolean.FALSE.toString(), deserializeEntry(OVERWRITE_WITH_EMPTY, serializedString));
         columnsMapping = deserializeEntry(COLUMNS_MAPPING, serializedString, Map.class);
         enumsMapping = deserializeEntry(ENUMS_MAPPING, serializedString, Map.class);
+        stepsMapping = Objects.requireNonNullElse(deserializeEntry(STEPS_MAPPING, serializedString, Map.class), Map.of());
         defaultWorkItemType = deserializeEntry(DEFAULT_WI_TYPE, serializedString);
         linkColumn = deserializeEntry(LINK_COLUMN, serializedString);
     }
@@ -71,7 +86,10 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
     @JsonIgnore
     @Override
     public Set<String> getUsedColumnsLetters() {
-        return (columnsMapping != null)? columnsMapping.keySet() : Set.of();
+        Set<String> result = new HashSet<>((columnsMapping != null) ? columnsMapping.keySet().stream()
+                .filter(k -> !k.startsWith(TEST_STEPS_COLUMN_FILLER_PREFIX)).collect(Collectors.toSet()) : Set.of());
+        stepsMapping.values().forEach(m -> result.addAll(m.values()));
+        return result;
     }
 
 }

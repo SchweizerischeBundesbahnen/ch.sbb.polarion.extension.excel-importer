@@ -22,6 +22,16 @@
                   projectGroupScope="false"
                   repositoryScope="true"/>
 
+        <extender id="user-guide"
+                  name="User Guide"
+                  parentNodeId="excel-importer"
+                  parentNodeName="Excel Importer"
+                  iconUrl="/polarion/excel-importer-admin/ui/images/menu/16x16/user_guide.svg"
+                  pageUrl="/polarion/excel-importer-admin/pages/user-guide.jsp?scope=$scope$"
+                  projectScope="true"
+                  projectGroupScope="false"
+                  repositoryScope="true"/>
+
         <extender id="rest-api"
                   name="REST API"
                   parentNodeId="excel-importer"

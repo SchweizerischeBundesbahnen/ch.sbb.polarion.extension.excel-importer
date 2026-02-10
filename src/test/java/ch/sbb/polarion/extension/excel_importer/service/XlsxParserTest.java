@@ -7,7 +7,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +33,9 @@ class XlsxParserTest {
     private static final String SHEET_EMPTY = "empty";
     private static final String SHEET_WIDE = "wide";
     private static final String SHEET_BAD = "bad";
+    private static final String SHEET_MERGED_FAIL = "merged_fail";
+    private static final String SHEET_MERGED_OK = "merged_ok";
+    private static final String SHEET_MERGED_MIXED = "merged_mixed";
 
     @Test
     void testSuccessfulParse() {
@@ -40,14 +55,17 @@ class XlsxParserTest {
     }
 
     @Test
+    @SneakyThrows
     void testFormulaError() {
         XlsxParser xlsxParser = new XlsxParser();
-        InputStream fileAttempt1 = getClass().getClassLoader().getResourceAsStream("error.xlsx");
-        IParserSettings settingsAttempt1 = generateSettings(SHEET_FIRST, 1);
+        IllegalArgumentException exception;
+        try (InputStream fileAttempt1 = getClass().getClassLoader().getResourceAsStream("error.xlsx")) {
+            IParserSettings settingsAttempt1 = generateSettings(SHEET_FIRST, 1);
 
-        // one of the columns has error
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> xlsxParser.parseFileStream(fileAttempt1, settingsAttempt1));
+            // one of the columns has error
+            exception = assertThrows(IllegalArgumentException.class,
+                    () -> xlsxParser.parseFileStream(fileAttempt1, settingsAttempt1));
+        }
         assertEquals("E1 contains bad/error value", exception.getMessage());
 
         // narrow columns mapping usage - this time column with error is ignored
@@ -80,6 +98,36 @@ class XlsxParserTest {
 
     @Test
     @SneakyThrows
+    void testOverlappingRowsOk() {
+        try (InputStream fileStream = getClass().getClassLoader().getResourceAsStream("test.xlsx")) {
+            IParserSettings settings = generateSettings(SHEET_MERGED_OK, 6, "A", "B", "C");
+            assertDoesNotThrow(() -> new XlsxParser().parseFileStream(fileStream, settings));
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testOverlappingRowsFail() {
+        try (InputStream fileStream = getClass().getClassLoader().getResourceAsStream("test.xlsx")) {
+            IParserSettings settings = generateSettings(SHEET_MERGED_FAIL, 2, "A", "B", "C");
+            XlsxParser xlsxParser = new XlsxParser();
+            IllegalArgumentException exception =  assertThrows(IllegalArgumentException.class, () -> xlsxParser.parseFileStream(fileStream, settings));
+            assertEquals("Merged regions A2:A4 and B3:B4 have partially overlapping row ranges which is not allowed", exception.getMessage());
+        }
+    }
+
+    @Test
+    void testMixed() {
+        List<Map<String, Object>> result = new XlsxParser().parseFileStream(getClass().getClassLoader().getResourceAsStream("test.xlsx"), generateSettings(SHEET_MERGED_MIXED, 1, "A", "B", "C", "D"));
+        assertEquals(List.of(
+                Map.of("A", "A1-3", "B", List.of("B11", "B12", "B13"), "C", "C1-3+D1-3", "D", "C1-3+D1-3"),
+                Map.of("A", "A4", "B", "B4", "C", "C4", "D", "D4"),
+                Map.of("A", "A5-6", "B", "B5-6", "C", Arrays.asList("C5", null), "D", Arrays.asList(null, null))
+        ), result);
+    }
+
+    @Test
+    @SneakyThrows
     void testUnknownSheetName() {
         XlsxParser xlsxParser = new XlsxParser();
         IParserSettings parserSettings = generateSettings(SHEET_BAD, 1);
@@ -101,6 +149,67 @@ class XlsxParserTest {
                     () -> xlsxParser.parseFileStream(xlsxInputStream, parserSettings),
                     "Expected IllegalArgumentException thrown, but it didn't");
             assertTrue(exception.getMessage().startsWith("File isn't an xlsx"));
+        }
+    }
+
+    @Test
+    void testValidateMergedRegionsConditions() throws Exception {
+        XlsxParser parser = new XlsxParser();
+        Method method = XlsxParser.class.getDeclaredMethod("validateMergedRegions", List.class, int.class);
+        method.setAccessible(true);
+
+        // Non-overlapping: region1 entirely before region2 (first condition true, second false)
+        List<CellRangeAddress> beforeRegions = List.of(new CellRangeAddress(1, 2, 0, 0), new CellRangeAddress(4, 5, 1, 1));
+        assertDoesNotThrow(() -> method.invoke(parser, beforeRegions, 1));
+
+        // Non-overlapping: region1 entirely after region2 (first condition false)
+        List<CellRangeAddress> afterRegions = List.of(new CellRangeAddress(4, 5, 0, 0), new CellRangeAddress(1, 2, 1, 1));
+        assertDoesNotThrow(() -> method.invoke(parser, afterRegions, 1));
+
+        // Overlapping with same row range → no exception
+        List<CellRangeAddress> sameRangeRegions = List.of(new CellRangeAddress(1, 3, 0, 0), new CellRangeAddress(1, 3, 1, 1));
+        assertDoesNotThrow(() -> method.invoke(parser, sameRangeRegions, 1));
+
+        // Same first row, different last row → sameRowRange second condition is false → exception
+        List<CellRangeAddress> sameFirstRowRegions = List.of(new CellRangeAddress(1, 3, 0, 0), new CellRangeAddress(1, 4, 1, 1));
+        InvocationTargetException ex1 = assertThrows(InvocationTargetException.class, () -> method.invoke(parser, sameFirstRowRegions, 1));
+        assertInstanceOf(IllegalArgumentException.class, ex1.getCause());
+
+        // Different first row, same last row → sameRowRange first condition is false → exception
+        List<CellRangeAddress> sameLastRowRegions = List.of(new CellRangeAddress(1, 4, 0, 0), new CellRangeAddress(2, 4, 1, 1));
+        InvocationTargetException ex2 = assertThrows(InvocationTargetException.class, () -> method.invoke(parser, sameLastRowRegions, 1));
+        assertInstanceOf(IllegalArgumentException.class, ex2.getCause());
+    }
+
+    @Test
+    @SneakyThrows
+    void testDateAndBooleanCells() {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("types");
+            XSSFRow row = sheet.createRow(0);
+
+            // Column A: date cell
+            XSSFCell dateCell = row.createCell(0);
+            Date testDate = new Date(1700000000000L); // fixed timestamp
+            dateCell.setCellValue(testDate);
+            short dateFormat = workbook.getCreationHelper().createDataFormat().getFormat("yyyy-MM-dd");
+            var style = workbook.createCellStyle();
+            style.setDataFormat(dateFormat);
+            dateCell.setCellStyle(style);
+
+            // Column B: boolean cell
+            XSSFCell boolCell = row.createCell(1);
+            boolCell.setCellValue(true);
+
+            workbook.write(bos);
+        }
+
+        try (InputStream is = new ByteArrayInputStream(bos.toByteArray())) {
+            List<Map<String, Object>> result = new XlsxParser().parseFileStream(is, generateSettings("types", 1, "A", "B"));
+            assertEquals(1, result.size());
+            assertInstanceOf(Date.class, result.getFirst().get("A"));
+            assertEquals(true, result.getFirst().get("B"));
         }
     }
 
