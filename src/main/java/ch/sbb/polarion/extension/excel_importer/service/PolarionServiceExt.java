@@ -128,7 +128,6 @@ public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.servic
                 return getTrackerService().getRichPageManager().getRichPage().path(objectId);
             }
             case "TESTRUN" -> {
-                ITestManagementService testManagementService = PlatformContext.getPlatform().lookupService(ITestManagementService.class);
                 return testManagementService.getTestRun(projectId, objectId);
             }
             case "WORKITEM" -> {

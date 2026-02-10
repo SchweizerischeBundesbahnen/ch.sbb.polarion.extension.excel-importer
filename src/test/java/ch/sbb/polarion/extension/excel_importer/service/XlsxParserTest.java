@@ -7,7 +7,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.apache.poi.ss.util.CellRangeAddress;
+
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +103,8 @@ class XlsxParserTest {
     void testOverlappingRowsFail() {
         try (InputStream fileStream = getClass().getClassLoader().getResourceAsStream("test.xlsx")) {
             IParserSettings settings = generateSettings(SHEET_MERGED_FAIL, 2, "A", "B", "C");
-            IllegalArgumentException exception =  assertThrows(IllegalArgumentException.class, () -> new XlsxParser().parseFileStream(fileStream, settings));
+            XlsxParser xlsxParser = new XlsxParser();
+            IllegalArgumentException exception =  assertThrows(IllegalArgumentException.class, () -> xlsxParser.parseFileStream(fileStream, settings));
             assertEquals("Merged regions A2:A4 and B3:B4 have partially overlapping row ranges which is not allowed", exception.getMessage());
         }
     }
@@ -138,6 +143,35 @@ class XlsxParserTest {
                     "Expected IllegalArgumentException thrown, but it didn't");
             assertTrue(exception.getMessage().startsWith("File isn't an xlsx"));
         }
+    }
+
+    @Test
+    void testValidateMergedRegionsConditions() throws Exception {
+        XlsxParser parser = new XlsxParser();
+        Method method = XlsxParser.class.getDeclaredMethod("validateMergedRegions", List.class, int.class);
+        method.setAccessible(true);
+
+        // Non-overlapping: region1 entirely before region2 (first condition true, second false)
+        List<CellRangeAddress> beforeRegions = List.of(new CellRangeAddress(1, 2, 0, 0), new CellRangeAddress(4, 5, 1, 1));
+        assertDoesNotThrow(() -> method.invoke(parser, beforeRegions, 1));
+
+        // Non-overlapping: region1 entirely after region2 (first condition false)
+        List<CellRangeAddress> afterRegions = List.of(new CellRangeAddress(4, 5, 0, 0), new CellRangeAddress(1, 2, 1, 1));
+        assertDoesNotThrow(() -> method.invoke(parser, afterRegions, 1));
+
+        // Overlapping with same row range → no exception
+        List<CellRangeAddress> sameRangeRegions = List.of(new CellRangeAddress(1, 3, 0, 0), new CellRangeAddress(1, 3, 1, 1));
+        assertDoesNotThrow(() -> method.invoke(parser, sameRangeRegions, 1));
+
+        // Same first row, different last row → sameRowRange second condition is false → exception
+        List<CellRangeAddress> sameFirstRowRegions = List.of(new CellRangeAddress(1, 3, 0, 0), new CellRangeAddress(1, 4, 1, 1));
+        InvocationTargetException ex1 = assertThrows(InvocationTargetException.class, () -> method.invoke(parser, sameFirstRowRegions, 1));
+        assertInstanceOf(IllegalArgumentException.class, ex1.getCause());
+
+        // Different first row, same last row → sameRowRange first condition is false → exception
+        List<CellRangeAddress> sameLastRowRegions = List.of(new CellRangeAddress(1, 4, 0, 0), new CellRangeAddress(2, 4, 1, 1));
+        InvocationTargetException ex2 = assertThrows(InvocationTargetException.class, () -> method.invoke(parser, sameLastRowRegions, 1));
+        assertInstanceOf(IllegalArgumentException.class, ex2.getCause());
     }
 
     private IParserSettings generateSettings(String sheetName, int startingRow, String... customUsedColumnsLetters) {

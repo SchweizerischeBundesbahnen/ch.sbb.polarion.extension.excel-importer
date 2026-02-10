@@ -128,7 +128,7 @@ class PolarionServiceExtTest {
 
     @Test
     @SuppressWarnings("rawtypes")
-    void testGetObjectAttachments() {
+    void testGetObjectAttachments() throws Exception {
         PolarionServiceExt service = spy(new PolarionServiceExt());
 
         IModule module = mock(IModule.class);
@@ -144,8 +144,9 @@ class PolarionServiceExtTest {
         assertEquals(richPage, result);
 
         ITestRun testRun = mock(ITestRun.class);
-        ITestManagementService testManagementService = mock(ITestManagementService.class);
-        when(PlatformContext.getPlatform().lookupService(ITestManagementService.class)).thenReturn(testManagementService);
+        Field tmField = PolarionServiceExt.class.getDeclaredField("testManagementService");
+        tmField.setAccessible(true);
+        ITestManagementService testManagementService = (ITestManagementService) tmField.get(service);
         when(testManagementService.getTestRun("testProjectId", "testObjectId")).thenReturn(testRun);
         result = service.getObjectAttachments("testProjectId", "TESTRUN", "testObjectId");
         assertEquals(testRun, result);

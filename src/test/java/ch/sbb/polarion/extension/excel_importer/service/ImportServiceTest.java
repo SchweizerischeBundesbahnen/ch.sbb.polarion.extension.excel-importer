@@ -454,7 +454,6 @@ class ImportServiceTest {
         IStructure mockStructure = mock(IStructure.class);
         when(trackerService.getDataService().createStructureForTypeId(any(), eq(TestSteps.STRUCTURE_ID), any())).thenReturn(mockStructure);
 
-        // stepsMapping: "testSteps" -> {"step" -> "B", "expectedResult" -> "C"}
         Map<String, Map<String, String>> stepsMapping = new HashMap<>();
         Map<String, String> stepFields = new HashMap<>();
         stepFields.put("step", "B");
