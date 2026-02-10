@@ -1,5 +1,20 @@
 # Changelog
 
+## [5.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v5.0.0...v5.1.0) (2026-02-10)
+
+
+### Features
+
+* cached BundleJarsPrioritizingRunnable usage ([#168](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/168)) ([319efc0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/319efc08a0aa74da64db23c8a29e16115c8911b8))
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v13.1.0 ([185f1e0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/185f1e0a8882d516be488a3002d699c97ef361a0))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v13.2.0 ([45dc9c4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/45dc9c46d1e7c4660e908c5ed2da114d11fa1af7))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v13.2.1 ([ff0dc4a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/ff0dc4a8da2a776454660efe0ab5c7b24c5608f5))
+* import test steps ([#170](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/170)) ([59dc02e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/59dc02efe5a13d0073779047cc13fa16dade43ac)), closes [#169](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/169)
+
 ## [5.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v4.3.0...v5.0.0) (2026-01-09)
 
 
