@@ -180,7 +180,7 @@ public class ImportService {
             if (fieldMetadata == null) {
                 return; // fields was probably removed
             }
-            if (!new HashSet<>(keys).containsAll(fieldMetadata.getOptions().stream().map(Option::getKey).toList())) {
+            if (!new HashSet<>(keys).equals(fieldMetadata.getOptions().stream().map(Option::getKey).collect(Collectors.toSet()))) {
                 throw new IllegalArgumentException("Test steps keys mismatch for the field '%s'. Check fields mapping.".formatted(mappingKey));
             }
             structureMap.put(ITestSteps.KEY_KEYS, keys);

@@ -520,11 +520,11 @@ class ImportServiceTest {
     }
 
     @Test
-    void testConstructTestStepsFieldsKeysMismatch() {
+    void testConstructTestStepsFieldsKeysMismatchFewerKeys() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ImportService service = new ImportService(polarionService);
 
-        // Field options require keys "step" and "expectedResult", but mapping only provides "step"
+        // Field options require "step" and "expectedResult", but mapping only provides "step"
         FieldMetadata stepsField = FieldMetadata.builder().id("testSteps").type(FieldType.STRING.getType())
                 .options(Set.of(new Option("step", "Step", null), new Option("expectedResult", "Expected Result", null)))
                 .build();
@@ -537,7 +537,7 @@ class ImportServiceTest {
         when(workItem.getType()).thenReturn(typeOpt);
 
         Map<String, Map<String, String>> stepsMapping = new HashMap<>();
-        stepsMapping.put("testSteps", Map.of("step", "B")); // missing "expectedResult"
+        stepsMapping.put("testSteps", Map.of("step", "B"));
 
         ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
                 .columnsMapping(Map.of())
@@ -547,6 +547,44 @@ class ImportServiceTest {
 
         Map<String, Object> mappingRecord = new HashMap<>();
         mappingRecord.put("B", List.of("step1"));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.fillWorkItemFields(workItem, mappingRecord, model, "linkField"));
+        assertTrue(ex.getMessage().contains("testSteps"));
+    }
+
+    @Test
+    void testConstructTestStepsFieldsKeysMismatchExtraKeys() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        // Field options only have "step", but mapping provides "step" and "extra"
+        FieldMetadata stepsField = FieldMetadata.builder().id("testSteps").type(FieldType.STRING.getType())
+                .options(Set.of(new Option("step", "Step", null)))
+                .build();
+        when(polarionService.getWorkItemsFields("projectId", "req")).thenReturn(Set.of(stepsField));
+
+        IWorkItem workItem = mock(IWorkItem.class);
+        when(workItem.getProjectId()).thenReturn("projectId");
+        ITypeOpt typeOpt = mock(ITypeOpt.class);
+        when(typeOpt.getId()).thenReturn("req");
+        when(workItem.getType()).thenReturn(typeOpt);
+
+        Map<String, Map<String, String>> stepsMapping = new HashMap<>();
+        Map<String, String> stepFields = new HashMap<>();
+        stepFields.put("step", "B");
+        stepFields.put("extra", "C");
+        stepsMapping.put("testSteps", stepFields);
+
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .columnsMapping(Map.of())
+                .stepsMapping(stepsMapping)
+                .overwriteWithEmpty(true)
+                .build();
+
+        Map<String, Object> mappingRecord = new HashMap<>();
+        mappingRecord.put("B", List.of("step1"));
+        mappingRecord.put("C", List.of("extra1"));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.fillWorkItemFields(workItem, mappingRecord, model, "linkField"));
