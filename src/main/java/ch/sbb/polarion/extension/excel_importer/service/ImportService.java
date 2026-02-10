@@ -12,7 +12,6 @@ import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import ch.sbb.polarion.extension.generic.util.OptionsMappingUtils;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
-import com.polarion.alm.tracker.internal.model.TestSteps;
 import com.polarion.alm.tracker.model.ILinkRoleOpt;
 import com.polarion.alm.tracker.model.ITestStep;
 import com.polarion.alm.tracker.model.ITestSteps;
@@ -191,7 +190,7 @@ public class ImportService {
         // we take the number of rows in the table from the first column, assuming that all columns have the same number of rows as they are part of the same table
         Object firstKeyValue = dataMap.get(mappingValue.get(keys.getFirst()));
         // if the value is not a list, it means that the table has only one row
-        int tableLength = firstKeyValue instanceof List ? ((List) firstKeyValue).size() : 1;
+        int tableLength = firstKeyValue instanceof List list ? list.size() : 1;
         for (int i = 0; i < tableLength; i++) {
             final int index = i;
             List<Text> values = keys.stream().map(mappingValue::get).map(dataMap::get)
@@ -204,7 +203,7 @@ public class ImportService {
         // remove separate step items from mapping, from now we need only the structure we build
         keys.forEach(key -> dataMap.remove(mappingValue.get(key)));
 
-        IStructure testSteps = polarionServiceExt.getTrackerService().getDataService().createStructureForTypeId(workItem, TestSteps.STRUCTURE_ID, structureMap);
+        IStructure testSteps = polarionServiceExt.getTrackerService().getDataService().createStructureForTypeId(workItem, ITestSteps.STRUCTURE_ID, structureMap);
         dataMap.put(ExcelSheetMappingSettingsModel.TEST_STEPS_COLUMN_FILLER_PREFIX + mappingKey, testSteps);
     }
 
