@@ -12,7 +12,6 @@ import com.polarion.alm.tracker.model.ITypeOpt;
 import com.polarion.alm.tracker.model.IWithAttachments;
 import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.platform.IPlatformService;
-import com.polarion.platform.core.PlatformContext;
 import com.polarion.platform.persistence.IEnumeration;
 import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.security.ISecurityService;

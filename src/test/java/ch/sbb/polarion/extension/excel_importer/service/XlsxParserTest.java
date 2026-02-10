@@ -8,11 +8,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -172,6 +179,38 @@ class XlsxParserTest {
         List<CellRangeAddress> sameLastRowRegions = List.of(new CellRangeAddress(1, 4, 0, 0), new CellRangeAddress(2, 4, 1, 1));
         InvocationTargetException ex2 = assertThrows(InvocationTargetException.class, () -> method.invoke(parser, sameLastRowRegions, 1));
         assertInstanceOf(IllegalArgumentException.class, ex2.getCause());
+    }
+
+    @Test
+    @SneakyThrows
+    void testDateAndBooleanCells() {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("types");
+            XSSFRow row = sheet.createRow(0);
+
+            // Column A: date cell
+            XSSFCell dateCell = row.createCell(0);
+            Date testDate = new Date(1700000000000L); // fixed timestamp
+            dateCell.setCellValue(testDate);
+            short dateFormat = workbook.getCreationHelper().createDataFormat().getFormat("yyyy-MM-dd");
+            var style = workbook.createCellStyle();
+            style.setDataFormat(dateFormat);
+            dateCell.setCellStyle(style);
+
+            // Column B: boolean cell
+            XSSFCell boolCell = row.createCell(1);
+            boolCell.setCellValue(true);
+
+            workbook.write(bos);
+        }
+
+        try (InputStream is = new ByteArrayInputStream(bos.toByteArray())) {
+            List<Map<String, Object>> result = new XlsxParser().parseFileStream(is, generateSettings("types", 1, "A", "B"));
+            assertEquals(1, result.size());
+            assertInstanceOf(Date.class, result.getFirst().get("A"));
+            assertEquals(true, result.getFirst().get("B"));
+        }
     }
 
     private IParserSettings generateSettings(String sheetName, int startingRow, String... customUsedColumnsLetters) {
