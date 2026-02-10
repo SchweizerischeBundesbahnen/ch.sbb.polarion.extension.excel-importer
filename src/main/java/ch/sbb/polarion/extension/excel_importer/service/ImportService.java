@@ -170,41 +170,42 @@ public class ImportService {
     /**
      * Data for TestSteps table scattered over several columns so we have to collect them into the proper structure
      */
-    @SuppressWarnings("rawtypes")
     private void constructTestStepsFields(Map<String, Object> dataMap, ExcelSheetMappingSettingsModel model, @NotNull IWorkItem workItem, Set<FieldMetadata> fieldMetadataSet) {
-        model.getStepsMapping().forEach((mappingKey, mappingValue) -> {
-            Map<String, Object> structureMap = new HashMap<>();
+        model.getStepsMapping().forEach((mappingKey, mappingValue) ->
+                processStepMapping(mappingKey, mappingValue, dataMap, workItem, fieldMetadataSet));
+    }
 
-            List<String> keys = mappingValue.keySet().stream().toList();
-            FieldMetadata fieldMetadata = fieldMetadataSet.stream().filter(f -> f.getId().equals(mappingKey)).findFirst().orElse(null);
-            if (fieldMetadata == null) {
-                return; // fields was probably removed
-            }
-            if (!new HashSet<>(keys).equals(fieldMetadata.getOptions().stream().map(Option::getKey).collect(Collectors.toSet()))) {
-                throw new IllegalArgumentException("Test steps keys mismatch for the field '%s'. Check fields mapping.".formatted(mappingKey));
-            }
-            structureMap.put(ITestSteps.KEY_KEYS, keys);
+    @SuppressWarnings("rawtypes")
+    private void processStepMapping(String mappingKey, Map<String, String> mappingValue,
+            Map<String, Object> dataMap, IWorkItem workItem, Set<FieldMetadata> fieldMetadataSet) {
+        Map<String, Object> structureMap = new HashMap<>();
 
-            List<Map<String, List<Text>>> steps = new ArrayList<>();
-            // we take the number of rows in the table from the first column, assuming that all columns have the same number of rows as they are part of the same table
-            Object firstKeyValue = dataMap.get(mappingValue.get(keys.getFirst()));
-            // if the value is not a list, it means that the table has only one row
-            int tableLength = firstKeyValue instanceof List ? ((List) firstKeyValue).size() : 1;
-            for (int i = 0; i < tableLength; i++) {
-                final int index = i;
-                List<Text> values = keys.stream().map(mappingValue::get).map(dataMap::get)
-                        .map(columnValue -> columnValue instanceof List list ? list.get(index) : columnValue)
-                        .map(nextRowValue -> Text.html(nextRowValue == null ? "" : String.valueOf(nextRowValue))).toList();
-                steps.add(Map.of(ITestStep.KEY_VALUES, values));
-            }
-            structureMap.put(ITestSteps.KEY_STEPS, steps);
+        List<String> keys = mappingValue.keySet().stream().toList();
+        FieldMetadata fieldMetadata = fieldMetadataSet.stream().filter(f -> f.getId().equals(mappingKey)).findFirst().orElse(null);
+        if (fieldMetadata == null || !new HashSet<>(keys).equals(fieldMetadata.getOptions().stream().map(Option::getKey).collect(Collectors.toSet()))) {
+            throw new IllegalArgumentException("Test steps keys mismatch for the field '%s'. Check fields mapping.".formatted(mappingKey));
+        }
+        structureMap.put(ITestSteps.KEY_KEYS, keys);
 
-            // remove separate step items from mapping, from now we need only the structure we build
-            keys.forEach(key -> dataMap.remove(mappingValue.get(key)));
+        List<Map<String, List<Text>>> steps = new ArrayList<>();
+        // we take the number of rows in the table from the first column, assuming that all columns have the same number of rows as they are part of the same table
+        Object firstKeyValue = dataMap.get(mappingValue.get(keys.getFirst()));
+        // if the value is not a list, it means that the table has only one row
+        int tableLength = firstKeyValue instanceof List ? ((List) firstKeyValue).size() : 1;
+        for (int i = 0; i < tableLength; i++) {
+            final int index = i;
+            List<Text> values = keys.stream().map(mappingValue::get).map(dataMap::get)
+                    .map(columnValue -> columnValue instanceof List list ? list.get(index) : columnValue)
+                    .map(nextRowValue -> Text.html(nextRowValue == null ? "" : String.valueOf(nextRowValue))).toList();
+            steps.add(Map.of(ITestStep.KEY_VALUES, values));
+        }
+        structureMap.put(ITestSteps.KEY_STEPS, steps);
 
-            IStructure testSteps = polarionServiceExt.getTrackerService().getDataService().createStructureForTypeId(workItem, TestSteps.STRUCTURE_ID, structureMap);
-            dataMap.put(ExcelSheetMappingSettingsModel.TEST_STEPS_COLUMN_FILLER_PREFIX + mappingKey, testSteps);
-        });
+        // remove separate step items from mapping, from now we need only the structure we build
+        keys.forEach(key -> dataMap.remove(mappingValue.get(key)));
+
+        IStructure testSteps = polarionServiceExt.getTrackerService().getDataService().createStructureForTypeId(workItem, TestSteps.STRUCTURE_ID, structureMap);
+        dataMap.put(ExcelSheetMappingSettingsModel.TEST_STEPS_COLUMN_FILLER_PREFIX + mappingKey, testSteps);
     }
 
     private void setFieldValue(Object value, @NotNull FieldMetadata fieldMetadata, IWorkItem workItem, ExcelSheetMappingSettingsModel model, @NotNull String linkColumnId) {

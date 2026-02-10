@@ -528,12 +528,12 @@ class ImportServiceTest {
     }
 
     @Test
-    void testConstructTestStepsFieldsSkipsUnknownField() {
+    void testConstructTestStepsFieldsThrowsOnUnknownField() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ImportService service = new ImportService(polarionService);
 
         FieldMetadata titleField = FieldMetadata.builder().id("title").type(FieldType.STRING.getType()).build();
-        // No "testSteps" field in metadata → constructTestStepsFields should skip (early return)
+        // No "testSteps" field in metadata → constructTestStepsFields should throw
         when(polarionService.getWorkItemsFields("projectId", "req")).thenReturn(Set.of(titleField));
 
         IWorkItem workItem = mock(IWorkItem.class);
@@ -555,12 +555,9 @@ class ImportServiceTest {
         mappingRecord.put("A", "Test Title");
         mappingRecord.put("B", List.of("step1"));
 
-        // Should not throw - unknown field is silently skipped
-        service.fillWorkItemFields(workItem, mappingRecord, model, "linkField");
-
-        verify(polarionService).setFieldValue(eq(workItem), eq("title"), eq("Test Title"), any());
-        // No testSteps structure should be created
-        verify(polarionService, never()).getTrackerService();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.fillWorkItemFields(workItem, mappingRecord, model, "linkField"));
+        assertTrue(exception.getMessage().contains("Test steps keys mismatch"));
     }
 
     @Test
