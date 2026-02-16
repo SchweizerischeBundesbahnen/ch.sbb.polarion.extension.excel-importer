@@ -4,8 +4,10 @@ import ch.sbb.polarion.extension.excel_importer.rest.model.AttachTableParams;
 import ch.sbb.polarion.extension.excel_importer.service.ExportHtmlTableResult;
 import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 
+import javax.inject.Singleton;
 import javax.ws.rs.Path;
 
+@Singleton
 @Secured
 @Path("/api/excel-tool")
 public class ExcelToolApiController extends ExcelToolInternalController {
