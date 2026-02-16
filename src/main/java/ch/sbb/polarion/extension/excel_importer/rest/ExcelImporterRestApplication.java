@@ -32,14 +32,14 @@ public class ExcelImporterRestApplication extends GenericRestApplication {
 
 
     @Override
-    protected @NotNull Set<Object> getExtensionControllerSingletons() {
+    protected @NotNull Set<Class<?>> getExtensionControllerClasses() {
         return Set.of(
-                new ExcelProcessingApiController(),
-                new ExcelProcessingInternalController(),
-                new ExcelToolInternalController(),
-                new ExcelToolApiController(),
-                new WorkItemsApiController(),
-                new WorkItemsInternalController()
+                ExcelProcessingApiController.class,
+                ExcelProcessingInternalController.class,
+                ExcelToolInternalController.class,
+                ExcelToolApiController.class,
+                WorkItemsApiController.class,
+                WorkItemsInternalController.class
         );
     }
 }
