@@ -1,4 +1,5 @@
 * [Test Steps table import](#test-steps-table-import)
+* [Linked work items](#linked-work-items)
 * [Velocity functions](#velocity-functions)
 
 
@@ -10,6 +11,11 @@ It is possible to import test steps table. To do this, the file should have a sp
 The mapping configuration for the example above should look like this:
 
 ![Test Steps mapping example](docs/user_guide/img/test_steps_mapping_example.png)
+
+## Linked work items
+In order to link imported work items using 'linkedWorkItems' field the cell must contain a comma-separated list of work item IDs together with the optional link role and project ID (e.g. `link_role:project_id/WI_ID`) or using full link to the work item:
+
+![Linked work items example](docs/user_guide/img/links.png)
 
 ## Velocity functions
 
