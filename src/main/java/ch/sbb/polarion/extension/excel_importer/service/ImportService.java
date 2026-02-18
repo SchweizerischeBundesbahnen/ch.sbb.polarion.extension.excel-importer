@@ -31,7 +31,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -179,11 +178,12 @@ public class ImportService {
             Map<String, Object> dataMap, IWorkItem workItem, Set<FieldMetadata> fieldMetadataSet) {
         Map<String, Object> structureMap = new HashMap<>();
 
-        List<String> keys = mappingValue.keySet().stream().toList();
         FieldMetadata fieldMetadata = fieldMetadataSet.stream().filter(f -> f.getId().equals(mappingKey)).findFirst().orElse(null);
-        if (fieldMetadata == null || !new HashSet<>(keys).equals(fieldMetadata.getOptions().stream().map(Option::getKey).collect(Collectors.toSet()))) {
+        if (fieldMetadata == null || !mappingValue.keySet().equals(fieldMetadata.getOptions().stream().map(Option::getKey).collect(Collectors.toSet()))) {
             throw new IllegalArgumentException("Test steps keys mismatch for the field '%s'. Check fields mapping.".formatted(mappingKey));
         }
+        // Use options order from fieldMetadata to preserve the correct column order
+        List<String> keys = fieldMetadata.getOptions().stream().map(Option::getKey).toList();
         structureMap.put(ITestSteps.KEY_KEYS, keys);
 
         List<Map<String, List<Text>>> steps = new ArrayList<>();

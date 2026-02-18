@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -440,7 +441,7 @@ class ImportServiceTest {
         FieldMetadata titleField = FieldMetadata.builder().id("title").type(FieldType.STRING.getType()).build();
         // stepsField must have options matching the mapping keys so validation passes
         FieldMetadata stepsField = FieldMetadata.builder().id("testSteps").type(FieldType.STRING.getType())
-                .options(Set.of(new Option("step", "Step", null), new Option("expectedResult", "Expected Result", null)))
+                .options(new LinkedHashSet<>(List.of(new Option("step", "Step", null), new Option("expectedResult", "Expected Result", null))))
                 .build();
         when(polarionService.getWorkItemsFields("projectId", "requirement")).thenReturn(Set.of(titleField, stepsField));
 
@@ -490,7 +491,7 @@ class ImportServiceTest {
 
         FieldMetadata titleField = FieldMetadata.builder().id("title").type(FieldType.STRING.getType()).build();
         FieldMetadata stepsField = FieldMetadata.builder().id("testSteps").type(FieldType.STRING.getType())
-                .options(Set.of(new Option("step", "Step", null), new Option("expectedResult", "Expected Result", null)))
+                .options(new LinkedHashSet<>(List.of(new Option("step", "Step", null), new Option("expectedResult", "Expected Result", null))))
                 .build();
         when(polarionService.getWorkItemsFields("projectId", "requirement")).thenReturn(Set.of(titleField, stepsField));
 
@@ -567,7 +568,7 @@ class ImportServiceTest {
 
         // Field options require "step" and "expectedResult", but mapping only provides "step"
         FieldMetadata stepsField = FieldMetadata.builder().id("testSteps").type(FieldType.STRING.getType())
-                .options(Set.of(new Option("step", "Step", null), new Option("expectedResult", "Expected Result", null)))
+                .options(new LinkedHashSet<>(List.of(new Option("step", "Step", null), new Option("expectedResult", "Expected Result", null))))
                 .build();
         when(polarionService.getWorkItemsFields("projectId", "req")).thenReturn(Set.of(stepsField));
 
@@ -601,7 +602,7 @@ class ImportServiceTest {
 
         // Field options only have "step", but mapping provides "step" and "extra"
         FieldMetadata stepsField = FieldMetadata.builder().id("testSteps").type(FieldType.STRING.getType())
-                .options(Set.of(new Option("step", "Step", null)))
+                .options(new LinkedHashSet<>(List.of(new Option("step", "Step", null))))
                 .build();
         when(polarionService.getWorkItemsFields("projectId", "req")).thenReturn(Set.of(stepsField));
 
