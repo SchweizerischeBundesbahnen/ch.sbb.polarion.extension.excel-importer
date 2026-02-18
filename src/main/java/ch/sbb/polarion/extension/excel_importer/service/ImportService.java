@@ -150,8 +150,10 @@ public class ImportService {
     @VisibleForTesting
     void fillWorkItemFields(@NotNull IWorkItem workItem, Map<String, Object> mappingRecord, ExcelSheetMappingSettingsModel model, @NotNull String linkColumnId) {
         Set<FieldMetadata> fieldMetadataSet = polarionServiceExt.getWorkItemsFields(workItem.getProjectId(), workItem.getType() == null ? "" : workItem.getType().getId());
-        constructTestStepsFields(mappingRecord, model, workItem, fieldMetadataSet);
-        mappingRecord.forEach((columnId, value) -> {
+        // Work on a copy to avoid mutating the original map (which may be reused for other work items)
+        Map<String, Object> dataMap = new HashMap<>(mappingRecord);
+        constructTestStepsFields(dataMap, model, workItem, fieldMetadataSet);
+        dataMap.forEach((columnId, value) -> {
             String fieldId = model.getColumnsMapping().get(columnId);
             if (fieldId == null && columnId.startsWith(ExcelSheetMappingSettingsModel.TEST_STEPS_COLUMN_FILLER_PREFIX)) {
                 fieldId = columnId.substring(ExcelSheetMappingSettingsModel.TEST_STEPS_COLUMN_FILLER_PREFIX.length());
