@@ -23,6 +23,7 @@ import com.polarion.subterra.base.data.model.internal.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -30,7 +31,7 @@ import java.util.stream.Collectors;
 
 public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.service.PolarionService {
 
-    private static final Set<Option> BOOLEAN_OPTIONS_MAPPING = Set.of(new Option("True", "true"), new Option("False", "false"));
+    private static final Set<Option> BOOLEAN_OPTIONS_MAPPING = new LinkedHashSet<>(List.of(new Option("True", "true"), new Option("False", "false")));
     private final ITestManagementService testManagementService = new TestManagementServiceAccessor().getTestingService();
 
     public PolarionServiceExt() {
@@ -64,7 +65,7 @@ public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.servic
                 List<ITestStepKeyOpt> testStepsKeys = testManagementService.getTestStepsKeys(projectId, workItemType);
                 field.setOptions(testStepsKeys.stream()
                         .map(tsk -> new Option(tsk.getId(), tsk.getName(), null))
-                        .collect(Collectors.toSet()));
+                        .collect(Collectors.toCollection(LinkedHashSet::new)));
             }
         }
     }

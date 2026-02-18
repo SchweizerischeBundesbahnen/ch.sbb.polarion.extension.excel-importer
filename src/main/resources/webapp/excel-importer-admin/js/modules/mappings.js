@@ -167,6 +167,7 @@ function updateAuxiliaryComponents(selectedField, mappingButton, uid) {
         columnInput.disabled = true;
         columnInput.value = "";
         const field = getField(selectedField);
+        let insertAfter = targetRow;
         for (const option of field.options) {
 
             const subRow = document.createElement('tr');
@@ -197,7 +198,8 @@ function updateAuxiliaryComponents(selectedField, mappingButton, uid) {
             fieldCell.appendChild(input);
             subRow.appendChild(fieldCell);
 
-            targetRow.after(subRow);
+            insertAfter.after(subRow);
+            insertAfter = subRow;
         }
     }
 }
