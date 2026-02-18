@@ -529,6 +529,65 @@ class ImportServiceTest {
     }
 
     @Test
+    void testFillWorkItemFieldsDoesNotMutateMappingRecord() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ITrackerService trackerService = mock(ITrackerService.class, RETURNS_DEEP_STUBS);
+        when(polarionService.getTrackerService()).thenReturn(trackerService);
+        ImportService service = new ImportService(polarionService);
+
+        FieldMetadata titleField = FieldMetadata.builder().id("title").type(FieldType.STRING.getType()).build();
+        FieldMetadata stepsField = FieldMetadata.builder().id("testSteps").type(FieldType.STRING.getType())
+                .options(new LinkedHashSet<>(List.of(new Option("step", "Step", null), new Option("expectedResult", "Expected Result", null))))
+                .build();
+        when(polarionService.getWorkItemsFields("projectId", "requirement")).thenReturn(Set.of(titleField, stepsField));
+
+        IStructure mockStructure = mock(IStructure.class);
+        when(trackerService.getDataService().createStructureForTypeId(any(), eq(TestSteps.STRUCTURE_ID), any())).thenReturn(mockStructure);
+
+        Map<String, Map<String, String>> stepsMapping = new HashMap<>();
+        Map<String, String> stepFields = new HashMap<>();
+        stepFields.put("step", "B");
+        stepFields.put("expectedResult", "C");
+        stepsMapping.put("testSteps", stepFields);
+
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .columnsMapping(Map.of("A", "title"))
+                .stepsMapping(stepsMapping)
+                .overwriteWithEmpty(true)
+                .build();
+
+        // Shared mappingRecord simulating multiple work items matching the same row
+        Map<String, Object> mappingRecord = new HashMap<>();
+        mappingRecord.put("A", "Test Title");
+        mappingRecord.put("B", List.of("step1", "step2"));
+        mappingRecord.put("C", List.of("result1", "result2"));
+
+        // First work item
+        IWorkItem workItem1 = mock(IWorkItem.class);
+        when(workItem1.getProjectId()).thenReturn("projectId");
+        ITypeOpt typeOpt1 = mock(ITypeOpt.class);
+        when(typeOpt1.getId()).thenReturn("requirement");
+        when(workItem1.getType()).thenReturn(typeOpt1);
+
+        // Second work item
+        IWorkItem workItem2 = mock(IWorkItem.class);
+        when(workItem2.getProjectId()).thenReturn("projectId");
+        ITypeOpt typeOpt2 = mock(ITypeOpt.class);
+        when(typeOpt2.getId()).thenReturn("requirement");
+        when(workItem2.getType()).thenReturn(typeOpt2);
+
+        // Call with same mappingRecord for both work items
+        service.fillWorkItemFields(workItem1, mappingRecord, model, "linkField");
+        service.fillWorkItemFields(workItem2, mappingRecord, model, "linkField");
+
+        // Both work items should get the test steps structure
+        verify(trackerService.getDataService()).createStructureForTypeId(eq(workItem1), eq(TestSteps.STRUCTURE_ID), any());
+        verify(trackerService.getDataService()).createStructureForTypeId(eq(workItem2), eq(TestSteps.STRUCTURE_ID), any());
+        verify(polarionService).setFieldValue(eq(workItem1), eq("testSteps"), eq(mockStructure), any());
+        verify(polarionService).setFieldValue(eq(workItem2), eq("testSteps"), eq(mockStructure), any());
+    }
+
+    @Test
     void testConstructTestStepsFieldsThrowsOnUnknownField() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ImportService service = new ImportService(polarionService);
