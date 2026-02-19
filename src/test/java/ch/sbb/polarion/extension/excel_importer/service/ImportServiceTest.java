@@ -716,7 +716,7 @@ class ImportServiceTest {
     }
 
     @Test
-    void testSetLinkedWorkItemsWithUnlinkExisting() {
+    void testSetLinkedWorkItemsWithUnlinkExistingDirect() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ImportService service = new ImportService(polarionService);
 
@@ -727,16 +727,91 @@ class ImportServiceTest {
 
             IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
 
-            // set up an extra direct link that should be removed
+            // direct struct matching the kept link (regularLink) → should NOT be removed
+            // also makes containedIn return true, so regularLink won't be added as new
+            ILinkedWorkItemStruct keptStruct = mock(ILinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
+            when(keptStruct.getLinkRole().getId()).thenReturn("relates_to");
+            when(keptStruct.getLinkedItem().getProjectId()).thenReturn("elibrary");
+            when(keptStruct.getLinkedItem().getId()).thenReturn("EL-123");
+
+            // extra direct struct NOT matching any kept link → should be removed
             ILinkedWorkItemStruct extraStruct = mock(ILinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
-            when(extraStruct.getLinkRole().getId()).thenReturn("other_role");
-            when(workItem.getLinkedWorkItemsStructsDirect()).thenReturn(List.of(extraStruct));
+            when(extraStruct.getLinkRole().getId()).thenReturn("relates_to");
+            when(extraStruct.getLinkedItem().getProjectId()).thenReturn("elibrary");
+            when(extraStruct.getLinkedItem().getId()).thenReturn("EL-999");
+
+            when(workItem.getLinkedWorkItemsStructsDirect()).thenReturn(List.of(keptStruct, extraStruct));
             when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(Collections.emptyList());
 
             service.setLinkedWorkItems(workItem, "expectedItems", true);
 
-            verify(workItem, times(1)).addLinkedItem(any(), any(), isNull(), anyBoolean());
+            // regularLink is already contained (matches keptStruct) so no addLinkedItem
+            verify(workItem, never()).addLinkedItem(any(), any(), isNull(), anyBoolean());
+            // only the extra struct should be removed, not the kept one
             verify(workItem, times(1)).removeLinkedItem(extraStruct.getLinkedItem(), extraStruct.getLinkRole());
+            verify(workItem, never()).removeLinkedItem(keptStruct.getLinkedItem(), keptStruct.getLinkRole());
+        }
+    }
+
+    @Test
+    void testSetLinkedWorkItemsWithUnlinkExistingExternal() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        // include an external link to keep and a regular link
+        LinkInfo keptExternalLink = new LinkInfo("ext_role", null, "http://external/kept", true);
+        LinkInfo regularLink = new LinkInfo("relates_to", "elibrary", "EL-123", false);
+
+        try (MockedStatic<LinkInfo> linkInfoMockedStatic = mockStatic(LinkInfo.class)) {
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("expectedItems"), any(IWorkItem.class))).thenReturn(List.of(keptExternalLink, regularLink));
+
+            IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+
+            // no extra direct links
+            when(workItem.getLinkedWorkItemsStructsDirect()).thenReturn(Collections.emptyList());
+
+            // external struct matching the kept link → should NOT be removed
+            // also makes keptExternalLink.containedIn return true
+            IExternallyLinkedWorkItemStruct keptStruct = mock(IExternallyLinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
+            when(keptStruct.getLinkRole().getId()).thenReturn("ext_role");
+            when(keptStruct.getLinkedWorkItemURI().getURI().toString()).thenReturn("http://external/kept");
+
+            // extra external struct: same role but different URI → should be removed
+            IExternallyLinkedWorkItemStruct extraStruct = mock(IExternallyLinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
+            when(extraStruct.getLinkRole().getId()).thenReturn("ext_role");
+            when(extraStruct.getLinkedWorkItemURI().getURI().toString()).thenReturn("http://external/extra");
+
+            when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(List.of(keptStruct, extraStruct));
+
+            service.setLinkedWorkItems(workItem, "expectedItems", true);
+
+            // keptExternalLink is already contained (matches keptStruct), regularLink is new
+            verify(workItem, never()).addExternallyLinkedItem(any(), any());
+            verify(workItem, times(1)).addLinkedItem(any(), any(), isNull(), anyBoolean());
+            // only the extra struct should be removed, not the kept one
+            verify(workItem, times(1)).removeExternallyLinkedItem(extraStruct.getLinkedWorkItemURI().getURI(), extraStruct.getLinkRole());
+            verify(workItem, never()).removeExternallyLinkedItem(keptStruct.getLinkedWorkItemURI().getURI(), keptStruct.getLinkRole());
+        }
+    }
+
+    @Test
+    void testSetLinkedWorkItemsSkipsAlreadyContainedLinks() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        LinkInfo alreadyContainedLink = mock(LinkInfo.class);
+        when(alreadyContainedLink.containedIn(any())).thenReturn(true);
+        LinkInfo newLink = new LinkInfo("relates_to", "elibrary", "EL-456", false);
+
+        try (MockedStatic<LinkInfo> linkInfoMockedStatic = mockStatic(LinkInfo.class)) {
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("items"), any(IWorkItem.class))).thenReturn(List.of(alreadyContainedLink, newLink));
+
+            IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+
+            service.setLinkedWorkItems(workItem, "items", false);
+
+            // only the new link should be added, the already contained one should be skipped
+            verify(workItem, times(1)).addLinkedItem(any(), any(), isNull(), anyBoolean());
         }
     }
 
@@ -788,9 +863,21 @@ class ImportServiceTest {
         assertTrue(service.existingValueDiffers(workItem, "fieldId", "42", floatMetadata, false));
         assertTrue(service.existingValueDiffers(workItem, "fieldId", null, floatMetadata, false));
 
+    }
+
+    @Test
+    void testExistingValueDiffersForLinkedWorkItems() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+        IWorkItem workItem = mock(IWorkItem.class);
+
         FieldMetadata linkedMetadata = FieldMetadata.builder().id("linkedWorkItems").type(FieldType.LIST.getType()).build();
         LinkInfo link1 = mock(LinkInfo.class);
         when(link1.containedIn(workItem)).thenReturn(true);
+        lenient().when(link1.isExternal()).thenReturn(false);
+        lenient().when(link1.getRoleId()).thenReturn("relates_to");
+        lenient().when(link1.getProjectId()).thenReturn("elibrary");
+        lenient().when(link1.getWorkItemId()).thenReturn("EL-1");
         LinkInfo link2 = mock(LinkInfo.class);
         when(link2.containedIn(workItem)).thenReturn(false);
         try (MockedStatic<LinkInfo> linkInfoMockedStatic = mockStatic(LinkInfo.class)) {
@@ -814,16 +901,18 @@ class ImportServiceTest {
             when(workItem.getLinkedWorkItemsStructsDirect()).thenReturn(Collections.emptyList());
             assertFalse(service.existingValueDiffers(workItem, "linkedWorkItems", "EL-1", linkedMetadata, true));
 
-            // all links already exist, unlinkExisting=true, extra direct items exist → diff
+            // all links already exist, unlinkExisting=true, extra direct items exist (different workItemId) → diff
             ILinkedWorkItemStruct extraStruct = mock(ILinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
-            when(extraStruct.getLinkRole().getId()).thenReturn("other_role");
+            when(extraStruct.getLinkRole().getId()).thenReturn("relates_to");
+            when(extraStruct.getLinkedItem().getProjectId()).thenReturn("elibrary");
+            when(extraStruct.getLinkedItem().getId()).thenReturn("EL-999");
             when(workItem.getLinkedWorkItemsStructsDirect()).thenReturn(List.of(extraStruct));
             assertTrue(service.existingValueDiffers(workItem, "linkedWorkItems", "EL-1", linkedMetadata, true));
 
             // same scenario but unlinkExisting=false → no diff (extra items ignored)
             assertFalse(service.existingValueDiffers(workItem, "linkedWorkItems", "EL-1", linkedMetadata, false));
 
-            // null value with null existingValue → early return false (both null, line 303-304)
+            // null value with null existingValue → early return false (both null)
             assertFalse(service.existingValueDiffers(workItem, "linkedWorkItems", null, linkedMetadata, false));
             assertFalse(service.existingValueDiffers(workItem, "linkedWorkItems", null, linkedMetadata, true));
 

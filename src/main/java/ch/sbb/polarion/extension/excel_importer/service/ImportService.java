@@ -312,15 +312,19 @@ public class ImportService {
             //WORKAROUND: converting to string helps to find same values even between different types (Float, Double etc.)
             return !Objects.equals(String.valueOf(newValue), String.valueOf(existingValue));
         } else if (IWorkItem.KEY_LINKED_WORK_ITEMS.equals(fieldId)) {
-            if (newValue instanceof String || newValue == null) {
-                List<LinkInfo> linksToInsert = newValue == null ? List.of() : LinkInfo.fromString((String) newValue, workItem);
-                return linksToInsert.stream().anyMatch(linkInfo -> !linkInfo.containedIn(workItem)) ||
-                        unlinkExisting && hasExistingExtraItems(workItem, linksToInsert);
-            } else {
-                throw new IllegalArgumentException(IWorkItem.KEY_LINKED_WORK_ITEMS + " can be set using string value only");
-            }
+            return linkedWorkItemsDiffer(workItem, newValue, unlinkExisting);
         } else {
             return !Objects.equals(newValue, existingValue);
+        }
+    }
+
+    private boolean linkedWorkItemsDiffer(IWorkItem workItem, Object newValue, boolean unlinkExisting) {
+        if (newValue instanceof String || newValue == null) {
+            List<LinkInfo> linksToInsert = newValue == null ? List.of() : LinkInfo.fromString((String) newValue, workItem);
+            return linksToInsert.stream().anyMatch(linkInfo -> !linkInfo.containedIn(workItem)) ||
+                    unlinkExisting && hasExistingExtraItems(workItem, linksToInsert);
+        } else {
+            throw new IllegalArgumentException(IWorkItem.KEY_LINKED_WORK_ITEMS + " can be set using string value only");
         }
     }
 
