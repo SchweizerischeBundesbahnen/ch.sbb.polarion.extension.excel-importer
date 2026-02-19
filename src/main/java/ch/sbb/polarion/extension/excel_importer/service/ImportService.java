@@ -12,7 +12,9 @@ import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import ch.sbb.polarion.extension.generic.util.OptionsMappingUtils;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
+import com.polarion.alm.tracker.model.IExternallyLinkedWorkItemStruct;
 import com.polarion.alm.tracker.model.ILinkRoleOpt;
+import com.polarion.alm.tracker.model.ILinkedWorkItemStruct;
 import com.polarion.alm.tracker.model.ITestStep;
 import com.polarion.alm.tracker.model.ITestSteps;
 import com.polarion.alm.tracker.model.ITrackerProject;
@@ -216,9 +218,9 @@ public class ImportService {
         if (!IUniqueObject.KEY_ID.equals(fieldId) && (!linkColumnId.equals(fieldId) || !workItem.isPersisted()) &&
                 (model.isOverwriteWithEmpty() || !isEmpty(value)) &&
                 ensureValidValue(value, fieldMetadata) &&
-                existingValueDiffers(workItem, fieldId, value, fieldMetadata)) {
+                existingValueDiffers(workItem, fieldId, value, fieldMetadata, model.isUnlinkExisting())) {
             if (IWorkItem.KEY_LINKED_WORK_ITEMS.equals(fieldId)) {
-                setLinkedWorkItems(workItem, value);
+                setLinkedWorkItems(workItem, value, model.isUnlinkExisting());
             } else {
                 polarionServiceExt.setFieldValue(workItem, fieldId, prepareValue(value, fieldMetadata), model.getEnumsMapping());
             }
@@ -229,17 +231,47 @@ public class ImportService {
     }
 
     @VisibleForTesting
-    void setLinkedWorkItems(IWorkItem workItem, Object value) {
-        List<LinkInfo> linkInfos = LinkInfo.fromString((String) value, workItem).stream().filter(link -> !link.containedIn(workItem)).toList();
-        for (LinkInfo linkInfo : linkInfos) {
-            ILinkRoleOpt roleEnum = workItem.getProject().getWorkItemLinkRoleEnum().wrapOption(linkInfo.getRoleId(), workItem.getType());
-            if (linkInfo.isExternal()) {
-                workItem.addExternallyLinkedItem(URI.create(linkInfo.getWorkItemId()), roleEnum);
+    void setLinkedWorkItems(IWorkItem workItem, Object value, boolean unlinkExisting) {
+        List<LinkInfo> links = LinkInfo.fromString((String) value, workItem);
+        List<LinkInfo> newLinks = links.stream().filter(link -> !link.containedIn(workItem)).toList();
+        for (LinkInfo newLink : newLinks) {
+            ILinkRoleOpt roleEnum = workItem.getProject().getWorkItemLinkRoleEnum().wrapOption(newLink.getRoleId(), workItem.getType());
+            if (newLink.isExternal()) {
+                workItem.addExternallyLinkedItem(URI.create(newLink.getWorkItemId()), roleEnum);
             } else {
-                IWorkItem linkedWorkItem = polarionServiceExt.getWorkItem(linkInfo.getProjectId(), linkInfo.getWorkItemId());
+                IWorkItem linkedWorkItem = polarionServiceExt.getWorkItem(newLink.getProjectId(), newLink.getWorkItemId());
                 workItem.addLinkedItem(linkedWorkItem, roleEnum, null, false);
             }
         }
+
+        if (unlinkExisting) {
+            unlinkExistingExtraItems(workItem, links);
+        }
+    }
+
+    private boolean hasExistingExtraItems(IWorkItem workItem, List<LinkInfo> linkInfos) {
+        return workItem.getExternallyLinkedWorkItemsStructs().stream().anyMatch(l -> linkInfos.stream().filter(LinkInfo::isExternal).noneMatch(li -> Objects.equals(li.getRoleId(), l.getLinkRole().getId()) &&
+                Objects.equals(li.getWorkItemId(), l.getLinkedWorkItemURI().getURI().toString()))) ||
+                workItem.getLinkedWorkItemsStructsDirect().stream().anyMatch(s -> linkInfos.stream().filter(li -> !li.isExternal()).noneMatch(li -> Objects.equals(li.getRoleId(), s.getLinkRole().getId()) &&
+                        Objects.equals(li.getProjectId(), s.getLinkedItem().getProjectId()) &&
+                        Objects.equals(li.getWorkItemId(), s.getLinkedItem().getId())));
+    }
+
+    private void unlinkExistingExtraItems(IWorkItem workItem, List<LinkInfo> keepLinks) {
+        List<IExternallyLinkedWorkItemStruct> externalToRemove = workItem.getExternallyLinkedWorkItemsStructs().stream()
+                .filter(s -> keepLinks.stream().filter(LinkInfo::isExternal).noneMatch(li ->
+                        Objects.equals(li.getRoleId(), s.getLinkRole().getId()) &&
+                                Objects.equals(li.getWorkItemId(), s.getLinkedWorkItemURI().getURI().toString())))
+                .toList();
+        externalToRemove.forEach(s -> workItem.removeExternallyLinkedItem(s.getLinkedWorkItemURI().getURI(), s.getLinkRole()));
+
+        List<ILinkedWorkItemStruct> structsToRemove = workItem.getLinkedWorkItemsStructsDirect().stream()
+                .filter(s -> keepLinks.stream().filter(li -> !li.isExternal()).noneMatch(li ->
+                        Objects.equals(li.getRoleId(), s.getLinkRole().getId()) &&
+                                Objects.equals(li.getProjectId(), s.getLinkedItem().getProjectId()) &&
+                                Objects.equals(li.getWorkItemId(), s.getLinkedItem().getId())))
+                .toList();
+        structsToRemove.forEach(s -> workItem.removeLinkedItem(s.getLinkedItem(), s.getLinkRole()));
     }
 
     @VisibleForTesting
@@ -266,7 +298,7 @@ public class ImportService {
      */
     @SuppressWarnings("java:S1125") //will be improved later
     @VisibleForTesting
-    boolean existingValueDiffers(IWorkItem workItem, String fieldId, Object newValue, FieldMetadata fieldMetadata) {
+    boolean existingValueDiffers(IWorkItem workItem, String fieldId, Object newValue, FieldMetadata fieldMetadata, boolean unlinkExisting) {
         Object existingValue = polarionServiceExt.getFieldValue(workItem, fieldId);
         if (existingValue == null && newValue == null) {
             return false;
@@ -280,12 +312,13 @@ public class ImportService {
             //WORKAROUND: converting to string helps to find same values even between different types (Float, Double etc.)
             return !Objects.equals(String.valueOf(newValue), String.valueOf(existingValue));
         } else if (IWorkItem.KEY_LINKED_WORK_ITEMS.equals(fieldId)) {
-            if (newValue instanceof String links) {
-                return LinkInfo.fromString(links, workItem).stream().anyMatch(linkInfo -> !linkInfo.containedIn(workItem));
-            } else if (newValue != null) {
+            if (newValue instanceof String || newValue == null) {
+                List<LinkInfo> linksToInsert = newValue == null ? List.of() : LinkInfo.fromString((String) newValue, workItem);
+                return linksToInsert.stream().anyMatch(linkInfo -> !linkInfo.containedIn(workItem)) ||
+                        unlinkExisting && hasExistingExtraItems(workItem, linksToInsert);
+            } else {
                 throw new IllegalArgumentException(IWorkItem.KEY_LINKED_WORK_ITEMS + " can be set using string value only");
             }
-            return false;
         } else {
             return !Objects.equals(newValue, existingValue);
         }
