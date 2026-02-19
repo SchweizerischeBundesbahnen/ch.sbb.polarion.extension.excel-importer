@@ -1,19 +1,2 @@
 Bundle-Name: Excel Importer for Polarion ALM
-Require-Bundle: com.polarion.portal.tomcat,
- com.polarion.alm.ui,
- com.polarion.platform.guice,
- com.polarion.alm.tracker,
- org.glassfish.jersey,
- com.fasterxml.jackson.core,
- com.fasterxml.jackson.databind,
- com.fasterxml.jackson.annotations,
- com.fasterxml.jackson.module.jaxb.annotations,
- org.apache.commons.commons-collections4,
- org.apache.commons.lang3,
- org.apache.commons.logging,
- slf4j.api,
- org.springframework.spring-core,
- org.springframework.spring-web,
- org.jsoup
 Export-Package: ch.sbb.polarion.extension.excel_importer
-Import-Package: org.osgi.framework

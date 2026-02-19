@@ -50,6 +50,14 @@
 
         <web.app.name>${maven-jar-plugin.Extension-Context}</web.app.name>
 
+        <!-- Extension-specific Require-Bundle (in addition to common ones from parent POM):
+            org.apache.commons.commons-collections4
+            org.apache.commons.lang3
+            org.jsoup
+        -->
+        <maven-jar-plugin.Require-Bundle.extension>org.apache.commons.commons-collections4,org.apache.commons.lang3,org.jsoup</maven-jar-plugin.Require-Bundle.extension>
+        <maven-jar-plugin.Require-Bundle>${maven-jar-plugin.Require-Bundle.common},${maven-jar-plugin.Require-Bundle.extension}</maven-jar-plugin.Require-Bundle>
+
         <awaitility.version>4.3.0</awaitility.version>
 
         <!-- this extension is designed for latest version of Apache POI -->
