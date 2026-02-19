@@ -5,7 +5,7 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>14.0.0</version>
+        <version>14.1.0</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.excel-importer</artifactId>
@@ -49,6 +49,14 @@
         <maven-jar-plugin.Discover-Base-Package>ch.sbb.polarion.extension.excel_importer</maven-jar-plugin.Discover-Base-Package>
 
         <web.app.name>${maven-jar-plugin.Extension-Context}</web.app.name>
+
+        <!-- Extension-specific Require-Bundle (in addition to common ones from parent POM):
+            org.apache.commons.commons-collections4
+            org.apache.commons.lang3
+            org.jsoup
+        -->
+        <maven-jar-plugin.Require-Bundle.extension>org.apache.commons.commons-collections4,org.apache.commons.lang3,org.jsoup</maven-jar-plugin.Require-Bundle.extension>
+        <maven-jar-plugin.Require-Bundle>${maven-jar-plugin.Require-Bundle.common},${maven-jar-plugin.Require-Bundle.extension}</maven-jar-plugin.Require-Bundle>
 
         <awaitility.version>4.3.0</awaitility.version>
 
