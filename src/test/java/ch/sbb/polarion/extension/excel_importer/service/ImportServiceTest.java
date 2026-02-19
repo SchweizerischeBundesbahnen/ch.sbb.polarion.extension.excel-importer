@@ -406,6 +406,46 @@ class ImportServiceTest {
     }
 
     @Test
+    void testFillWorkItemFieldsWithLinkedWorkItems() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        FieldMetadata linkedField = FieldMetadata.builder().id("linkedWorkItems").type(FieldType.LIST.getType()).build();
+        when(polarionService.getWorkItemsFields("projectId", "requirement")).thenReturn(Set.of(linkedField));
+
+        IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+        when(workItem.getProjectId()).thenReturn("projectId");
+        ITypeOpt typeOpt = mock(ITypeOpt.class);
+        when(typeOpt.getId()).thenReturn("requirement");
+        when(workItem.getType()).thenReturn(typeOpt);
+
+        LinkInfo newLink = new LinkInfo("relates_to", "elibrary", "EL-123", false);
+
+        try (MockedStatic<LinkInfo> linkInfoMockedStatic = mockStatic(LinkInfo.class)) {
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("relates_to:elibrary/EL-123"), any(IWorkItem.class))).thenReturn(List.of(newLink));
+
+            when(polarionService.getFieldValue(workItem, "linkedWorkItems")).thenReturn("existingLinks");
+            when(workItem.getLinkedWorkItemsStructsDirect()).thenReturn(Collections.emptyList());
+            when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(Collections.emptyList());
+
+            ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                    .columnsMapping(Map.of("A", "linkedWorkItems"))
+                    .stepsMapping(Map.of())
+                    .overwriteWithEmpty(true)
+                    .build();
+
+            Map<String, Object> mappingRecord = new HashMap<>();
+            mappingRecord.put("A", "relates_to:elibrary/EL-123");
+
+            service.fillWorkItemFields(workItem, mappingRecord, model, "linkField");
+
+            // linkedWorkItems should go through setLinkedWorkItems, not setFieldValue
+            verify(polarionService, never()).setFieldValue(any(IWorkItem.class), anyString(), any(), any());
+            verify(workItem, times(1)).addLinkedItem(any(), any(), isNull(), anyBoolean());
+        }
+    }
+
+    @Test
     void testFillWorkItemFieldsNullTypeAndTestStepsPrefix() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ImportService service = new ImportService(polarionService);
@@ -960,6 +1000,38 @@ class ImportServiceTest {
 
             // same but unlinkExisting=false → false (extra external items ignored)
             assertFalse(service.existingValueDiffers(workItem, "linkedWorkItems", "EL-1", linkedMetadata, false));
+
+            // test hasExistingExtraItems with external link in linksToInsert to cover URI comparison (line 254)
+            LinkInfo extLink = mock(LinkInfo.class);
+            when(extLink.containedIn(workItem)).thenReturn(true);
+            when(extLink.isExternal()).thenReturn(true);
+            when(extLink.getRoleId()).thenReturn("ext_role");
+            when(extLink.getWorkItemId()).thenReturn("http://external/kept");
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("EXT-1"), any(IWorkItem.class))).thenReturn(List.of(extLink));
+
+            // external struct matching extLink → not extra
+            IExternallyLinkedWorkItemStruct matchingExtStruct = mock(IExternallyLinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
+            when(matchingExtStruct.getLinkRole().getId()).thenReturn("ext_role");
+            when(matchingExtStruct.getLinkedWorkItemURI().getURI().toString()).thenReturn("http://external/kept");
+
+            // matching direct struct for link1 → not extra
+            ILinkedWorkItemStruct matchingDirectStruct = mock(ILinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
+            when(matchingDirectStruct.getLinkRole().getId()).thenReturn("relates_to");
+            when(matchingDirectStruct.getLinkedItem().getProjectId()).thenReturn("elibrary");
+            when(matchingDirectStruct.getLinkedItem().getId()).thenReturn("EL-1");
+
+            // no extra items at all → no diff
+            when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(List.of(matchingExtStruct));
+            when(workItem.getLinkedWorkItemsStructsDirect()).thenReturn(List.of(matchingDirectStruct));
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("EXT-1,EL-1"), any(IWorkItem.class))).thenReturn(List.of(extLink, link1));
+            assertFalse(service.existingValueDiffers(workItem, "linkedWorkItems", "EXT-1,EL-1", linkedMetadata, true));
+
+            // add an extra external struct with same role but different URI → diff
+            IExternallyLinkedWorkItemStruct extraExtStruct = mock(IExternallyLinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
+            when(extraExtStruct.getLinkRole().getId()).thenReturn("ext_role");
+            when(extraExtStruct.getLinkedWorkItemURI().getURI().toString()).thenReturn("http://external/extra");
+            when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(List.of(matchingExtStruct, extraExtStruct));
+            assertTrue(service.existingValueDiffers(workItem, "linkedWorkItems", "EXT-1,EL-1", linkedMetadata, true));
         }
     }
 
