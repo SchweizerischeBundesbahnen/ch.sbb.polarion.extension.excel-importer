@@ -232,7 +232,7 @@ public class ImportService {
 
     @VisibleForTesting
     void setLinkedWorkItems(IWorkItem workItem, Object value, boolean unlinkExisting) {
-        List<LinkInfo> links = LinkInfo.fromString((String) value, workItem);
+        List<LinkInfo> links = value == null ? List.of() : LinkInfo.fromString((String) value, workItem);
         List<LinkInfo> newLinks = links.stream().filter(link -> !link.containedIn(workItem)).toList();
         for (LinkInfo newLink : newLinks) {
             ILinkRoleOpt roleEnum = workItem.getProject().getWorkItemLinkRoleEnum().wrapOption(newLink.getRoleId(), workItem.getType());

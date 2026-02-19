@@ -695,6 +695,25 @@ class ImportServiceTest {
     }
 
     @Test
+    void testSetLinkedWorkItemsNullValueWithUnlink() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+
+        // set up an extra direct link that should be removed when unlinking
+        ILinkedWorkItemStruct extraStruct = mock(ILinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
+        when(workItem.getLinkedWorkItemsStructsDirect()).thenReturn(List.of(extraStruct));
+        when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(Collections.emptyList());
+
+        // null value with unlinkExisting=true should remove all existing links without NPE
+        service.setLinkedWorkItems(workItem, null, true);
+
+        verify(workItem, never()).addLinkedItem(any(), any(), isNull(), anyBoolean());
+        verify(workItem, times(1)).removeLinkedItem(extraStruct.getLinkedItem(), extraStruct.getLinkRole());
+    }
+
+    @Test
     void testSetLinkedWorkItems() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ImportService service = new ImportService(polarionService);
