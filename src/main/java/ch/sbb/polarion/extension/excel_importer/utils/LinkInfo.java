@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.excel_importer.utils;
 
+import com.polarion.alm.tracker.model.IExternallyLinkedWorkItemStruct;
+import com.polarion.alm.tracker.model.ILinkedWorkItemStruct;
 import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.core.util.StringUtils;
 import lombok.EqualsAndHashCode;
@@ -8,11 +10,31 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 
 @Getter
 @EqualsAndHashCode
 public class LinkInfo {
+
+    /**
+     * Tests whether an external {@link LinkInfo} matches a given {@link IExternallyLinkedWorkItemStruct}
+     * by comparing link role ID and work item URI. Returns {@code false} for non-external links.
+     */
+    public static final BiPredicate<LinkInfo, IExternallyLinkedWorkItemStruct> MATCHES_EXTERNAL_STRUCT = (li, s) ->
+            li.isExternal() &&
+                    Objects.equals(li.getRoleId(), s.getLinkRole().getId()) &&
+                    Objects.equals(li.getWorkItemId(), s.getLinkedWorkItemURI().getURI().toString());
+
+    /**
+     * Tests whether a non-external {@link LinkInfo} matches a given {@link ILinkedWorkItemStruct}
+     * by comparing link role ID, project ID and work item ID. Returns {@code false} for external links.
+     */
+    public static final BiPredicate<LinkInfo, ILinkedWorkItemStruct> MATCHES_DIRECT_STRUCT = (li, s) ->
+            !li.isExternal() &&
+                    Objects.equals(li.getRoleId(), s.getLinkRole().getId()) &&
+                    Objects.equals(li.getProjectId(), s.getLinkedItem().getProjectId()) &&
+                    Objects.equals(li.getWorkItemId(), s.getLinkedItem().getId());
 
     private String roleId;
     private String projectId;
@@ -61,13 +83,7 @@ public class LinkInfo {
     }
 
     public boolean containedIn(IWorkItem workItem) {
-        return external && workItem.getExternallyLinkedWorkItemsStructs().stream().anyMatch(s ->
-                Objects.equals(s.getLinkRole().getId(), roleId) &&
-                        Objects.equals(s.getLinkedWorkItemURI().getURI().toString(), workItemId)) ||
-                workItem.getLinkedWorkItemsStructsDirect().stream().anyMatch(s ->
-                        Objects.equals(s.getLinkRole().getId(), roleId) &&
-                                Objects.equals(s.getLinkedItem().getProjectId(), projectId) &&
-                                Objects.equals(s.getLinkedItem().getId(), workItemId)
-                );
+        return workItem.getExternallyLinkedWorkItemsStructs().stream().anyMatch(s -> MATCHES_EXTERNAL_STRUCT.test(this, s)) ||
+                workItem.getLinkedWorkItemsStructsDirect().stream().anyMatch(s -> MATCHES_DIRECT_STRUCT.test(this, s));
     }
 }

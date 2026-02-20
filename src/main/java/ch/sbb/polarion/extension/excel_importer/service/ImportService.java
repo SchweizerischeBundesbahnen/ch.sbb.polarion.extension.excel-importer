@@ -250,27 +250,19 @@ public class ImportService {
     }
 
     private boolean hasExistingExtraItems(IWorkItem workItem, List<LinkInfo> linkInfos) {
-        return workItem.getExternallyLinkedWorkItemsStructs().stream().anyMatch(l -> linkInfos.stream().filter(LinkInfo::isExternal).noneMatch(li -> Objects.equals(li.getRoleId(), l.getLinkRole().getId()) &&
-                Objects.equals(li.getWorkItemId(), l.getLinkedWorkItemURI().getURI().toString()))) ||
-                workItem.getLinkedWorkItemsStructsDirect().stream().anyMatch(s -> linkInfos.stream().filter(li -> !li.isExternal()).noneMatch(li -> Objects.equals(li.getRoleId(), s.getLinkRole().getId()) &&
-                        Objects.equals(li.getProjectId(), s.getLinkedItem().getProjectId()) &&
-                        Objects.equals(li.getWorkItemId(), s.getLinkedItem().getId())));
+        return workItem.getExternallyLinkedWorkItemsStructs().stream()
+                .anyMatch(s -> linkInfos.stream().noneMatch(li -> LinkInfo.MATCHES_EXTERNAL_STRUCT.test(li, s))) ||
+                workItem.getLinkedWorkItemsStructsDirect().stream()
+                        .anyMatch(s -> linkInfos.stream().noneMatch(li -> LinkInfo.MATCHES_DIRECT_STRUCT.test(li, s)));
     }
 
     private void unlinkExistingExtraItems(IWorkItem workItem, List<LinkInfo> keepLinks) {
         List<IExternallyLinkedWorkItemStruct> externalToRemove = workItem.getExternallyLinkedWorkItemsStructs().stream()
-                .filter(s -> keepLinks.stream().filter(LinkInfo::isExternal).noneMatch(li ->
-                        Objects.equals(li.getRoleId(), s.getLinkRole().getId()) &&
-                                Objects.equals(li.getWorkItemId(), s.getLinkedWorkItemURI().getURI().toString())))
-                .toList();
+                .filter(s -> keepLinks.stream().noneMatch(li -> LinkInfo.MATCHES_EXTERNAL_STRUCT.test(li, s))).toList();
         externalToRemove.forEach(s -> workItem.removeExternallyLinkedItem(s.getLinkedWorkItemURI().getURI(), s.getLinkRole()));
 
         List<ILinkedWorkItemStruct> structsToRemove = workItem.getLinkedWorkItemsStructsDirect().stream()
-                .filter(s -> keepLinks.stream().filter(li -> !li.isExternal()).noneMatch(li ->
-                        Objects.equals(li.getRoleId(), s.getLinkRole().getId()) &&
-                                Objects.equals(li.getProjectId(), s.getLinkedItem().getProjectId()) &&
-                                Objects.equals(li.getWorkItemId(), s.getLinkedItem().getId())))
-                .toList();
+                .filter(s -> keepLinks.stream().noneMatch(li -> LinkInfo.MATCHES_DIRECT_STRUCT.test(li, s))).toList();
         structsToRemove.forEach(s -> workItem.removeLinkedItem(s.getLinkedItem(), s.getLinkRole()));
     }
 

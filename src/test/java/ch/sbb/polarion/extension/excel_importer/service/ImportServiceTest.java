@@ -793,21 +793,35 @@ class ImportServiceTest {
             when(keptStruct.getLinkedItem().getProjectId()).thenReturn("elibrary");
             when(keptStruct.getLinkedItem().getId()).thenReturn("EL-123");
 
-            // extra direct struct NOT matching any kept link → should be removed
+            // extra direct struct NOT matching any kept link (same role+project, different id) → should be removed
             ILinkedWorkItemStruct extraStruct = mock(ILinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
             when(extraStruct.getLinkRole().getId()).thenReturn("relates_to");
             when(extraStruct.getLinkedItem().getProjectId()).thenReturn("elibrary");
             when(extraStruct.getLinkedItem().getId()).thenReturn("EL-999");
 
-            when(workItem.getLinkedWorkItemsStructsDirect()).thenReturn(List.of(keptStruct, extraStruct));
+            // extra direct struct with different roleId → covers roleId-mismatch branch
+            ILinkedWorkItemStruct diffRoleStruct = mock(ILinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
+            when(diffRoleStruct.getLinkRole().getId()).thenReturn("different_role");
+            lenient().when(diffRoleStruct.getLinkedItem().getProjectId()).thenReturn("elibrary");
+            lenient().when(diffRoleStruct.getLinkedItem().getId()).thenReturn("EL-123");
+
+            // extra direct struct with matching roleId but different projectId → covers projectId-mismatch branch
+            ILinkedWorkItemStruct diffProjectStruct = mock(ILinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
+            when(diffProjectStruct.getLinkRole().getId()).thenReturn("relates_to");
+            when(diffProjectStruct.getLinkedItem().getProjectId()).thenReturn("other_project");
+            lenient().when(diffProjectStruct.getLinkedItem().getId()).thenReturn("EL-123");
+
+            when(workItem.getLinkedWorkItemsStructsDirect()).thenReturn(List.of(keptStruct, extraStruct, diffRoleStruct, diffProjectStruct));
             when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(Collections.emptyList());
 
             service.setLinkedWorkItems(workItem, "expectedItems", true);
 
             // regularLink is already contained (matches keptStruct) so no addLinkedItem
             verify(workItem, never()).addLinkedItem(any(), any(), isNull(), anyBoolean());
-            // only the extra struct should be removed, not the kept one
+            // extra structs should be removed, kept one should not
             verify(workItem, times(1)).removeLinkedItem(extraStruct.getLinkedItem(), extraStruct.getLinkRole());
+            verify(workItem, times(1)).removeLinkedItem(diffRoleStruct.getLinkedItem(), diffRoleStruct.getLinkRole());
+            verify(workItem, times(1)).removeLinkedItem(diffProjectStruct.getLinkedItem(), diffProjectStruct.getLinkRole());
             verify(workItem, never()).removeLinkedItem(keptStruct.getLinkedItem(), keptStruct.getLinkRole());
         }
     }
@@ -840,15 +854,21 @@ class ImportServiceTest {
             when(extraStruct.getLinkRole().getId()).thenReturn("ext_role");
             when(extraStruct.getLinkedWorkItemURI().getURI().toString()).thenReturn("http://external/extra");
 
-            when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(List.of(keptStruct, extraStruct));
+            // extra external struct with different roleId → covers roleId-mismatch branch
+            IExternallyLinkedWorkItemStruct diffRoleExtStruct = mock(IExternallyLinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
+            when(diffRoleExtStruct.getLinkRole().getId()).thenReturn("different_role");
+            lenient().when(diffRoleExtStruct.getLinkedWorkItemURI().getURI().toString()).thenReturn("http://external/other");
+
+            when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(List.of(keptStruct, extraStruct, diffRoleExtStruct));
 
             service.setLinkedWorkItems(workItem, "expectedItems", true);
 
             // keptExternalLink is already contained (matches keptStruct), regularLink is new
             verify(workItem, never()).addExternallyLinkedItem(any(), any());
             verify(workItem, times(1)).addLinkedItem(any(), any(), isNull(), anyBoolean());
-            // only the extra struct should be removed, not the kept one
+            // extra structs should be removed, kept one should not
             verify(workItem, times(1)).removeExternallyLinkedItem(extraStruct.getLinkedWorkItemURI().getURI(), extraStruct.getLinkRole());
+            verify(workItem, times(1)).removeExternallyLinkedItem(diffRoleExtStruct.getLinkedWorkItemURI().getURI(), diffRoleExtStruct.getLinkRole());
             verify(workItem, never()).removeExternallyLinkedItem(keptStruct.getLinkedWorkItemURI().getURI(), keptStruct.getLinkRole());
         }
     }
@@ -1031,6 +1051,30 @@ class ImportServiceTest {
             when(extraExtStruct.getLinkRole().getId()).thenReturn("ext_role");
             when(extraExtStruct.getLinkedWorkItemURI().getURI().toString()).thenReturn("http://external/extra");
             when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(List.of(matchingExtStruct, extraExtStruct));
+            assertTrue(service.existingValueDiffers(workItem, "linkedWorkItems", "EXT-1,EL-1", linkedMetadata, true));
+
+            // extra external struct with different roleId → covers roleId-mismatch branch in hasExistingExtraItems
+            IExternallyLinkedWorkItemStruct diffRoleExtStruct = mock(IExternallyLinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
+            when(diffRoleExtStruct.getLinkRole().getId()).thenReturn("different_role");
+            lenient().when(diffRoleExtStruct.getLinkedWorkItemURI().getURI().toString()).thenReturn("http://external/other");
+            when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(List.of(matchingExtStruct, diffRoleExtStruct));
+            assertTrue(service.existingValueDiffers(workItem, "linkedWorkItems", "EXT-1,EL-1", linkedMetadata, true));
+
+            // extra direct struct with different roleId → covers roleId-mismatch branch for direct links
+            ILinkedWorkItemStruct diffRoleDirectStruct = mock(ILinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
+            when(diffRoleDirectStruct.getLinkRole().getId()).thenReturn("different_role");
+            lenient().when(diffRoleDirectStruct.getLinkedItem().getProjectId()).thenReturn("elibrary");
+            lenient().when(diffRoleDirectStruct.getLinkedItem().getId()).thenReturn("EL-1");
+            when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(List.of(matchingExtStruct));
+            when(workItem.getLinkedWorkItemsStructsDirect()).thenReturn(List.of(matchingDirectStruct, diffRoleDirectStruct));
+            assertTrue(service.existingValueDiffers(workItem, "linkedWorkItems", "EXT-1,EL-1", linkedMetadata, true));
+
+            // extra direct struct with matching roleId but different projectId → covers projectId-mismatch branch
+            ILinkedWorkItemStruct diffProjectDirectStruct = mock(ILinkedWorkItemStruct.class, RETURNS_DEEP_STUBS);
+            when(diffProjectDirectStruct.getLinkRole().getId()).thenReturn("relates_to");
+            when(diffProjectDirectStruct.getLinkedItem().getProjectId()).thenReturn("other_project");
+            lenient().when(diffProjectDirectStruct.getLinkedItem().getId()).thenReturn("EL-1");
+            when(workItem.getLinkedWorkItemsStructsDirect()).thenReturn(List.of(matchingDirectStruct, diffProjectDirectStruct));
             assertTrue(service.existingValueDiffers(workItem, "linkedWorkItems", "EXT-1,EL-1", linkedMetadata, true));
         }
     }
