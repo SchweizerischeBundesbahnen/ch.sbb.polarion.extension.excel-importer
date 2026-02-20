@@ -29,6 +29,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
     public static final String SHEET_NAME = "SHEET_NAME";
     public static final String START_FROM_ROW = "START_FROM_ROW";
     public static final String OVERWRITE_WITH_EMPTY = "OVERWRITE_WITH_EMPTY";
+    public static final String UNLINK_EXISTING = "UNLINK_EXISTING";
 
     public static final String COLUMNS_MAPPING = "COLUMNS_MAPPING";
     public static final String ENUMS_MAPPING = "ENUMS_MAPPING";
@@ -48,6 +49,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
     private String sheetName;
     private int startFromRow;
     private boolean overwriteWithEmpty;
+    private boolean unlinkExisting;
     private Map<String, String> columnsMapping;
     private Map<String, Map<String, String>> enumsMapping;
     private Map<String, Map<String, String>> stepsMapping;
@@ -62,6 +64,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
         return serializeEntry(SHEET_NAME, sheetName) +
                 serializeEntry(START_FROM_ROW, startFromRow) +
                 serializeEntry(OVERWRITE_WITH_EMPTY, overwriteWithEmpty) +
+                serializeEntry(UNLINK_EXISTING, unlinkExisting) +
                 serializeEntry(COLUMNS_MAPPING, columnsMapping) +
                 serializeEntry(ENUMS_MAPPING, enumsMapping) +
                 serializeEntry(STEPS_MAPPING, stepsMapping) +
@@ -76,6 +79,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
         Integer startFromRowValue = deserializeEntry(START_FROM_ROW, serializedString, Integer.class);
         startFromRow = startFromRowValue == null ? 0 : startFromRowValue;
         overwriteWithEmpty = !Objects.equals(Boolean.FALSE.toString(), deserializeEntry(OVERWRITE_WITH_EMPTY, serializedString));
+        unlinkExisting = Objects.equals(Boolean.TRUE.toString(), deserializeEntry(UNLINK_EXISTING, serializedString));
         columnsMapping = deserializeEntry(COLUMNS_MAPPING, serializedString, Map.class);
         enumsMapping = deserializeEntry(ENUMS_MAPPING, serializedString, Map.class);
         stepsMapping = Objects.requireNonNullElse(deserializeEntry(STEPS_MAPPING, serializedString, Map.class), Map.of());

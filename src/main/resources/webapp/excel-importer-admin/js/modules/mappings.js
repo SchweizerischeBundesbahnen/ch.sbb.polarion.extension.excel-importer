@@ -11,10 +11,6 @@ const ctx = new ExtensionContext({
 const conf = new ConfigurationsPane({
     ctx: ctx,
     setConfigurationContentCallback: parseAndSetSettings,
-    preDeleteCallback: () => new Promise((resolve) => {
-        ctx.setNewerVersionNotificationVisible(false);
-        resolve();
-    })
 });
 
 ctx.onClick(
@@ -134,6 +130,21 @@ function createFieldCell(tableRow, fieldValue) {
     });
     fieldCell.appendChild(mappingButton);
 
+    const unlinkLabel = document.createElement('label');
+    unlinkLabel.classList.add('unlink-existing-label');
+    unlinkLabel.style.display = 'none';
+    const unlinkCheckbox = document.createElement('input');
+    unlinkCheckbox.type = 'checkbox';
+    unlinkCheckbox.classList.add('unlink-existing-checkbox');
+    unlinkCheckbox.addEventListener('change', () => {
+        cache.unlinkExisting = unlinkCheckbox.checked;
+    });
+    unlinkLabel.appendChild(unlinkCheckbox);
+    let unlinkNode = document.createTextNode(' Unlink existing');
+    unlinkLabel.title = "If checked, existing links to work items not present in the imported data will be removed.";
+    unlinkLabel.appendChild(unlinkNode);
+    fieldCell.appendChild(unlinkLabel);
+
     fieldSelect.addEventListener('change', () => {
         // deselect the same field in other rows to avoid duplicate selection
         if (!fieldSelect.deselecting) { // prevent infinite loop of change events when deselecting other selects
@@ -155,6 +166,17 @@ function createFieldCell(tableRow, fieldValue) {
 
 function updateAuxiliaryComponents(selectedField, mappingButton, uid) {
     mappingButton.style.display = isEnum(selectedField) ? 'inline-block' : 'none';
+
+    const targetRowEl = document.querySelector(`[data-uid="${uid}"]`);
+    const unlinkLabel = targetRowEl.querySelector('.unlink-existing-label');
+    if (unlinkLabel) {
+        if (selectedField === 'linkedWorkItems') {
+            unlinkLabel.style.display = 'inline-block';
+            unlinkLabel.querySelector('.unlink-existing-checkbox').checked = cache.unlinkExisting || false;
+        } else {
+            unlinkLabel.style.display = 'none';
+        }
+    }
 
     const targetRow = document.querySelector(`[data-uid="${uid}"]`);
     let columnInput = targetRow.querySelector(".excel-column-input");
@@ -425,11 +447,13 @@ function parseAndSetSettings(text) {
     })
     cache.stepsMapping = settings.stepsMapping == null ? {} : settings.stepsMapping;
     cache.enumsMapping = settings.enumsMapping == null ? {} : settings.enumsMapping;
+    cache.unlinkExisting = settings.unlinkExisting || false;
+    ctx.querySelectorAll('.unlink-existing-checkbox').forEach(cb => {
+        cb.checked = cache.unlinkExisting;
+    });
     updateLinkColumnDropdown();
     ctx.setValueById('link-column', settings.linkColumn);
     createAddButton();
-
-    ctx.setNewerVersionNotificationVisible(settings.bundleTimestamp !== ctx.getValueById('bundle-timestamp'));
 }
 
 function getProjectIdFromScope() {
@@ -459,11 +483,11 @@ function saveSettings() {
             'stepsMapping': getTestStepsMapping(),
             'enumsMapping': cache.enumsMapping,
             'defaultWorkItemType': ctx.getValueById('wi-types'),
-            'linkColumn': ctx.getValueById('link-column')
+            'linkColumn': ctx.getValueById('link-column'),
+            'unlinkExisting': cache.unlinkExisting || false
         }),
         onOk: () => {
             ctx.showSaveSuccessAlert();
-            ctx.setNewerVersionNotificationVisible(false);
             conf.loadConfigurationNames();
         },
         onError: () => ctx.showSaveErrorAlert()
