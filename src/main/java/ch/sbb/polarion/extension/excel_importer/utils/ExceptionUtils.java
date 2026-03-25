@@ -10,7 +10,7 @@ public class ExceptionUtils {
     @Nullable
     public static String getRootCauseMessage(@NotNull Throwable e) {
         Throwable cause = e;
-        while (cause.getCause() != null && cause.getCause() != cause) {
+        while (cause.getCause() != null) {
             cause = cause.getCause();
         }
         return cause.getMessage();
