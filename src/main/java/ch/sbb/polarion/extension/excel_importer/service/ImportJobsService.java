@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
+import ch.sbb.polarion.extension.excel_importer.utils.ExceptionUtils;
 import ch.sbb.polarion.extension.excel_importer.utils.PropertiesUtility;
 import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
 import com.polarion.core.util.logging.Logger;
@@ -19,7 +20,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -53,9 +53,7 @@ public class ImportJobsService {
             try {
                 return securityService.doAsUser(userSubject, (PrivilegedAction<ImportResult>) () -> importService.processFile(jobParams.getProjectId(), jobParams.getMappingName(), jobParams.getFileContent()));
             } catch (Exception e) {
-                String errorMessage = String.format("Import job '%s' is failed with error: %s", jobId, e.getMessage());
-                logger.error(errorMessage, e);
-                failedJobsReasons.put(jobId, e.getMessage());
+                failedJobsReasons.put(jobId, ExceptionUtils.getRootCauseMessage(e));
                 throw e;
             } finally {
                 if ((userSubject != null) && isJobLogoutRequired) {
@@ -67,11 +65,11 @@ public class ImportJobsService {
         asyncImportJob
                 .orTimeout(timeoutInMinutes, TimeUnit.MINUTES)
                 .exceptionally(e -> {
-                    String failedReason = e.getMessage();
+                    String failedReason;
                     if (e instanceof TimeoutException) {
                         failedReason = String.format("Timeout after %d min", timeoutInMinutes);
-                    } else if (e instanceof CompletionException ce && ce.getCause() != null) {
-                        failedReason = ce.getCause().getMessage();
+                    } else {
+                        failedReason = ExceptionUtils.getRootCauseMessage(e);
                     }
                     failedJobsReasons.put(jobId, failedReason);
                     logger.error(String.format("Import job '%s' is failed with error: %s", jobId, failedReason), e);
