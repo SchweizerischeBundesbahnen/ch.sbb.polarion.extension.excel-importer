@@ -15,4 +15,10 @@ public class ExceptionUtils {
         }
         return cause.getMessage();
     }
+
+    @NotNull
+    public static String getRootCauseMessageOrEmpty(@NotNull Throwable e) {
+        String message = getRootCauseMessage(e);
+        return message != null ? message : "";
+    }
 }

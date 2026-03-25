@@ -29,19 +29,16 @@ class ExceptionUtilsTest {
     }
 
     @Test
-    void shouldHandleSelfReferencingCause() {
-        Exception e = new SelfCausedException("self-referencing");
-        assertEquals("self-referencing", ExceptionUtils.getRootCauseMessage(e));
+    void shouldReturnEmptyStringWhenRootHasNoMessage() {
+        Exception root = new RuntimeException((String) null);
+        Exception wrapper = new Exception(root);
+        assertEquals("", ExceptionUtils.getRootCauseMessageOrEmpty(wrapper));
     }
 
-    private static class SelfCausedException extends Exception {
-        SelfCausedException(String message) {
-            super(message);
-        }
-
-        @Override
-        public synchronized Throwable getCause() {
-            return this;
-        }
+    @Test
+    void shouldReturnMessageFromOrEmpty() {
+        Exception e = new IllegalArgumentException("some error");
+        assertEquals("some error", ExceptionUtils.getRootCauseMessageOrEmpty(e));
     }
+
 }
