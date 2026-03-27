@@ -326,7 +326,7 @@ public class ImportService {
         return fieldMetadataSet.stream()
                 .filter(m -> m.getId().equals(fieldId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Cannot find field metadata for ID '%s'".formatted(fieldId)));
+                .orElseThrow(() -> new IllegalArgumentException("The field with ID '%s' was not found in the current WorkItem configuration. Please check your configuration to ensure the field exists and verify that your import data matches the correct WorkItem type.".formatted(fieldId)));
     }
 
     private boolean isEmpty(Object value) {

@@ -365,7 +365,8 @@ class ImportServiceTest {
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> service.getFieldMetadataForField(Set.of(), "unknownFieldId"));
-        assertEquals("Cannot find field metadata for ID 'unknownFieldId'", exception.getMessage());
+        assertEquals("The field with ID 'unknownFieldId' was not found in the current WorkItem configuration." +
+                " Please check your configuration to ensure the field exists and verify that your import data matches the correct WorkItem type.", exception.getMessage());
     }
 
     @Test
