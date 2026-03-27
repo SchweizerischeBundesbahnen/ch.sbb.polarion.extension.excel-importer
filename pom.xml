@@ -96,6 +96,13 @@
         </dependency>
 
         <dependency>
+            <groupId>com.polarion.thirdparty</groupId>
+            <artifactId>org.apache.commons.lang3_3.12.0</artifactId>
+            <version>${polarion.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>ch.sbb.polarion.extensions</groupId>
             <artifactId>ch.sbb.polarion.extension.generic.app</artifactId>
             <version>${project.parent.version}</version>
