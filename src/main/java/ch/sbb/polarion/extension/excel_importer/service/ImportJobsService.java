@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
-import ch.sbb.polarion.extension.excel_importer.utils.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import ch.sbb.polarion.extension.excel_importer.utils.PropertiesUtility;
 import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
 import com.polarion.core.util.logging.Logger;
@@ -53,7 +54,7 @@ public class ImportJobsService {
             try {
                 return securityService.doAsUser(userSubject, (PrivilegedAction<ImportResult>) () -> importService.processFile(jobParams.getProjectId(), jobParams.getMappingName(), jobParams.getFileContent()));
             } catch (Exception e) {
-                failedJobsReasons.put(jobId, ExceptionUtils.getRootCauseMessageOrEmpty(e));
+                failedJobsReasons.put(jobId, StringUtils.defaultString(ExceptionUtils.getRootCause(e).getMessage()));
                 throw e;
             } finally {
                 if ((userSubject != null) && isJobLogoutRequired) {
@@ -69,7 +70,7 @@ public class ImportJobsService {
                     if (e instanceof TimeoutException) {
                         failedReason = String.format("Timeout after %d min", timeoutInMinutes);
                     } else {
-                        failedReason = ExceptionUtils.getRootCauseMessageOrEmpty(e);
+                        failedReason = StringUtils.defaultString(ExceptionUtils.getRootCause(e).getMessage());
                     }
                     failedJobsReasons.put(jobId, failedReason);
                     logger.error(String.format("Import job '%s' is failed with error: %s", jobId, failedReason), e);
