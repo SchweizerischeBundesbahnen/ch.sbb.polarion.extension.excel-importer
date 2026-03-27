@@ -53,7 +53,7 @@ public class ImportJobsService {
             try {
                 return securityService.doAsUser(userSubject, (PrivilegedAction<ImportResult>) () -> importService.processFile(jobParams.getProjectId(), jobParams.getMappingName(), jobParams.getFileContent()));
             } catch (Exception e) {
-                failedJobsReasons.put(jobId, Objects.toString(ExceptionUtils.getRootCause(e).getMessage(), ""));
+                failedJobsReasons.put(jobId, ExceptionUtils.getRootCauseMessage(e));
                 throw e;
             } finally {
                 if ((userSubject != null) && isJobLogoutRequired) {
@@ -69,7 +69,7 @@ public class ImportJobsService {
                     if (e instanceof TimeoutException) {
                         failedReason = String.format("Timeout after %d min", timeoutInMinutes);
                     } else {
-                        failedReason = Objects.toString(ExceptionUtils.getRootCause(e).getMessage(), "");
+                        failedReason = ExceptionUtils.getRootCauseMessage(e);
                     }
                     failedJobsReasons.put(jobId, failedReason);
                     logger.error(String.format("Import job '%s' is failed with error: %s", jobId, failedReason), e);
