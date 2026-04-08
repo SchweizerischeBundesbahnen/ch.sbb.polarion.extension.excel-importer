@@ -79,7 +79,7 @@ class PolarionServiceExtTest {
         when(otherStructType.getStructTypeId()).thenReturn("someOtherStructure");
         FieldMetadata otherStructField = FieldMetadata.builder().id("otherStruct").type(otherStructType).build();
 
-        doReturn(new TreeSet<>(Set.of(stringField, testStepsField))).when(service).getGeneralFields(eq(IWorkItem.PROTO), any());
+        doReturn(new TreeSet<>(Set.of(stringField, testStepsField))).when(service).getGeneralFields(eq(IWorkItem.PROTO), any(), nullable(String.class));
         doReturn(new TreeSet<>(Set.of(otherStructField))).when(service).getCustomFields(eq(IWorkItem.PROTO), any(), isNull());
         doReturn(new TreeSet<>(Set.of(booleanField))).when(service).getCustomFields(eq(IWorkItem.PROTO), any(), eq("testType"));
 
