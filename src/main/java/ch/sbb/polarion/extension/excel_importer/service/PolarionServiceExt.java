@@ -51,7 +51,7 @@ public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.servic
 
         IContextId contextId = trackerProject.getContextId();
         Set<FieldMetadata> fields = new TreeSet<>();
-        fields.addAll(getGeneralFields(IWorkItem.PROTO, contextId)); // get common fields for WorkItem
+        fields.addAll(getGeneralFields(IWorkItem.PROTO, contextId, typeOpt.getId())); // get common fields for WorkItem
         fields.addAll(getCustomFields(IWorkItem.PROTO, contextId, null)); // get custom fields for WorkItem with any type in the project (-- All Types --)
         fields.addAll(getCustomFields(IWorkItem.PROTO, contextId, typeOpt.getId())); // get custom fields for WorkItem with specific type in the project
         fillBooleanOptionMappings(fields); // set mappings for booleans
