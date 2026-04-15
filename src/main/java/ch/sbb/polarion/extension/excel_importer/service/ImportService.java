@@ -12,7 +12,9 @@ import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import ch.sbb.polarion.extension.generic.util.OptionsMappingUtils;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
+import com.polarion.alm.tracker.model.IHyperlinkStruct;
 import com.polarion.alm.tracker.model.IExternallyLinkedWorkItemStruct;
+import com.polarion.platform.persistence.IEnumOption;
 import com.polarion.alm.tracker.model.ILinkRoleOpt;
 import com.polarion.alm.tracker.model.ILinkedWorkItemStruct;
 import com.polarion.alm.tracker.model.ITestStep;
@@ -32,6 +34,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -221,6 +224,9 @@ public class ImportService {
                 existingValueDiffers(workItem, fieldId, value, fieldMetadata, model.isUnlinkExisting())) {
             if (IWorkItem.KEY_LINKED_WORK_ITEMS.equals(fieldId)) {
                 setLinkedWorkItems(workItem, value, model.isUnlinkExisting());
+            } else if (IWorkItem.KEY_HYPERLINKS.equals(fieldId)) {
+                workItem.getHyperlinks().clear();
+                addHyperlinks(workItem, prepareValue(value, fieldMetadata));
             } else {
                 polarionServiceExt.setFieldValue(workItem, fieldId, prepareValue(value, fieldMetadata), model.getEnumsMapping());
             }
@@ -246,6 +252,35 @@ public class ImportService {
 
         if (unlinkExisting) {
             unlinkExistingExtraItems(workItem, links);
+        }
+    }
+
+    @VisibleForTesting
+    void addHyperlinks(IWorkItem workItem, Object value) {
+        if (value == null) {
+            return;
+        }
+        String stringValue = String.valueOf(value);
+        if (StringUtils.isEmpty(stringValue)) {
+            return;
+        }
+        for (String entry : stringValue.split("\\n")) {
+            entry = entry.trim();
+            if (StringUtils.isEmpty(entry)) {
+                continue;
+            }
+            String[] parts = entry.split(";", 3);
+            if (parts.length < 3) {
+                throw new IllegalArgumentException("Invalid hyperlink format: '" + entry + "'. Expected format: 'name;role;uri'");
+            }
+            String name = parts[0].trim();
+            String roleId = parts[1].trim();
+            String uri = parts[2].trim();
+            IEnumOption roleEnum = null;
+            if (!StringUtils.isEmpty(roleId)) {
+                roleEnum = workItem.getProject().getHyperlinkRoleEnum().wrapOption(roleId);
+            }
+            workItem.addHyperlink(uri, roleEnum, StringUtils.isEmpty(name) ? null : name);
         }
     }
 
@@ -305,6 +340,8 @@ public class ImportService {
             return !Objects.equals(String.valueOf(newValue), String.valueOf(existingValue));
         } else if (IWorkItem.KEY_LINKED_WORK_ITEMS.equals(fieldId)) {
             return linkedWorkItemsDiffer(workItem, newValue, unlinkExisting);
+        } else if (IWorkItem.KEY_HYPERLINKS.equals(fieldId)) {
+            return hyperlinksDiffer(workItem, newValue);
         } else {
             return !Objects.equals(newValue, existingValue);
         }
@@ -318,6 +355,63 @@ public class ImportService {
         } else {
             throw new IllegalArgumentException(IWorkItem.KEY_LINKED_WORK_ITEMS + " can be set using string value only");
         }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private boolean hyperlinksDiffer(IWorkItem workItem, Object newValue) {
+        String stringValue = newValue == null ? "" : String.valueOf(newValue);
+        List<String> newEntries = parseHyperlinkEntries(stringValue);
+        Collection<IHyperlinkStruct> existing = workItem.getHyperlinks();
+        if (existing.isEmpty() && newEntries.isEmpty()) {
+            return false;
+        }
+        if (existing.isEmpty() || newEntries.isEmpty()) {
+            return true;
+        }
+        if (newEntries.size() != existing.size()) {
+            return true;
+        }
+        List<IHyperlinkStruct> remainingExisting = new ArrayList<>(existing);
+        for (String entry : newEntries) {
+            String[] parts = entry.split(";", 3);
+            if (parts.length < 3 || !removeMatchingHyperlink(remainingExisting, parts)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private List<String> parseHyperlinkEntries(String value) {
+        List<String> entries = new ArrayList<>();
+        for (String entry : value.split("\\n")) {
+            entry = entry.trim();
+            if (!StringUtils.isEmpty(entry)) {
+                entries.add(entry);
+            }
+        }
+        return entries;
+    }
+
+    private boolean removeMatchingHyperlink(List<IHyperlinkStruct> existing, String[] parts) {
+        String name = parts[0].trim();
+        String roleId = parts[1].trim();
+        String uri = parts[2].trim();
+        String expectedName = StringUtils.isEmpty(name) ? null : name;
+        String expectedRoleId = StringUtils.isEmpty(roleId) ? null : roleId;
+        for (int i = 0; i < existing.size(); i++) {
+            if (hyperlinkMatches(existing.get(i), uri, expectedName, expectedRoleId)) {
+                existing.remove(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hyperlinkMatches(IHyperlinkStruct hyperlink, String uri, String name, String roleId) {
+        String existingRoleId = hyperlink.getRole() != null ? hyperlink.getRole().getId() : null;
+        return Objects.equals(uri, hyperlink.getUri())
+                && Objects.equals(name, hyperlink.getTitle())
+                && Objects.equals(roleId, existingRoleId);
     }
 
     @NotNull

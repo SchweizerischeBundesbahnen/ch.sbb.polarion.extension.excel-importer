@@ -1,5 +1,6 @@
 * [Test Steps table import](#test-steps-table-import)
 * [Linked work items](#linked-work-items)
+* [Hyperlinks](#hyperlinks)
 * [Velocity functions](#velocity-functions)
 
 
@@ -16,6 +17,27 @@ The mapping configuration for the example above should look like this:
 In order to link imported work items using 'linkedWorkItems' field the cell must contain a comma-separated list of work item IDs together with the optional link role and project ID (e.g. `link_role:project_id/WI_ID`) or using full link to the work item:
 
 ![Linked work items example](docs/user_guide/img/links.png)
+
+## Hyperlinks
+The `hyperlinks` field can be used to import hyperlinks into work items. Each hyperlink entry must follow the format:
+
+```
+name;role;uri
+```
+
+| Part   | Description                                                                                   | Required |
+|--------|-----------------------------------------------------------------------------------------------|----------|
+| `name` | Display title of the hyperlink. Leave empty for no title.                                     | No       |
+| `role` | Hyperlink role ID as defined in Polarion (e.g. `internal reference`, `external reference`).   | No       |
+| `uri`  | The URL of the hyperlink.                                                                     | Yes      |
+
+Multiple hyperlinks can be specified in a single cell by separating them with a newline character.
+
+### Example
+
+```
+title;internal reference;http://localhost/polarion/redirect/project/elibrary/workitem?id=EL-100\nExternal Doc;external reference;https://example.com/doc 
+```
 
 ## Velocity functions
 
