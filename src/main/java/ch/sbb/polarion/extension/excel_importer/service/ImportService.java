@@ -360,14 +360,14 @@ public class ImportService {
     @SuppressWarnings({"unchecked"})
     private boolean hyperlinksDiffer(IWorkItem workItem, Object newValue) {
         String stringValue = newValue == null ? "" : String.valueOf(newValue);
+        List<String> newEntries = parseHyperlinkEntries(stringValue);
         Collection<IHyperlinkStruct> existing = workItem.getHyperlinks();
-        if (existing.isEmpty() && StringUtils.isEmpty(stringValue)) {
+        if (existing.isEmpty() && newEntries.isEmpty()) {
             return false;
         }
-        if (existing.isEmpty() || StringUtils.isEmpty(stringValue)) {
+        if (existing.isEmpty() || newEntries.isEmpty()) {
             return true;
         }
-        List<String> newEntries = parseHyperlinkEntries(stringValue);
         if (newEntries.size() != existing.size()) {
             return true;
         }

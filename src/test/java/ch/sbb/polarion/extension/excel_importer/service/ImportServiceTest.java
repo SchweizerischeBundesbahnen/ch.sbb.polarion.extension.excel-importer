@@ -33,6 +33,7 @@ import com.polarion.platform.persistence.model.IPrototype;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import com.polarion.subterra.base.data.model.ICustomField;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1270,26 +1271,30 @@ class ImportServiceTest {
     }
 
     @Test
+    @SneakyThrows
     void testAddHyperlinksFromXlsx() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ImportService service = new ImportService(polarionService);
 
         // Parse the hyperlinks sheet from test.xlsx
-        // Close and re-create the mocked XlsxParser construction to use the real parser temporarily
+        List<Map<String, Object>> parsed;
         xlsxParserMockedConstruction.close();
-        IParserSettings settings = new IParserSettings() {
-            @Override
-            public String getSheetName() { return "hyperlinks"; }
-            @Override
-            public int getStartFromRow() { return 1; }
-            @Override
-            public Set<String> getUsedColumnsLetters() { return Set.of("A", "B"); }
-        };
-        List<Map<String, Object>> parsed = new XlsxParser().parseFileStream(
-                getClass().getClassLoader().getResourceAsStream("test.xlsx"), settings);
-        // Re-create the mocked construction so @AfterEach cleanup succeeds
-        xlsxParserMockedConstruction = mockConstruction(XlsxParser.class,
-                (mock, context) -> when(mock.parseFileStream(any(), any())).thenReturn(parsedData));
+        try {
+            IParserSettings settings = new IParserSettings() {
+                @Override
+                public String getSheetName() { return "hyperlinks"; }
+                @Override
+                public int getStartFromRow() { return 1; }
+                @Override
+                public Set<String> getUsedColumnsLetters() { return Set.of("A", "B"); }
+            };
+            try (var input = getClass().getClassLoader().getResourceAsStream("test.xlsx")) {
+                parsed = new XlsxParser().parseFileStream(input, settings);
+            }
+        } finally {
+            xlsxParserMockedConstruction = mockConstruction(XlsxParser.class,
+                    (mock, context) -> when(mock.parseFileStream(any(), any())).thenReturn(parsedData));
+        }
 
         assertEquals(6, parsed.size());
 
