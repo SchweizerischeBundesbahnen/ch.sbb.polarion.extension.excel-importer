@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
+import ch.sbb.polarion.extension.excel_importer.service.parser.IParserSettings;
 import ch.sbb.polarion.extension.excel_importer.service.parser.impl.XlsxParser;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettings;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettingsModel;
@@ -19,6 +20,8 @@ import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.ITypeOpt;
 import com.polarion.alm.tracker.model.IExternallyLinkedWorkItemStruct;
 import com.polarion.alm.tracker.model.ILinkedWorkItemStruct;
+import com.polarion.alm.tracker.model.IHyperlinkStruct;
+import com.polarion.alm.tracker.model.IHyperlinkRoleOpt;
 import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.platform.persistence.model.IStructure;
 import com.polarion.platform.IPlatformService;
@@ -1098,6 +1101,245 @@ class ImportServiceTest {
         assertFalse(predicate.test(workItem));
         when(workItem.getValue("someFieldId")).thenReturn(null);
         assertTrue(predicate.test(workItem));
+    }
+
+    @Test
+    void testAddHyperlinksNull() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+        IWorkItem workItem = mock(IWorkItem.class);
+
+        // null and empty values should be no-ops
+        service.addHyperlinks(workItem, null);
+        service.addHyperlinks(workItem, "");
+        service.addHyperlinks(workItem, "  ");
+
+        verify(workItem, never()).addHyperlink(anyString(), any(), anyString());
+    }
+
+    @Test
+    void testAddHyperlinksSingleEntry() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+        IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+
+        IHyperlinkRoleOpt roleEnum = mock(IHyperlinkRoleOpt.class);
+        when(workItem.getProject().getHyperlinkRoleEnum().wrapOption("ref_ext")).thenReturn(roleEnum);
+
+        service.addHyperlinks(workItem, "My Link;ref_ext;https://example.com");
+
+        verify(workItem).addHyperlink("https://example.com", roleEnum, "My Link");
+    }
+
+    @Test
+    void testAddHyperlinksMultipleEntries() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+        IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+
+        IHyperlinkRoleOpt role1 = mock(IHyperlinkRoleOpt.class);
+        IHyperlinkRoleOpt role2 = mock(IHyperlinkRoleOpt.class);
+        when(workItem.getProject().getHyperlinkRoleEnum().wrapOption("ref_ext")).thenReturn(role1);
+        when(workItem.getProject().getHyperlinkRoleEnum().wrapOption("ref_int")).thenReturn(role2);
+
+        service.addHyperlinks(workItem, "Link1;ref_ext;https://example.com\nLink2;ref_int;https://other.com");
+
+        verify(workItem).addHyperlink("https://example.com", role1, "Link1");
+        verify(workItem).addHyperlink("https://other.com", role2, "Link2");
+    }
+
+    @Test
+    void testAddHyperlinksEmptyNameAndRole() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+        IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+
+        service.addHyperlinks(workItem, ";;https://example.com");
+
+        verify(workItem).addHyperlink("https://example.com", null, null);
+    }
+
+    @Test
+    void testAddHyperlinksUriWithSemicolon() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+        IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+
+        IHyperlinkRoleOpt roleEnum = mock(IHyperlinkRoleOpt.class);
+        when(workItem.getProject().getHyperlinkRoleEnum().wrapOption("ref_ext")).thenReturn(roleEnum);
+
+        service.addHyperlinks(workItem, "My Link;ref_ext;https://example.com/path;param=1");
+
+        verify(workItem).addHyperlink("https://example.com/path;param=1", roleEnum, "My Link");
+    }
+
+    @Test
+    void testAddHyperlinksInvalidFormat() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+        IWorkItem workItem = mock(IWorkItem.class);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.addHyperlinks(workItem, "invalid-no-semicolons"));
+        assertTrue(exception.getMessage().contains("Invalid hyperlink format"));
+    }
+
+    @Test
+    void testAddHyperlinksSkipsBlankLines() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+        IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+
+        IHyperlinkRoleOpt roleEnum = mock(IHyperlinkRoleOpt.class);
+        when(workItem.getProject().getHyperlinkRoleEnum().wrapOption("ref_ext")).thenReturn(roleEnum);
+
+        service.addHyperlinks(workItem, "Link;ref_ext;https://example.com\n\n  \n");
+
+        verify(workItem, times(1)).addHyperlink("https://example.com", roleEnum, "Link");
+    }
+
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    void testExistingValueDiffersForHyperlinks() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+        IWorkItem workItem = mock(IWorkItem.class);
+
+        FieldMetadata hyperlinksMetadata = FieldMetadata.builder().id("hyperlinks").type(FieldType.LIST.getType()).build();
+
+        // both null → no diff
+        when(polarionService.getFieldValue(workItem, "hyperlinks")).thenReturn(null);
+        assertFalse(service.existingValueDiffers(workItem, "hyperlinks", null, hyperlinksMetadata, false));
+
+        // no existing hyperlinks, new value provided → diff
+        java.util.Collection emptyCollection = Collections.emptyList();
+        when(workItem.getHyperlinks()).thenReturn(emptyCollection);
+        when(polarionService.getFieldValue(workItem, "hyperlinks")).thenReturn(emptyCollection);
+        assertTrue(service.existingValueDiffers(workItem, "hyperlinks", "Link;ref_ext;https://example.com", hyperlinksMetadata, false));
+
+        // existing hyperlinks, null new value → diff
+        IHyperlinkStruct existingHyperlink = mock(IHyperlinkStruct.class);
+        when(existingHyperlink.getUri()).thenReturn("https://example.com");
+        when(existingHyperlink.getTitle()).thenReturn("Link");
+        IHyperlinkRoleOpt roleOpt = mock(IHyperlinkRoleOpt.class);
+        when(roleOpt.getId()).thenReturn("ref_ext");
+        when(existingHyperlink.getRole()).thenReturn(roleOpt);
+        java.util.Collection singleCollection = List.of(existingHyperlink);
+        when(workItem.getHyperlinks()).thenReturn(singleCollection);
+        when(polarionService.getFieldValue(workItem, "hyperlinks")).thenReturn(singleCollection);
+        assertTrue(service.existingValueDiffers(workItem, "hyperlinks", null, hyperlinksMetadata, false));
+
+        // matching hyperlink → no diff
+        assertFalse(service.existingValueDiffers(workItem, "hyperlinks", "Link;ref_ext;https://example.com", hyperlinksMetadata, false));
+
+        // different URI → diff
+        assertTrue(service.existingValueDiffers(workItem, "hyperlinks", "Link;ref_ext;https://other.com", hyperlinksMetadata, false));
+
+        // different role → diff
+        assertTrue(service.existingValueDiffers(workItem, "hyperlinks", "Link;other_role;https://example.com", hyperlinksMetadata, false));
+
+        // different name → diff
+        assertTrue(service.existingValueDiffers(workItem, "hyperlinks", "Other;ref_ext;https://example.com", hyperlinksMetadata, false));
+
+        // different count → diff
+        assertTrue(service.existingValueDiffers(workItem, "hyperlinks",
+                "Link;ref_ext;https://example.com\nLink2;ref_ext;https://other.com", hyperlinksMetadata, false));
+
+        // empty name and role in both existing and new → no diff
+        IHyperlinkStruct noNameNoRole = mock(IHyperlinkStruct.class);
+        when(noNameNoRole.getUri()).thenReturn("https://example.com");
+        when(noNameNoRole.getTitle()).thenReturn(null);
+        when(noNameNoRole.getRole()).thenReturn(null);
+        when(workItem.getHyperlinks()).thenReturn((java.util.Collection) List.of(noNameNoRole));
+        when(polarionService.getFieldValue(workItem, "hyperlinks")).thenReturn(List.of(noNameNoRole));
+        assertFalse(service.existingValueDiffers(workItem, "hyperlinks", ";;https://example.com", hyperlinksMetadata, false));
+
+        // duplicate hyperlinks (same uri/name/role appearing twice) → no diff when both sides match
+        IHyperlinkStruct dup1 = mock(IHyperlinkStruct.class);
+        when(dup1.getUri()).thenReturn("https://example.com");
+        when(dup1.getTitle()).thenReturn("Link");
+        when(dup1.getRole()).thenReturn(roleOpt);
+        IHyperlinkStruct dup2 = mock(IHyperlinkStruct.class);
+        when(dup2.getUri()).thenReturn("https://example.com");
+        when(dup2.getTitle()).thenReturn("Link");
+        when(dup2.getRole()).thenReturn(roleOpt);
+        when(workItem.getHyperlinks()).thenReturn((java.util.Collection) List.of(dup1, dup2));
+        when(polarionService.getFieldValue(workItem, "hyperlinks")).thenReturn(List.of(dup1, dup2));
+        assertFalse(service.existingValueDiffers(workItem, "hyperlinks",
+                "Link;ref_ext;https://example.com\nLink;ref_ext;https://example.com", hyperlinksMetadata, false));
+    }
+
+    @Test
+    void testAddHyperlinksFromXlsx() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        // Parse the hyperlinks sheet from test.xlsx
+        // Close and re-create the mocked XlsxParser construction to use the real parser temporarily
+        xlsxParserMockedConstruction.close();
+        IParserSettings settings = new IParserSettings() {
+            @Override
+            public String getSheetName() { return "hyperlinks"; }
+            @Override
+            public int getStartFromRow() { return 1; }
+            @Override
+            public Set<String> getUsedColumnsLetters() { return Set.of("A", "B"); }
+        };
+        List<Map<String, Object>> parsed = new XlsxParser().parseFileStream(
+                getClass().getClassLoader().getResourceAsStream("test.xlsx"), settings);
+        // Re-create the mocked construction so @AfterEach cleanup succeeds
+        xlsxParserMockedConstruction = mockConstruction(XlsxParser.class,
+                (mock, context) -> when(mock.parseFileStream(any(), any())).thenReturn(parsedData));
+
+        assertEquals(6, parsed.size());
+
+        // Row 1: single internal reference
+        IWorkItem workItem1 = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+        IHyperlinkRoleOpt intRole1 = mock(IHyperlinkRoleOpt.class);
+        when(workItem1.getProject().getHyperlinkRoleEnum().wrapOption("internal reference")).thenReturn(intRole1);
+
+        service.addHyperlinks(workItem1, parsed.get(0).get("B"));
+        verify(workItem1).addHyperlink("http://localhost/polarion/redirect/project/elibrary/workitem?id=EL-100", intRole1, "title");
+
+        // Row 2: two internal references (newline separated)
+        IWorkItem workItem2 = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+        IHyperlinkRoleOpt intRole2 = mock(IHyperlinkRoleOpt.class);
+        when(workItem2.getProject().getHyperlinkRoleEnum().wrapOption("internal reference")).thenReturn(intRole2);
+
+        service.addHyperlinks(workItem2, parsed.get(1).get("B"));
+        verify(workItem2).addHyperlink("http://localhost/polarion/redirect/project/elibrary_st_6a2a65261c28/workitem?id=EL-139", intRole2, "title");
+        verify(workItem2).addHyperlink("http://localhost/polarion/redirect/project/elibrary_st_6a2a65261c28/workitem?id=EL-140", intRole2, "title");
+
+        // Row 3: single external reference
+        IWorkItem workItem3 = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+        IHyperlinkRoleOpt extRole3 = mock(IHyperlinkRoleOpt.class);
+        when(workItem3.getProject().getHyperlinkRoleEnum().wrapOption("external reference")).thenReturn(extRole3);
+
+        service.addHyperlinks(workItem3, parsed.get(2).get("B"));
+        verify(workItem3).addHyperlink("https://example.com/doc", extRole3, "External Doc");
+
+        // Row 4: mixed internal + external references
+        IWorkItem workItem4 = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+        IHyperlinkRoleOpt intRole4 = mock(IHyperlinkRoleOpt.class);
+        IHyperlinkRoleOpt extRole4 = mock(IHyperlinkRoleOpt.class);
+        when(workItem4.getProject().getHyperlinkRoleEnum().wrapOption("internal reference")).thenReturn(intRole4);
+        when(workItem4.getProject().getHyperlinkRoleEnum().wrapOption("external reference")).thenReturn(extRole4);
+
+        service.addHyperlinks(workItem4, parsed.get(3).get("B"));
+        verify(workItem4).addHyperlink("http://localhost/polarion/redirect/project/elibrary/workitem?id=EL-200", intRole4, "Int Link");
+        verify(workItem4).addHyperlink("https://example.com/spec", extRole4, "Ext Link");
+
+        // Row 5: no name and no role
+        IWorkItem workItem5 = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+
+        service.addHyperlinks(workItem5, parsed.get(4).get("B"));
+        verify(workItem5).addHyperlink("https://no-name-no-role.com", null, null);
+
+        // Row 6: empty value — should be a no-op
+        IWorkItem workItem6 = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+
+        service.addHyperlinks(workItem6, parsed.get(5).get("B"));
+        verify(workItem6, never()).addHyperlink(anyString(), any(), anyString());
     }
 
     private void mockSettings(boolean overwriteWithEmpty) {
