@@ -900,6 +900,46 @@ class ImportServiceTest {
     }
 
     @Test
+    void testSetLinkedWorkItemsIgnoresFailedLinkWhenIgnoreUnknown() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        LinkInfo newLink = new LinkInfo("relates_to", "someProject", "SOME-123", false);
+
+        try (MockedStatic<LinkInfo> linkInfoMockedStatic = mockStatic(LinkInfo.class)) {
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("items"), any(IWorkItem.class))).thenReturn(List.of(newLink));
+
+            IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+            when(polarionService.getWorkItem("someProject", "SOME-123")).thenThrow(new RuntimeException("work item not found"));
+
+            ImportService.ImportContext context = contextFor(ExcelSheetMappingSettingsModel.builder().ignoreUnknown(true).build());
+
+            assertDoesNotThrow(() -> service.setLinkedWorkItems(workItem, "items", context));
+            verify(workItem, never()).addLinkedItem(any(), any(), any(), anyBoolean());
+            assertTrue(context.logs.stream().anyMatch(log -> log.contains("SOME-123") && log.contains("Skipping this link")));
+        }
+    }
+
+    @Test
+    void testSetLinkedWorkItemsRethrowsFailedLinkWhenNotIgnoreUnknown() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        LinkInfo newLink = new LinkInfo("relates_to", "someProject", "SOME-123", false);
+
+        try (MockedStatic<LinkInfo> linkInfoMockedStatic = mockStatic(LinkInfo.class)) {
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("items"), any(IWorkItem.class))).thenReturn(List.of(newLink));
+
+            IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+            when(polarionService.getWorkItem("someProject", "SOME-123")).thenThrow(new RuntimeException("work item not found"));
+
+            ImportService.ImportContext context = contextFor(ExcelSheetMappingSettingsModel.builder().ignoreUnknown(false).build());
+
+            assertThrows(RuntimeException.class, () -> service.setLinkedWorkItems(workItem, "items", context));
+        }
+    }
+
+    @Test
     void testExistingValueDiffers() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ImportService service = new ImportService(polarionService);

@@ -237,6 +237,7 @@ public class ImportService {
     }
 
     @VisibleForTesting
+    @SuppressWarnings("java:S3776") // ignore cognitive complexity complaint
     void setLinkedWorkItems(IWorkItem workItem, Object value, ImportContext context) {
         List<LinkInfo> links = value == null ? List.of() : LinkInfo.fromString((String) value, workItem);
         List<LinkInfo> newLinks = links.stream().filter(link -> !link.containedIn(workItem)).toList();
