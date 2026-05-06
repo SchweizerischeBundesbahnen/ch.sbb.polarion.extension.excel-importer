@@ -921,6 +921,27 @@ class ImportServiceTest {
     }
 
     @Test
+    void testSetLinkedWorkItemsIgnoresFailedLinkLogsNullRoleWhenRoleEnumIsNull() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        LinkInfo newLink = new LinkInfo("relates_to", "someProject", "SOME-123", false);
+
+        try (MockedStatic<LinkInfo> linkInfoMockedStatic = mockStatic(LinkInfo.class)) {
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("items"), any(IWorkItem.class))).thenReturn(List.of(newLink));
+
+            IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+            lenient().when(workItem.getProject().getWorkItemLinkRoleEnum().wrapOption(any(), any())).thenReturn(null);
+            when(polarionService.getWorkItem("someProject", "SOME-123")).thenThrow(new RuntimeException("work item not found"));
+
+            ImportService.ImportContext context = contextFor(ExcelSheetMappingSettingsModel.builder().ignoreUnknown(true).build());
+
+            assertDoesNotThrow(() -> service.setLinkedWorkItems(workItem, "items", context));
+            assertTrue(context.logs.stream().anyMatch(log -> log.contains("'null'") && log.contains("Skipping this link")));
+        }
+    }
+
+    @Test
     void testSetLinkedWorkItemsRethrowsFailedLinkWhenNotIgnoreUnknown() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ImportService service = new ImportService(polarionService);
