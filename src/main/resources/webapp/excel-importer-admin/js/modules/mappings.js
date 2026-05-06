@@ -440,6 +440,7 @@ function parseAndSetSettings(text) {
     ctx.setValueById('sheet-name', settings.sheetName);
     ctx.setValueById('start-from-row', settings.startFromRow);
     ctx.setCheckboxValueById('overwrite', settings.overwriteWithEmpty);
+    ctx.setCheckboxValueById('ignore-unknown', settings.ignoreUnknown);
     ctx.setValueById('wi-types', settings.defaultWorkItemType);
     ctx.getElementById('mapping-table').innerHTML = '';
     Object.entries(settings.columnsMapping).forEach(entry => {
@@ -479,6 +480,7 @@ function saveSettings() {
             'sheetName': ctx.getValueById('sheet-name'),
             'startFromRow': ctx.getValueById('start-from-row'),
             'overwriteWithEmpty': ctx.getCheckboxValueById('overwrite'),
+            'ignoreUnknown': ctx.getCheckboxValueById('ignore-unknown'),
             'columnsMapping': Object.fromEntries(getColumnToFieldMapping()),
             'stepsMapping': getTestStepsMapping(),
             'enumsMapping': cache.enumsMapping,

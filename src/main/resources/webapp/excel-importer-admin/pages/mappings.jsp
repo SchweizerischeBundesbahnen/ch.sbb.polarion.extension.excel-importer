@@ -129,6 +129,9 @@
         <tr>
             <td colspan="2"><input id="overwrite" type="checkbox"><label for="overwrite" title="Determines whether or not an empty value from the imported excel file should overwrite (and thus delete) an existing value of the work item field.">Overwrite with empty values</label></td>
         </tr>
+        <tr>
+            <td colspan="2"><input id="ignore-unknown" type="checkbox"><label for="ignore-unknown" title="Silently skip unresolvable items (e.g. missing linked work items) instead of failing the import.">Ignore unknown/nonexistent values</label></td>
+        </tr>
     </table>
     <h2 class="align-left">Workitem Type To Create</h2>
     <div id="workitem-types-container">
