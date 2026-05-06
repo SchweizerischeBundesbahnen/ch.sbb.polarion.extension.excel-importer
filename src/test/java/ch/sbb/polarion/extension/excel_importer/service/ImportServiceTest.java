@@ -400,7 +400,7 @@ class ImportServiceTest {
         mappingRecord.put("B", "High");
         mappingRecord.put("C", "unmapped");
 
-        service.fillWorkItemFields(workItem, mappingRecord, model, "linkField");
+        service.fillWorkItemFields(workItem, mappingRecord, contextFor(model), "linkField");
 
         // title: normal mapping, no option mapping → value unchanged
         verify(polarionService).setFieldValue(eq(workItem), eq("title"), eq("Test Title"), any());
@@ -442,7 +442,7 @@ class ImportServiceTest {
             Map<String, Object> mappingRecord = new HashMap<>();
             mappingRecord.put("A", "relates_to:elibrary/EL-123");
 
-            service.fillWorkItemFields(workItem, mappingRecord, model, "linkField");
+            service.fillWorkItemFields(workItem, mappingRecord, contextFor(model), "linkField");
 
             // linkedWorkItems should go through setLinkedWorkItems, not setFieldValue
             verify(polarionService, never()).setFieldValue(any(IWorkItem.class), anyString(), any(), any());
@@ -472,7 +472,7 @@ class ImportServiceTest {
         Map<String, Object> mappingRecord = new HashMap<>();
         mappingRecord.put("testSteps|mySteps", "stepsData");
 
-        service.fillWorkItemFields(workItem, mappingRecord, model, "linkField");
+        service.fillWorkItemFields(workItem, mappingRecord, contextFor(model), "linkField");
 
         verify(polarionService).getWorkItemsFields("projectId", "");
         verify(polarionService).setFieldValue(eq(workItem), eq("mySteps"), eq("stepsData"), any());
@@ -519,7 +519,7 @@ class ImportServiceTest {
         mappingRecord.put("B", List.of("step1", "step2"));
         mappingRecord.put("C", List.of("result1", "result2"));
 
-        service.fillWorkItemFields(workItem, mappingRecord, model, "linkField");
+        service.fillWorkItemFields(workItem, mappingRecord, contextFor(model), "linkField");
 
         // constructTestStepsFields should have called createStructureForTypeId
         verify(trackerService.getDataService()).createStructureForTypeId(eq(workItem), eq(TestSteps.STRUCTURE_ID), any());
@@ -569,7 +569,7 @@ class ImportServiceTest {
         mappingRecord.put("B", "singleStep");
         mappingRecord.put("C", "singleResult");
 
-        service.fillWorkItemFields(workItem, mappingRecord, model, "linkField");
+        service.fillWorkItemFields(workItem, mappingRecord, contextFor(model), "linkField");
 
         verify(trackerService.getDataService()).createStructureForTypeId(eq(workItem), eq(TestSteps.STRUCTURE_ID), any());
         verify(polarionService).setFieldValue(eq(workItem), eq("testSteps"), eq(mockStructure), any());
@@ -624,8 +624,8 @@ class ImportServiceTest {
         when(workItem2.getType()).thenReturn(typeOpt2);
 
         // Call with same mappingRecord for both work items
-        service.fillWorkItemFields(workItem1, mappingRecord, model, "linkField");
-        service.fillWorkItemFields(workItem2, mappingRecord, model, "linkField");
+        service.fillWorkItemFields(workItem1, mappingRecord, contextFor(model), "linkField");
+        service.fillWorkItemFields(workItem2, mappingRecord, contextFor(model), "linkField");
 
         // Both work items should get the test steps structure
         verify(trackerService.getDataService()).createStructureForTypeId(eq(workItem1), eq(TestSteps.STRUCTURE_ID), any());
@@ -663,7 +663,7 @@ class ImportServiceTest {
         mappingRecord.put("B", List.of("step1"));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> service.fillWorkItemFields(workItem, mappingRecord, model, "linkField"));
+                () -> service.fillWorkItemFields(workItem, mappingRecord, contextFor(model), "linkField"));
         assertTrue(exception.getMessage().contains("Test steps keys mismatch"));
     }
 
@@ -697,7 +697,7 @@ class ImportServiceTest {
         mappingRecord.put("B", List.of("step1"));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> service.fillWorkItemFields(workItem, mappingRecord, model, "linkField"));
+                () -> service.fillWorkItemFields(workItem, mappingRecord, contextFor(model), "linkField"));
         assertTrue(ex.getMessage().contains("testSteps"));
     }
 
@@ -735,7 +735,7 @@ class ImportServiceTest {
         mappingRecord.put("C", List.of("extra1"));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> service.fillWorkItemFields(workItem, mappingRecord, model, "linkField"));
+                () -> service.fillWorkItemFields(workItem, mappingRecord, contextFor(model), "linkField"));
         assertTrue(ex.getMessage().contains("testSteps"));
     }
 
@@ -752,7 +752,7 @@ class ImportServiceTest {
         when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(Collections.emptyList());
 
         // null value with unlinkExisting=true should remove all existing links without NPE
-        service.setLinkedWorkItems(workItem, null, true);
+        service.setLinkedWorkItems(workItem, null, unlinkContext(true));
 
         verify(workItem, never()).addLinkedItem(any(), any(), isNull(), anyBoolean());
         verify(workItem, times(1)).removeLinkedItem(extraStruct.getLinkedItem(), extraStruct.getLinkRole());
@@ -770,7 +770,7 @@ class ImportServiceTest {
             linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("expectedItems"), any(IWorkItem.class))).thenReturn(List.of(regularLink, externalLink));
 
             IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
-            service.setLinkedWorkItems(workItem, "expectedItems", false);
+            service.setLinkedWorkItems(workItem, "expectedItems", unlinkContext(false));
 
             verify(workItem, times(1)).addExternallyLinkedItem(any(), any());
             verify(workItem, times(1)).addLinkedItem(any(), any(), isNull(), anyBoolean());
@@ -819,7 +819,7 @@ class ImportServiceTest {
             when(workItem.getLinkedWorkItemsStructsDirect()).thenReturn(List.of(keptStruct, extraStruct, diffRoleStruct, diffProjectStruct));
             when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(Collections.emptyList());
 
-            service.setLinkedWorkItems(workItem, "expectedItems", true);
+            service.setLinkedWorkItems(workItem, "expectedItems", unlinkContext(true));
 
             // regularLink is already contained (matches keptStruct) so no addLinkedItem
             verify(workItem, never()).addLinkedItem(any(), any(), isNull(), anyBoolean());
@@ -866,7 +866,7 @@ class ImportServiceTest {
 
             when(workItem.getExternallyLinkedWorkItemsStructs()).thenReturn(List.of(keptStruct, extraStruct, diffRoleExtStruct));
 
-            service.setLinkedWorkItems(workItem, "expectedItems", true);
+            service.setLinkedWorkItems(workItem, "expectedItems", unlinkContext(true));
 
             // keptExternalLink is already contained (matches keptStruct), regularLink is new
             verify(workItem, never()).addExternallyLinkedItem(any(), any());
@@ -892,10 +892,75 @@ class ImportServiceTest {
 
             IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
 
-            service.setLinkedWorkItems(workItem, "items", false);
+            service.setLinkedWorkItems(workItem, "items", unlinkContext(false));
 
             // only the new link should be added, the already contained one should be skipped
             verify(workItem, times(1)).addLinkedItem(any(), any(), isNull(), anyBoolean());
+        }
+    }
+
+    @Test
+    void testSetLinkedWorkItemsIgnoresFailedLinkWhenIgnoreUnknown() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        LinkInfo newLink = new LinkInfo("relates_to", "someProject", "SOME-123", false);
+
+        try (MockedStatic<LinkInfo> linkInfoMockedStatic = mockStatic(LinkInfo.class)) {
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("items"), any(IWorkItem.class))).thenReturn(List.of(newLink));
+
+            IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+            when(polarionService.getWorkItem("someProject", "SOME-123")).thenThrow(new RuntimeException("work item not found"));
+
+            ImportService.ImportContext context = contextFor(ExcelSheetMappingSettingsModel.builder().ignoreUnknown(true).build());
+
+            assertDoesNotThrow(() -> service.setLinkedWorkItems(workItem, "items", context));
+            verify(workItem, never()).addLinkedItem(any(), any(), any(), anyBoolean());
+            assertTrue(context.logs.stream().anyMatch(log -> log.contains("SOME-123") && log.contains("Skipping this link")));
+        }
+    }
+
+    @Test
+    void testSetLinkedWorkItemsIgnoresFailedLinkLogsNullRoleWhenRoleEnumIsNull() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        LinkInfo newLink = new LinkInfo("relates_to", "someProject", "SOME-123", false);
+
+        try (MockedStatic<LinkInfo> linkInfoMockedStatic = mockStatic(LinkInfo.class)) {
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("items"), any(IWorkItem.class))).thenReturn(List.of(newLink));
+
+            IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+            when(workItem.getId()).thenReturn("PARENT-1");
+            // workItem.getType() returns ITypeOpt (extends IEnumOption, not IPObject), so the production call
+            // resolves to wrapOption(String, Object). any(Object.class) forces the matcher to that overload
+            // a bare any() would let the compiler pick the more-specific wrapOption(String, IPObject) and the stub would never fire.
+            when(workItem.getProject().getWorkItemLinkRoleEnum().wrapOption(anyString(), any(Object.class))).thenReturn(null);
+            when(polarionService.getWorkItem("someProject", "SOME-123")).thenThrow(new RuntimeException("work item not found"));
+
+            ImportService.ImportContext context = contextFor(ExcelSheetMappingSettingsModel.builder().ignoreUnknown(true).build());
+
+            assertDoesNotThrow(() -> service.setLinkedWorkItems(workItem, "items", context));
+            assertTrue(context.logs.stream().anyMatch(log -> log.contains("by 'null' role") && log.contains("Skipping this link")));
+        }
+    }
+
+    @Test
+    void testSetLinkedWorkItemsRethrowsFailedLinkWhenNotIgnoreUnknown() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        LinkInfo newLink = new LinkInfo("relates_to", "someProject", "SOME-123", false);
+
+        try (MockedStatic<LinkInfo> linkInfoMockedStatic = mockStatic(LinkInfo.class)) {
+            linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("items"), any(IWorkItem.class))).thenReturn(List.of(newLink));
+
+            IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+            when(polarionService.getWorkItem("someProject", "SOME-123")).thenThrow(new RuntimeException("work item not found"));
+
+            ImportService.ImportContext context = contextFor(ExcelSheetMappingSettingsModel.builder().ignoreUnknown(false).build());
+
+            assertThrows(RuntimeException.class, () -> service.setLinkedWorkItems(workItem, "items", context));
         }
     }
 
@@ -1200,7 +1265,7 @@ class ImportServiceTest {
     }
 
     @Test
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({"rawtypes"})
     void testExistingValueDiffersForHyperlinks() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ImportService service = new ImportService(polarionService);
@@ -1251,7 +1316,7 @@ class ImportServiceTest {
         when(noNameNoRole.getUri()).thenReturn("https://example.com");
         when(noNameNoRole.getTitle()).thenReturn(null);
         when(noNameNoRole.getRole()).thenReturn(null);
-        when(workItem.getHyperlinks()).thenReturn((java.util.Collection) List.of(noNameNoRole));
+        when(workItem.getHyperlinks()).thenReturn(List.of(noNameNoRole));
         when(polarionService.getFieldValue(workItem, "hyperlinks")).thenReturn(List.of(noNameNoRole));
         assertFalse(service.existingValueDiffers(workItem, "hyperlinks", ";;https://example.com", hyperlinksMetadata, false));
 
@@ -1264,7 +1329,7 @@ class ImportServiceTest {
         when(dup2.getUri()).thenReturn("https://example.com");
         when(dup2.getTitle()).thenReturn("Link");
         when(dup2.getRole()).thenReturn(roleOpt);
-        when(workItem.getHyperlinks()).thenReturn((java.util.Collection) List.of(dup1, dup2));
+        when(workItem.getHyperlinks()).thenReturn(List.of(dup1, dup2));
         when(polarionService.getFieldValue(workItem, "hyperlinks")).thenReturn(List.of(dup1, dup2));
         assertFalse(service.existingValueDiffers(workItem, "hyperlinks",
                 "Link;ref_ext;https://example.com\nLink;ref_ext;https://example.com", hyperlinksMetadata, false));
@@ -1303,7 +1368,7 @@ class ImportServiceTest {
         IHyperlinkRoleOpt intRole1 = mock(IHyperlinkRoleOpt.class);
         when(workItem1.getProject().getHyperlinkRoleEnum().wrapOption("internal reference")).thenReturn(intRole1);
 
-        service.addHyperlinks(workItem1, parsed.get(0).get("B"));
+        service.addHyperlinks(workItem1, parsed.getFirst().get("B"));
         verify(workItem1).addHyperlink("http://localhost/polarion/redirect/project/elibrary/workitem?id=EL-100", intRole1, "title");
 
         // Row 2: two internal references (newline separated)
@@ -1345,6 +1410,14 @@ class ImportServiceTest {
 
         service.addHyperlinks(workItem6, parsed.get(5).get("B"));
         verify(workItem6, never()).addHyperlink(anyString(), any(), anyString());
+    }
+
+    private static ImportService.ImportContext contextFor(ExcelSheetMappingSettingsModel settings) {
+        return new ImportService.ImportContext(null, null, settings);
+    }
+
+    private static ImportService.ImportContext unlinkContext(boolean unlinkExisting) {
+        return contextFor(ExcelSheetMappingSettingsModel.builder().unlinkExisting(unlinkExisting).build());
     }
 
     private void mockSettings(boolean overwriteWithEmpty) {

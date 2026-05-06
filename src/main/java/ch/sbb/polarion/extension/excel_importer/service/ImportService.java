@@ -100,7 +100,7 @@ public class ImportService {
                         logEntries.add("no work item found by ID '%s'. Since the 'id' is used as the 'Link Column', new work item creation is impossible".formatted(idString));
                     } else {
                         IWorkItem createdWorkItem = polarionServiceExt.createWorkItem(context.project, context.workItemType);
-                        fillWorkItemFields(createdWorkItem, columnMappingRecord, context.settings, identifierFieldId);
+                        fillWorkItemFields(createdWorkItem, columnMappingRecord, context, identifierFieldId);
                         createdWorkItem.save();
                         logEntries.add("new work item '%s' is being created".formatted(createdWorkItem.getId()));
                         context.createdIds.add(createdWorkItem.getId());
@@ -110,7 +110,7 @@ public class ImportService {
                         context.log("ATTENTION! Found multiple work items for '%s' with value '%s'. Will update all of them.".formatted(idString, idValue));
                     }
                     for (IWorkItem workItem : workItems) {
-                        fillWorkItemFields(workItem, columnMappingRecord, context.settings, identifierFieldId);
+                        fillWorkItemFields(workItem, columnMappingRecord, context, identifierFieldId);
                         if (!workItem.isModified()) {
                             logEntries.add("no changes were made to '%s'".formatted(workItem.getId()));
                             context.unchangedIds.add(workItem.getId());
@@ -153,21 +153,21 @@ public class ImportService {
     }
 
     @VisibleForTesting
-    void fillWorkItemFields(@NotNull IWorkItem workItem, Map<String, Object> mappingRecord, ExcelSheetMappingSettingsModel model, @NotNull String linkColumnId) {
+    void fillWorkItemFields(@NotNull IWorkItem workItem, Map<String, Object> mappingRecord, ImportContext context, @NotNull String linkColumnId) {
         Set<FieldMetadata> fieldMetadataSet = polarionServiceExt.getWorkItemsFields(workItem.getProjectId(), workItem.getType() == null ? "" : workItem.getType().getId());
         // Work on a copy to avoid mutating the original map (which may be reused for other work items)
         Map<String, Object> dataMap = new HashMap<>(mappingRecord);
-        constructTestStepsFields(dataMap, model, workItem, fieldMetadataSet);
+        constructTestStepsFields(dataMap, context.settings, workItem, fieldMetadataSet);
         dataMap.forEach((columnId, value) -> {
-            String fieldId = model.getColumnsMapping().get(columnId);
+            String fieldId = context.settings.getColumnsMapping().get(columnId);
             if (fieldId == null && columnId.startsWith(ExcelSheetMappingSettingsModel.TEST_STEPS_COLUMN_FILLER_PREFIX)) {
                 fieldId = columnId.substring(ExcelSheetMappingSettingsModel.TEST_STEPS_COLUMN_FILLER_PREFIX.length());
             }
             if (fieldId != null) {
                 // we need to know possible mapped value asap because some types (at least boolean) need it to check value for modification
-                String mappedOption = OptionsMappingUtils.getMappedOptionKey(fieldId, value, model.getEnumsMapping());
+                String mappedOption = OptionsMappingUtils.getMappedOptionKey(fieldId, value, context.settings.getEnumsMapping());
                 value = mappedOption != null ? mappedOption : value;
-                setFieldValue(value, getFieldMetadataForField(fieldMetadataSet, fieldId), workItem, model, linkColumnId);
+                setFieldValue(value, getFieldMetadataForField(fieldMetadataSet, fieldId), workItem, context, linkColumnId);
             }
         });
     }
@@ -214,21 +214,21 @@ public class ImportService {
         dataMap.put(ExcelSheetMappingSettingsModel.TEST_STEPS_COLUMN_FILLER_PREFIX + mappingKey, testSteps);
     }
 
-    private void setFieldValue(Object value, @NotNull FieldMetadata fieldMetadata, IWorkItem workItem, ExcelSheetMappingSettingsModel model, @NotNull String linkColumnId) {
+    private void setFieldValue(Object value, @NotNull FieldMetadata fieldMetadata, IWorkItem workItem, ImportContext context, @NotNull String linkColumnId) {
         // The linkColumn field's value can't change, therefore it doesn't need to be overwritten.
         // However, it must be saved to the newly created work item otherwise sequential imports will produce several objects.
         String fieldId = fieldMetadata.getId();
         if (!IUniqueObject.KEY_ID.equals(fieldId) && (!linkColumnId.equals(fieldId) || !workItem.isPersisted()) &&
-                (model.isOverwriteWithEmpty() || !isEmpty(value)) &&
+                (context.settings.isOverwriteWithEmpty() || !isEmpty(value)) &&
                 ensureValidValue(value, fieldMetadata) &&
-                existingValueDiffers(workItem, fieldId, value, fieldMetadata, model.isUnlinkExisting())) {
+                existingValueDiffers(workItem, fieldId, value, fieldMetadata, context.settings.isUnlinkExisting())) {
             if (IWorkItem.KEY_LINKED_WORK_ITEMS.equals(fieldId)) {
-                setLinkedWorkItems(workItem, value, model.isUnlinkExisting());
+                setLinkedWorkItems(workItem, value, context);
             } else if (IWorkItem.KEY_HYPERLINKS.equals(fieldId)) {
                 workItem.getHyperlinks().clear();
                 addHyperlinks(workItem, prepareValue(value, fieldMetadata));
             } else {
-                polarionServiceExt.setFieldValue(workItem, fieldId, prepareValue(value, fieldMetadata), model.getEnumsMapping());
+                polarionServiceExt.setFieldValue(workItem, fieldId, prepareValue(value, fieldMetadata), context.settings.getEnumsMapping());
             }
         } else if (IUniqueObject.KEY_ID.equals(fieldId) && !linkColumnId.equals(fieldId)) {
             // If the work item id is imported, it must be the Link Column. Its value also can't be set by imported data unlike other possible Link Column fields.
@@ -237,7 +237,8 @@ public class ImportService {
     }
 
     @VisibleForTesting
-    void setLinkedWorkItems(IWorkItem workItem, Object value, boolean unlinkExisting) {
+    @SuppressWarnings("java:S3776") // ignore cognitive complexity complaint
+    void setLinkedWorkItems(IWorkItem workItem, Object value, ImportContext context) {
         List<LinkInfo> links = value == null ? List.of() : LinkInfo.fromString((String) value, workItem);
         List<LinkInfo> newLinks = links.stream().filter(link -> !link.containedIn(workItem)).toList();
         for (LinkInfo newLink : newLinks) {
@@ -245,12 +246,20 @@ public class ImportService {
             if (newLink.isExternal()) {
                 workItem.addExternallyLinkedItem(URI.create(newLink.getWorkItemId()), roleEnum);
             } else {
-                IWorkItem linkedWorkItem = polarionServiceExt.getWorkItem(newLink.getProjectId(), newLink.getWorkItemId());
-                workItem.addLinkedItem(linkedWorkItem, roleEnum, null, false);
+                try {
+                    IWorkItem linkedWorkItem = polarionServiceExt.getWorkItem(newLink.getProjectId(), newLink.getWorkItemId());
+                    workItem.addLinkedItem(linkedWorkItem, roleEnum, null, false);
+                } catch (RuntimeException e) {
+                    if (context.settings.isIgnoreUnknown()) {
+                        context.log("Failed to link work item '%s' with '%s' by '%s' role. Cause: %s. Skipping this link.".formatted(workItem.getId(), newLink.getWorkItemId(), roleEnum != null ? roleEnum.getId() : "null", e.getMessage()));
+                    } else {
+                        throw e;
+                    }
+                }
             }
         }
 
-        if (unlinkExisting) {
+        if (context.settings.isUnlinkExisting()) {
             unlinkExistingExtraItems(workItem, links);
         }
     }
@@ -427,7 +436,7 @@ public class ImportService {
         return value == null || (value instanceof String stringValue && StringUtils.isEmptyTrimmed(stringValue));
     }
 
-    private static class ImportContext {
+    static class ImportContext {
         ITrackerProject project;
         ITypeOpt workItemType;
         ExcelSheetMappingSettingsModel settings;
