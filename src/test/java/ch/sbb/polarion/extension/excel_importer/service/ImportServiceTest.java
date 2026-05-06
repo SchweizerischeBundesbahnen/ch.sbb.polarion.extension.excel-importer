@@ -931,7 +931,8 @@ class ImportServiceTest {
             linkInfoMockedStatic.when(() -> LinkInfo.fromString(eq("items"), any(IWorkItem.class))).thenReturn(List.of(newLink));
 
             IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
-            lenient().when(workItem.getProject().getWorkItemLinkRoleEnum().wrapOption(any(), any())).thenReturn(null);
+            var linkRoleEnum = workItem.getProject().getWorkItemLinkRoleEnum();
+            when(linkRoleEnum.wrapOption(any(), any())).thenReturn(null);
             when(polarionService.getWorkItem("someProject", "SOME-123")).thenThrow(new RuntimeException("work item not found"));
 
             ImportService.ImportContext context = contextFor(ExcelSheetMappingSettingsModel.builder().ignoreUnknown(true).build());
