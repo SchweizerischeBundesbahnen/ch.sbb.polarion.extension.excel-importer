@@ -933,7 +933,7 @@ class ImportServiceTest {
             IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
             when(workItem.getId()).thenReturn("PARENT-1");
             // workItem.getType() returns ITypeOpt (extends IEnumOption, not IPObject), so the production call
-            // resolves to wrapOption(String, Object). any(Object.class) forces the matcher to that overload;
+            // resolves to wrapOption(String, Object). any(Object.class) forces the matcher to that overload
             // a bare any() would let the compiler pick the more-specific wrapOption(String, IPObject) and the stub would never fire.
             when(workItem.getProject().getWorkItemLinkRoleEnum().wrapOption(anyString(), any(Object.class))).thenReturn(null);
             when(polarionService.getWorkItem("someProject", "SOME-123")).thenThrow(new RuntimeException("work item not found"));
