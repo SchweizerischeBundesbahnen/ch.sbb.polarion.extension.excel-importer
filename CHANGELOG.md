@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.4.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v5.3.0...v5.4.0) (2026-05-06)
+
+
+### Features
+
+* ability to ignore nonexistent linked work items import ([#194](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/194)) ([efbc404](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/efbc4043b87329e1c42332e13b1932f38ddb99b4)), closes [#193](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/193)
+
 ## [5.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v5.2.0...v5.3.0) (2026-04-23)
 
 
