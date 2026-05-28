@@ -23,6 +23,7 @@ import com.polarion.alm.tracker.model.ILinkedWorkItemStruct;
 import com.polarion.alm.tracker.model.IHyperlinkStruct;
 import com.polarion.alm.tracker.model.IHyperlinkRoleOpt;
 import com.polarion.alm.tracker.model.IWorkItem;
+import com.polarion.core.util.types.Text;
 import com.polarion.platform.persistence.model.IStructure;
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.persistence.ICustomFieldsService;
@@ -1167,6 +1168,53 @@ class ImportServiceTest {
         assertFalse(predicate.test(workItem));
         when(workItem.getValue("someFieldId")).thenReturn(null);
         assertTrue(predicate.test(workItem));
+    }
+
+    @Test
+    void testFindWorkItemByFieldValueUnwrapsTextField() {
+        IWorkItem workItem = mock(IWorkItem.class);
+
+        Predicate<IWorkItem> predicate = ImportService.findWorkItemByFieldValue("someFieldId", "someValue");
+        when(workItem.getValue("someFieldId")).thenReturn(Text.plain("someValue"));
+        assertTrue(predicate.test(workItem));
+        when(workItem.getValue("someFieldId")).thenReturn(Text.plain("otherValue"));
+        assertFalse(predicate.test(workItem));
+        when(workItem.getValue("someFieldId")).thenReturn(Text.html("someValue"));
+        assertTrue(predicate.test(workItem));
+    }
+
+    @Test
+    void testFindWorkItemByFieldValueLooseCrossTypeCompare() {
+        IWorkItem workItem = mock(IWorkItem.class);
+
+        // non-String field vs String value: toString-based match
+        Predicate<IWorkItem> predicate = ImportService.findWorkItemByFieldValue("someFieldId", "5");
+        when(workItem.getValue("someFieldId")).thenReturn(5);
+        assertTrue(predicate.test(workItem));
+        when(workItem.getValue("someFieldId")).thenReturn(6);
+        assertFalse(predicate.test(workItem));
+
+        // String field vs non-String value: toString-based match
+        predicate = ImportService.findWorkItemByFieldValue("someFieldId", 5);
+        when(workItem.getValue("someFieldId")).thenReturn("5");
+        assertTrue(predicate.test(workItem));
+        when(workItem.getValue("someFieldId")).thenReturn("6");
+        assertFalse(predicate.test(workItem));
+
+        // both non-String: equal via Objects.equals
+        predicate = ImportService.findWorkItemByFieldValue("someFieldId", 5);
+        when(workItem.getValue("someFieldId")).thenReturn(5);
+        assertTrue(predicate.test(workItem));
+
+        // both non-String, different concrete types but same toString
+        predicate = ImportService.findWorkItemByFieldValue("someFieldId", 5L);
+        when(workItem.getValue("someFieldId")).thenReturn(5);
+        assertTrue(predicate.test(workItem));
+
+        // both non-String and toString differs
+        predicate = ImportService.findWorkItemByFieldValue("someFieldId", 5L);
+        when(workItem.getValue("someFieldId")).thenReturn(6);
+        assertFalse(predicate.test(workItem));
     }
 
     @Test

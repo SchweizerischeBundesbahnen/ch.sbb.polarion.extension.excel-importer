@@ -134,11 +134,12 @@ public class ImportService {
     static Predicate<IWorkItem> findWorkItemByFieldValue(String fieldId, Object value) {
         return workItem -> {
             Object workItemFieldValue = workItem.getValue(fieldId);
-            boolean equals = Objects.equals(workItemFieldValue, value);
-            if (!equals && workItemFieldValue != null && value != null) {
-                equals = workItemFieldValue.toString().contains(value.toString());
+            if (workItemFieldValue instanceof Text text) {
+                workItemFieldValue = text.getContent();
             }
-            return equals;
+            return Objects.equals(workItemFieldValue, value)
+                    || (workItemFieldValue != null && value != null && (!(workItemFieldValue instanceof String) || !(value instanceof String))
+                    && workItemFieldValue.toString().equals(value.toString()));
         };
     }
 
