@@ -27,7 +27,6 @@ replay_pid*
 # Additonal not included in Java.gitignore
 .history/
 .idea/*
-.claude/*
 
 # code style config
 !.idea/codeStyles
@@ -41,4 +40,8 @@ dependency-reduced-pom.xml
 
 src/main/resources/webapp/*-admin/html/about.html
 src/main/resources/webapp/*-admin/html/user-guide.html
+src/main/resources/webapp/*-admin/html/disclaimer.html
 README.html
+
+node/
+node_modules/
