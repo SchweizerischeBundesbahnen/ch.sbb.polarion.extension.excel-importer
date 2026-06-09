@@ -4,7 +4,7 @@ on:
   push:
     branches: ['**']
   pull_request:
-    branches: [main]
+    branches: [main, release-v*]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 env:
@@ -60,20 +60,32 @@ jobs:
       - name: 📦 Build with Maven for Pushes
         if: github.event_name == 'push'
         env:
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          IS_PUBLIC: ${{ github.event.repository.visibility == 'public' }}
+          IS_TEMPLATE: ${{ github.event.repository.is_template }}
         run: |
-          if [ -n "${GITHUB_HEAD_REF}" ]; then
-            mvn --batch-mode -s "${SETTINGS_XML}" clean verify sonar:sonar -Dsonar.branch.name="${GITHUB_HEAD_REF}"
-          else
-            mvn --batch-mode -s "${SETTINGS_XML}" clean verify sonar:sonar
+          SONAR_ARGS=()
+          if [ "${IS_PUBLIC}" = "true" ] && [ "${IS_TEMPLATE}" != "true" ]; then
+            SONAR_ARGS+=(sonar:sonar "-Dsonar.exclusions=.github/**")
+            if [ -n "${BRANCH_NAME}" ]; then
+              SONAR_ARGS+=("-Dsonar.branch.name=${BRANCH_NAME}")
+            fi
           fi
+          mvn --batch-mode -s "${SETTINGS_XML}" clean verify "${SONAR_ARGS[@]}"
       - name: 📦 Build with Maven for PRs
         if: github.event_name == 'pull_request'
         env:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_PR_NUMBER_REF: ${{ github.event.pull_request.number }}
-        run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify sonar:sonar -Dsonar.pullrequest.base="${GITHUB_BASE_REF}" -Dsonar.pullrequest.branch="${GITHUB_HEAD_REF}" -Dsonar.pullrequest.key="${GITHUB_PR_NUMBER_REF}"
+          IS_PUBLIC: ${{ github.event.repository.visibility == 'public' }}
+          IS_TEMPLATE: ${{ github.event.repository.is_template }}
+        run: |
+          SONAR_ARGS=()
+          if [ "${IS_PUBLIC}" = "true" ] && [ "${IS_TEMPLATE}" != "true" ]; then
+            SONAR_ARGS+=(sonar:sonar "-Dsonar.pullrequest.base=${GITHUB_BASE_REF}" "-Dsonar.pullrequest.branch=${GITHUB_HEAD_REF}" "-Dsonar.pullrequest.key=${GITHUB_PR_NUMBER_REF}" "-Dsonar.exclusions=.github/**")
+          fi
+          mvn --batch-mode -s "${SETTINGS_XML}" clean verify "${SONAR_ARGS[@]}"
       - name: 📋 Analyze dependencies
         run: mvn --batch-mode -s "${SETTINGS_XML}" dependency:analyze
         continue-on-error: false
@@ -87,9 +99,11 @@ jobs:
             target/*.pom
           retention-days: 1
           if-no-files-found: error
+  # Deploy releases to Maven Central from main and LTS branches (release-v*)
+  # See RELEASE.md for LTS branch documentation
   deploy-maven-central:
     needs: build
-    if: ${{ needs.build.outputs.is_release == 'true' && github.ref == 'refs/heads/main' }}
+    if: ${{ needs.build.outputs.is_release == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-v')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -123,10 +137,13 @@ jobs:
             -P central-publishing \
             -Dcentral.timeout=3600 \
             -Dmaven.wagon.http.connectionTimeout=3600000 \
-            -Dmaven.wagon.http.readTimeout=3600000
+            -Dmaven.wagon.http.readTimeout=3600000 \
+            -Dcentral-publishing-maven-plugin.autoPublish=${{ github.event.repository.visibility == 'public' }}
+  # Deploy to GitHub Packages (snapshots from main only) and upload release assets to GitHub Release
+  # LTS branches (release-v*) only upload release assets, no snapshot deployment
   deploy-github-packages:
     needs: build
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: ${{ github.ref == 'refs/heads/main' || (needs.build.outputs.is_release == 'true' && startsWith(github.ref, 'refs/heads/release-v')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -154,9 +171,9 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
       - name: 📦 Deploy to GitHub Packages
-        # Releases should only be deployed to GitHub packages when the repo is private
-        # Only snapshots should always be deployed here
-        if: ${{ needs.build.outputs.is_release == 'false' }}
+        # Releases should only be deployed to GitHub Packages when the repo is private
+        # Snapshots are always deployed to GitHub Packages
+        if: ${{ needs.build.outputs.is_release == 'false' || github.event.repository.visibility == 'private' }}
         run: |
           mvn --batch-mode -s "${SETTINGS_XML}" deploy \
             -Dmaven.test.skip=true \
