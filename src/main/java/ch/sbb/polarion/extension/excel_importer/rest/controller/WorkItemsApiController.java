@@ -4,8 +4,8 @@ import ch.sbb.polarion.extension.generic.fields.model.FieldMetadata;
 import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 import com.polarion.alm.tracker.model.ITypeOpt;
 
-import javax.inject.Singleton;
-import javax.ws.rs.Path;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.Path;
 import java.util.List;
 import java.util.Set;
 
