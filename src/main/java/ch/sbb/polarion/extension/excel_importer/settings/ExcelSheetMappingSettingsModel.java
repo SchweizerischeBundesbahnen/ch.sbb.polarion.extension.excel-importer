@@ -4,7 +4,6 @@ import ch.sbb.polarion.extension.excel_importer.service.parser.IParserSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingsModel;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -57,9 +56,6 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
     private Map<String, Map<String, String>> stepsMapping;
     private String defaultWorkItemType;
     private String linkColumn;
-
-    @JsonIgnore
-    private ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     protected String serializeModelData() {

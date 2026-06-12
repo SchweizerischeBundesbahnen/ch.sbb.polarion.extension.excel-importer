@@ -16,7 +16,7 @@ Column-to-Field mapping is manageable using mapping settings.
 
 > [!IMPORTANT]
 > Starting from version 3.0.0 only latest version of Polarion is supported.
-> Right now it is Polarion 2512.
+> Right now it is Polarion 2606.
 
 ## Quick start
 

@@ -4,8 +4,8 @@ import ch.sbb.polarion.extension.excel_importer.rest.model.AttachTableParams;
 import ch.sbb.polarion.extension.excel_importer.service.ExportHtmlTableResult;
 import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 
-import javax.inject.Singleton;
-import javax.ws.rs.Path;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.Path;
 
 @Singleton
 @Secured

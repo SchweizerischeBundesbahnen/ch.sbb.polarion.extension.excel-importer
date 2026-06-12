@@ -3,9 +3,9 @@ package ch.sbb.polarion.extension.excel_importer.rest.controller;
 import ch.sbb.polarion.extension.excel_importer.service.ImportResult;
 import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 
-import javax.inject.Singleton;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
 import java.io.InputStream;
 
 @Singleton
