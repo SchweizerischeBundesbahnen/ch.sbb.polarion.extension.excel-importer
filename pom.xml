@@ -160,33 +160,34 @@
                 <artifactId>maven-dependency-plugin</artifactId>
             </plugin>
 
-            <!-- Polarion 2606's JakartaCompatibilityChecker rejects any bundled jar that references a
-                 forbidden javax.* package. POI's transitive xmlbeans bundles an OPTIONAL SAAJ SOAP layer
-                 (org.apache.xmlbeans.impl.soap.*) that implements javax.xml.soap — unused by xlsx/OOXML
-                 processing. Remove that package from the bundled xmlbeans jar (after copy-dependencies,
-                 before the extension jar is packaged) so startup is not blocked.
-                 TODO: drop this step once a Jakarta-compatible xmlbeans exists (none as of xmlbeans 5.3.0 /
-                 POI 5.5.1 — Apache has not migrated org.apache.xmlbeans.impl.soap to jakarta.xml.soap). -->
+            <!-- Polarion 2606's JakartaCompatibilityChecker rejects a bundled jar only if a class makes a
+                 real TYPE reference to a forbidden javax.* package. In POI's transitive xmlbeans, exactly
+                 three SAAJ factory classes (MessageFactory, SOAPConnectionFactory, SOAPFactory) reference
+                 javax.xml.soap; nothing else in xmlbeans references THEM and xlsx/OOXML never uses them.
+                 Drop just those three from the bundled xmlbeans jar (keeping the rest — incl. impl.soap.Text,
+                 which the xmlbeans core needs for XSSFWorkbook) so startup passes and xlsx still works.
+                 Verified against the real checker (0/1032 flagged) + XSSFWorkbook round-trip. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>strip-xmlbeans-javax-soap</id>
+                        <id>strip-xmlbeans-javax-soap-factories</id>
                         <phase>prepare-package</phase>
                         <goals>
                             <goal>run</goal>
                         </goals>
                         <configuration>
                             <target>
-                                <!-- rebuild the bundled xmlbeans jar without the optional SAAJ soap layer,
-                                     preserving its original manifest, then swap it in place. The xmlbeans
-                                     version is whatever POI drags in transitively — locate the jar by glob. -->
                                 <pathconvert property="xmlbeans.lib">
                                     <fileset dir="${project.build.outputDirectory}/webapp/${web.app.name}/WEB-INF/lib" includes="xmlbeans-*.jar"/>
                                 </pathconvert>
                                 <zip destfile="${xmlbeans.lib}.stripped">
-                                    <zipfileset src="${xmlbeans.lib}" excludes="org/apache/xmlbeans/impl/soap/**"/>
+                                    <zipfileset src="${xmlbeans.lib}">
+                                        <exclude name="org/apache/xmlbeans/impl/soap/MessageFactory.class"/>
+                                        <exclude name="org/apache/xmlbeans/impl/soap/SOAPConnectionFactory.class"/>
+                                        <exclude name="org/apache/xmlbeans/impl/soap/SOAPFactory.class"/>
+                                    </zipfileset>
                                 </zip>
                                 <move file="${xmlbeans.lib}.stripped" tofile="${xmlbeans.lib}"/>
                             </target>
