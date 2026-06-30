@@ -2,7 +2,7 @@
 <html>
     <%! String bundleTimestamp = ch.sbb.polarion.extension.generic.util.VersionUtils.getVersion().getBundleBuildTimestampDigitsOnly(); %>
 <head>
-    <link rel="stylesheet" href="../css/micromodal.css?bundle=<%= bundleTimestamp %>">
+    <link rel="stylesheet" href="../ui/generic/css/micromodal.css?bundle=<%= bundleTimestamp %>">
 </head>
 <body>
 <div class="modal micromodal-slide" id="modal-popup" aria-hidden="true">
