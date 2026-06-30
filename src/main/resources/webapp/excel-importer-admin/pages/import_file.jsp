@@ -52,7 +52,7 @@
             </div>
 
             <div id="import-progress-container" style="display: none; margin-top: 10px;">
-                <img id='import-progress' src='/polarion/ria/images/progress_grey.gif' alt=''/>
+                <img id='import-progress' src='/polarion/ria/images/progressWheel48.svg' alt=''/>
                 <span style="margin-left: 10px;">Import is in progress. Please wait...</span>
             </div>
 
