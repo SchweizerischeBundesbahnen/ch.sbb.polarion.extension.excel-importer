@@ -1,5 +1,18 @@
 # Changelog
 
+## [6.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v6.0.0...v6.1.0) (2026-06-30)
+
+
+### Features
+
+* use shared generic micromodal styling ([#222](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/222)) ([bf3bd97](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/bf3bd97a4e24b5c6502deeaae5288560ae98763d)), closes [#221](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/221)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.1.0 ([#214](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/214)) ([cfffd24](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/cfffd242effc6e67dac39947d698688d0dd910d4))
+* use Polarion 2606 spinner (progressWheel) ([#224](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/224)) ([3777a1a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/3777a1aa697608da0389a04e173d06d19ec8f338)), closes [#223](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/223)
+
 ## [6.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v5.4.2...v6.0.0) (2026-06-12)
 
 
