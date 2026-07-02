@@ -1,5 +1,6 @@
 import ExtensionContext from '../../ui/generic/js/modules/ExtensionContext.js';
 import ConfigurationsPane from '../../ui/generic/js/modules/ConfigurationsPane.js';
+import SearchableDropdown from '../../ui/generic/js/modules/SearchableDropdown.js';
 import ColumnInput from './ColumnInput.js';
 
 const ctx = new ExtensionContext({
@@ -20,6 +21,15 @@ ctx.onClick(
     'default-toolbar-button', revertToDefault,
     'revisions-toolbar-button', ctx.toggleRevisions,
 );
+
+// Wrap the native <select>s with the shared Polarion-styled dropdown. Their options are populated
+// asynchronously; SearchableDropdown's MutationObserver keeps the dropdown in sync.
+['wi-types', 'link-column'].forEach(id => {
+    const element = ctx.getElementById(id);
+    if (element) {
+        new SearchableDropdown({element: element, placeholder: '', rememberSelection: false});
+    }
+});
 
 const cache = {
     fields: undefined,
