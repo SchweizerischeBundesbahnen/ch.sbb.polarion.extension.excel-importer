@@ -82,6 +82,10 @@ function createFieldCell(tableRow, fieldValue) {
     const fieldSelect = document.createElement('select');
     fieldSelect.classList.add('fs-14', 'fields', 'field-name-select');
     fieldCell.appendChild(fieldSelect);
+    // Wrap with the shared Polarion-styled dropdown. Options are populated asynchronously
+    // (populateFieldDropdown) and the cross-row deselection sets value + dispatches 'change';
+    // SearchableDropdown's option observer / change listener keep the trigger in sync.
+    new SearchableDropdown({element: fieldSelect, placeholder: '', rememberSelection: false});
 
     const mappingButton = document.createElement('button');
     mappingButton.classList.add('toolbar-button', 'options-mapping-button');
@@ -301,6 +305,11 @@ function createRemoveButtonCell(tableRow) {
     image.setAttribute('src', '/polarion/ria/images/control/tableMinus.png');
     removeButton.appendChild(image);
     removeButton.addEventListener('click', function () {
+        // tear down the row's field-name dropdown so its body-level portal isn't orphaned
+        const fs = tableRow.querySelector('.field-name-select');
+        if (fs && fs._searchableDropdown) {
+            fs._searchableDropdown.destroy();
+        }
         tableRow.remove();
         updateLinkColumnDropdown();
     })

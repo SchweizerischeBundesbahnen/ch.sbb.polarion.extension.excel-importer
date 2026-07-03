@@ -70,9 +70,27 @@
             align-items: center;
         }
 
+        /* Editable column input styled to match the shared SearchableDropdown look
+           (sharp corners, same border/font). No dropdown chevron: it stays a plain,
+           free-typing text input, not a select. */
         .excel-column-input {
             width: 100%;
             box-sizing: border-box;
+            height: 23px;
+            padding: 2px .5rem;
+            border: 1px solid #c9c9c9;
+            border-radius: 0;
+            background-color: #fff;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .excel-column-input:focus {
+            border-color: #1491EB;
+            box-shadow: 0 3px 6px 0 rgba(0, 0, 0, 0.3);
+            outline: none;
         }
 
         .field-name, .field-name-select {
@@ -82,28 +100,57 @@
 
         .dropdown-menu {
             position: absolute;
-            background-color: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.375rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-height: 200px;
+            top: 100%; /* Position right below the input field */
+            background-color: #fff;
+            border: 1px solid #CCCCD4;
+            border-radius: 0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            max-height: 180px;
             overflow-y: auto;
             z-index: 10;
-
-            top: 100%; /* Position right below the input field */
         }
 
         .dropdown-item {
-            padding: 0.5rem 0.75rem;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a1a1a;
+            cursor: pointer;
+            white-space: nowrap;
         }
 
         .dropdown-item:hover {
-            background-color: #1967D2;
-            color: white;
+            background-color: #ebf7f8;
         }
 
         .hidden {
             display: none;
+        }
+
+        /* Keep the column input, the Field Name dropdown and the button on one baseline,
+           and give the "Options mapping" button breathing room from the dropdown. */
+        .mapping-row td {
+            vertical-align: middle;
+        }
+
+        .mapping-row .column-input-wrapper,
+        .mapping-row .searchable-dropdown,
+        .mapping-row label {
+            vertical-align: middle;
+        }
+
+        /* Field Name dropdown fixed width. */
+        .mapping-row .searchable-dropdown {
+            width: 250px;
+        }
+
+        .mapping-row .options-mapping-button {
+            margin-left: 12px;
+            height: 23px;
+            box-sizing: border-box;
+            line-height: 21px;
+            padding-top: 0;
+            padding-bottom: 0;
         }
     </style>
 </head>
