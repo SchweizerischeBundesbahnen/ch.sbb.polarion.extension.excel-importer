@@ -1,4 +1,5 @@
 import ExtensionContext from '../../ui/generic/js/modules/ExtensionContext.js';
+import SearchableDropdown from '../../ui/generic/js/modules/SearchableDropdown.js';
 
 const SELECTED_CONFIGURATION_COOKIE = 'selected-configuration-';
 const PULL_INTERVAL = 1000;
@@ -16,6 +17,12 @@ ctx.onChange(
 ctx.onClick(
     'import-button', importFile
 );
+
+// Wrap the mapping selector with the shared Polarion-styled dropdown.
+const mappingSelectElement = ctx.getElementById('mapping-select');
+if (mappingSelectElement) {
+    new SearchableDropdown({element: mappingSelectElement, placeholder: '', rememberSelection: false});
+}
 
 function fileChosen() {
     const file = ctx.getElementById('file-xlsx').files[0];
