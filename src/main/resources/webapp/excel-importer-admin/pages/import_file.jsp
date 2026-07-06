@@ -40,7 +40,7 @@
         <div id="import-panel" class="input-block wide">
             <div class="label-block"><label>Excel File</label></div>
 
-            <div style="margin-top: 10px; margin-bottom: 10px;">
+            <div style="margin-top: 10px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
                 <label for='mapping-select'>Mapping:</label>
                 <select id="mapping-select"></select>
             </div>

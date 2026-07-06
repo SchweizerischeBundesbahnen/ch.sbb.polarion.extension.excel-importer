@@ -7,7 +7,6 @@
 <head>
     <title>Mappings</title>
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
-    <link rel="stylesheet" href="../ui/generic/css/custom-select.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/configurations.css?bundle=<%= bundleTimestamp %>">
     <script type="module" src="../js/modules/mappings.js?bundle=<%= bundleTimestamp %>"></script>
     <style>
@@ -127,16 +126,23 @@
             display: none;
         }
 
-        /* Keep the column input, the Field Name dropdown and the button on one baseline,
-           and give the "Options mapping" button breathing room from the dropdown. */
-        .mapping-row td {
+        /* Common: vertically center every inline control on its row, page-wide
+           (labels, inputs, native selects, our dropdowns, toolbar buttons, table cells). */
+        .standard-admin-page label,
+        .standard-admin-page input:not([type="hidden"]),
+        .standard-admin-page select,
+        .standard-admin-page .searchable-dropdown,
+        .standard-admin-page .toolbar-button,
+        .standard-admin-page .action-buttons,
+        .standard-admin-page .column-input-wrapper,
+        .standard-admin-page td {
             vertical-align: middle;
         }
 
-        .mapping-row .column-input-wrapper,
-        .mapping-row .searchable-dropdown,
-        .mapping-row label {
-            vertical-align: middle;
+        /* Configuration row (generic configurations.jsp) — center label + dropdown + buttons
+           whether it lays out inline-block or flex. */
+        #configurations-pane {
+            align-items: center;
         }
 
         /* Field Name dropdown fixed width. */
@@ -182,7 +188,7 @@
     </table>
     <h2 class="align-left">Workitem Type To Create</h2>
     <div id="workitem-types-container">
-        <label for="wi-types">Import rows as: </label><select class="fs-14" id="wi-types"></select>
+        <label for="wi-types">Import rows as: </label><select class="fs-14" id="wi-types" style="width: 260px"></select>
     </div>
     <h2 class="align-left">Column Name To Workitem Field Mapping</h2>
     <table id="mapping-table">
