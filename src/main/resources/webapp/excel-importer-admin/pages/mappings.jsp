@@ -69,61 +69,17 @@
             align-items: center;
         }
 
-        /* Editable column input styled to match the shared SearchableDropdown look
-           (sharp corners, same border/font). No dropdown chevron: it stays a plain,
-           free-typing text input, not a select. */
-        .excel-column-input {
+        /* The column identifier is now the shared editable SearchableDropdown; fill the (narrow)
+           wrapper. Scoped with .mapping-row so it outranks the 250px ".mapping-row .searchable-dropdown"
+           Field Name rule below — both share the column input's row, and the column field must stay
+           small. */
+        .mapping-row .column-input-wrapper .searchable-dropdown {
             width: 100%;
-            box-sizing: border-box;
-            height: 23px;
-            padding: 2px .5rem;
-            border: 1px solid #c9c9c9;
-            border-radius: 0;
-            background-color: #fff;
-            font-family: inherit;
-            font-size: 13px;
-            font-weight: 600;
-            color: #1a1a1a;
-        }
-
-        .excel-column-input:focus {
-            border-color: #1491EB;
-            box-shadow: 0 3px 6px 0 rgba(0, 0, 0, 0.3);
-            outline: none;
         }
 
         .field-name, .field-name-select {
             width: 250px;
             box-sizing: border-box;
-        }
-
-        .dropdown-menu {
-            position: absolute;
-            top: 100%; /* Position right below the input field */
-            background-color: #fff;
-            border: 1px solid #CCCCD4;
-            border-radius: 0;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            max-height: 180px;
-            overflow-y: auto;
-            z-index: 10;
-        }
-
-        .dropdown-item {
-            padding: 6px 12px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #1a1a1a;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .dropdown-item:hover {
-            background-color: #ebf7f8;
-        }
-
-        .hidden {
-            display: none;
         }
 
         /* Common: vertically center every inline control on its row, page-wide
