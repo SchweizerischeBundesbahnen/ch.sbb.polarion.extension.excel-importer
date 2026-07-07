@@ -202,6 +202,12 @@ function updateAuxiliaryComponents(selectedField, mappingButton, uid) {
 
         columnInput.disabled = true;
         columnInput.value = "";
+        // The editable SearchableDropdown mirrors the wrapped <input> into its own visible trigger and
+        // does not observe programmatic value changes, so clear the trigger too (the disabled state is
+        // already mirrored via the dropdown's disabled MutationObserver).
+        if (columnInput._searchableDropdown) {
+            columnInput._searchableDropdown.trigger.value = "";
+        }
         const field = getField(selectedField);
         let insertAfter = targetRow;
         for (const option of field.options) {
