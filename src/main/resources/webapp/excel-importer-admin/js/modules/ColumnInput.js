@@ -1,3 +1,9 @@
+import { createEditableSelect } from '../../ui/generic/js/modules/searchableSelect.js';
+
+// Excel column-identifier picker: an editable (free-text) SearchableDropdown wrapping a text input.
+// The user can type any column identifier (A, B, …, AA, …) or pick a letter from the suggestion
+// list; input is sanitised to Latin letters and upper-cased. Replaces the previous bespoke input +
+// custom dropdown, so the column field is the same shared combobox as everything else.
 export default class ColumnInput {
 
     constructor({
@@ -5,33 +11,35 @@ export default class ColumnInput {
                     initialValue,
                     inputPlaceholder,
                     outputSpan,
-                    errorSpan,
                     onValueChange = () => {
                     },
                 }) {
         this.containerElement = containerElement;
         this.containerElement.classList.add('column-input-wrapper');
         this.outputSpan = outputSpan;
-        this.errorSpan = errorSpan;
-        this.uniqueId = Math.random().toString(36).substring(2, 9); // Generate a unique ID suffix
-
         this.onValueChange = onValueChange;
         this.inputPlaceholder = inputPlaceholder;
-        this.excelColumnInput = null;
-        this.columnDropdown = null;
+        this.uniqueId = Math.random().toString(36).substring(2, 9);
+        this.previousValue = '';
 
         this.render();
-        this.populateDropdown();
-        this.addEventListeners();
+
+        // Seed the saved value BEFORE wrapping: the editable SearchableDropdown copies the wrapped
+        // input's value into its trigger at construction, so a value set afterwards (e.g. on page
+        // reload) would not appear in the trigger.
+        if (initialValue) {
+            this.excelColumnInput.value = initialValue.toUpperCase();
+        }
+
+        this.wrap();
 
         if (initialValue) {
-            this.excelColumnInput.value = initialValue.toUpperCase(); // Ensure initial value is uppercase
-            this.handleInput();
+            // Notify consumers (output span / onValueChange) of the restored value.
+            this.excelColumnInput.dispatchEvent(new Event('change', {bubbles: true}));
         }
     }
 
     render() {
-        // Create Input field
         this.excelColumnInput = document.createElement('input');
         this.excelColumnInput.setAttribute('type', 'text');
         this.excelColumnInput.setAttribute('id', `excelColumnIdentifier_${this.uniqueId}`);
@@ -40,134 +48,34 @@ export default class ColumnInput {
         this.excelColumnInput.setAttribute('maxlength', '5');
         this.excelColumnInput.setAttribute('autocomplete', 'off');
         this.containerElement.appendChild(this.excelColumnInput);
-
-        // Create Dropdown menu container
-        this.columnDropdown = document.createElement('div');
-        this.columnDropdown.setAttribute('id', `columnDropdown_${this.uniqueId}`);
-        this.columnDropdown.classList.add('dropdown-menu', 'hidden');
-        this.containerElement.appendChild(this.columnDropdown);
     }
 
-    populateDropdown() {
-        for (let i = 0; i < 26; i++) {
-            const charCode = 'A'.charCodeAt(0) + i;
-            const letter = String.fromCharCode(charCode);
+    wrap() {
+        // A–Z column-letter suggestions; free entry (e.g. "AA") stays allowed via editable mode.
+        const columns = Array.from({length: 26}, (_, i) => {
+            const letter = String.fromCharCode('A'.charCodeAt(0) + i);
+            return {value: letter, label: letter};
+        });
 
-            const dropdownItem = document.createElement('div');
-            dropdownItem.classList.add('dropdown-item');
-            dropdownItem.textContent = letter;
+        createEditableSelect(this.excelColumnInput, {
+            placeholder: this.inputPlaceholder ?? '',
+            // Only Latin letters, upper-cased (catches typing and paste).
+            inputFilter: value => value.replace(/[^A-Za-z]/g, '').toUpperCase(),
+            items: columns,
+        });
 
-            // Use an arrow function to maintain 'this' context
-            dropdownItem.addEventListener('click', () => {
-                this.excelColumnInput.value = letter;
-                this.excelColumnInput.dispatchEvent(new Event('input', {bubbles: true}));
-                this.columnDropdown.classList.add('hidden');
-                this.excelColumnInput.focus();
-            });
-
-            this.columnDropdown.appendChild(dropdownItem);
-        }
-    }
-
-    adjustDropdownPosition() {
-        const inputRect = this.excelColumnInput.getBoundingClientRect();
-        const parentRect = this.excelColumnInput.parentElement.getBoundingClientRect();
-
-        const relativeLeft = inputRect.left - parentRect.left;
-
-        this.columnDropdown.style.width = `${inputRect.width}px`;
-        this.columnDropdown.style.left = `${relativeLeft}px`;
-    }
-
-    handleInput() {
-        let inputValue = this.excelColumnInput.value;
-        let sanitizedValue = '';
-        let hasInvalidChar = false;
-
-        for (let i = 0; i < inputValue.length; i++) {
-            const char = inputValue[i];
-            if ((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')) {
-                sanitizedValue += char.toUpperCase();
-            } else {
-                hasInvalidChar = true;
+        // SearchableDropdown mirrors the committed value onto the wrapped input and dispatches
+        // `change`; forward that to the consumer callback and the optional preview span.
+        this.excelColumnInput.addEventListener('change', () => {
+            const value = this.excelColumnInput.value;
+            if (value === this.previousValue) {
+                return;
             }
-        }
-
-        this.excelColumnInput.value = sanitizedValue;
-
-        if (this.errorSpan) {
-            if (hasInvalidChar) {
-                this.errorSpan.textContent = 'Only Latin letters (A-Z) are allowed.';
-            } else {
-                this.errorSpan.textContent = '';
-            }
-        }
-
-        const currentValue = this.excelColumnInput.value;
-        if (currentValue !== this.previousValue) {
+            this.previousValue = value;
             if (this.outputSpan) {
-                this.outputSpan.textContent = currentValue;
+                this.outputSpan.textContent = value;
             }
-            this.onValueChange(currentValue);
-            this.previousValue = currentValue;
-        }
-
-        if (this.excelColumnInput.value.length === 0) {
-            this.adjustDropdownPosition(); // Ensure position is correct before showing
-            this.columnDropdown.classList.remove('hidden');
-        } else {
-            this.columnDropdown.classList.add('hidden');
-        }
-    }
-
-    /**
-     * Handles the 'focus' event, showing the dropdown if input is empty.
-     */
-    handleFocus() {
-        if (this.excelColumnInput.value === '') {
-            this.adjustDropdownPosition();
-            this.columnDropdown.classList.remove('hidden');
-        }
-    }
-
-    /**
-     * Handles the 'blur' event, hiding the dropdown after a short delay.
-     */
-    handleBlur() {
-        setTimeout(() => {
-            this.columnDropdown.classList.add('hidden');
-        }, 150);
-
-        // Ensure uppercasing on blur as a safeguard
-        const currentValueOnBlur = this.excelColumnInput.value.toUpperCase();
-        this.excelColumnInput.value = currentValueOnBlur;
-
-        // Check if the value has truly changed before updating output and calling callback
-        if (currentValueOnBlur !== this.previousValue) {
-            if (this.outputSpan) {
-                this.outputSpan.textContent = currentValueOnBlur;
-            }
-            this.onValueChange(currentValueOnBlur);
-            this.previousValue = currentValueOnBlur;
-        }
-    }
-
-    /**
-     * Handles window resize event to readjust dropdown position.
-     */
-    handleResize() {
-        if (!this.columnDropdown.classList.contains('hidden')) {
-            this.adjustDropdownPosition();
-        }
-    }
-
-    /**
-     * Adds all necessary event listeners to the component elements.
-     */
-    addEventListeners() {
-        this.excelColumnInput.addEventListener('input', this.handleInput.bind(this));
-        this.excelColumnInput.addEventListener('focus', this.handleFocus.bind(this));
-        this.excelColumnInput.addEventListener('blur', this.handleBlur.bind(this));
-        window.addEventListener('resize', this.handleResize.bind(this));
+            this.onValueChange(value);
+        });
     }
 }

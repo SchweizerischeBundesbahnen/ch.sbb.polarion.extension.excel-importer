@@ -7,6 +7,29 @@
     <title>Import File</title>
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
     <script type="module" src="../js/modules/import_file.js?bundle=<%= bundleTimestamp %>"></script>
+    <script type="text/javascript">
+        // Show this topic in the Polarion app-header breadcrumb via the shared generic
+        // BreadcrumbBridge (injected into the shell window); it stays out of the Administration area.
+        (function () {
+            try {
+                var shell = window.top;
+                var cfg = { marker: 'excel-importer', title: 'Excel Importer', icon: '/polarion/excel-importer-admin/ui/images/menu/30x30/_parent.svg' };
+                if (shell.SbbBreadcrumbBridge) { shell.SbbBreadcrumbBridge.install(cfg); return; }
+                var doc = shell.document;
+                if (!doc || !doc.head) { return; }
+                var old = doc.getElementById('sbb-breadcrumb-bridge-loader');
+                if (old) { old.parentNode.removeChild(old); }
+                var s = doc.createElement('script');
+                s.id = 'sbb-breadcrumb-bridge-loader';
+                s.type = 'text/javascript';
+                s.src = window.location.pathname.replace(/\/pages\/[^/]*$/, '/ui/generic/js/modules/') + 'BreadcrumbBridge.js';
+                s.setAttribute('data-marker', cfg.marker);
+                s.setAttribute('data-title', cfg.title);
+                if (cfg.icon) { s.setAttribute('data-icon', cfg.icon); }
+                doc.head.appendChild(s);
+            } catch (e) { /* no accessible shell window */ }
+        })();
+    </script>
     <style type="text/css">
         input[type="file"] {
             display: none;
@@ -26,6 +49,7 @@
 
         #import-progress {
             width: 20px;
+            height: 20px;
             vertical-align: middle;
         }
     </style>
@@ -40,7 +64,7 @@
         <div id="import-panel" class="input-block wide">
             <div class="label-block"><label>Excel File</label></div>
 
-            <div style="margin-top: 10px; margin-bottom: 10px;">
+            <div style="margin-top: 10px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
                 <label for='mapping-select'>Mapping:</label>
                 <select id="mapping-select"></select>
             </div>
@@ -52,7 +76,7 @@
             </div>
 
             <div id="import-progress-container" style="display: none; margin-top: 10px;">
-                <img id='import-progress' src='/polarion/ria/images/progressWheel48.svg' alt=''/>
+                <span id='import-progress' class='sbb-spinner' role='img' aria-label='Loading'></span>
                 <span style="margin-left: 10px;">Import is in progress. Please wait...</span>
             </div>
 

@@ -85,7 +85,7 @@ function createFieldCell(tableRow, fieldValue) {
     // Wrap with the shared Polarion-styled dropdown. Options are populated asynchronously
     // (populateFieldDropdown) and the cross-row deselection sets value + dispatches 'change';
     // SearchableDropdown's option observer / change listener keep the trigger in sync.
-    new SearchableDropdown({element: fieldSelect, placeholder: '', rememberSelection: false});
+    new SearchableDropdown({element: fieldSelect, allowEmpty: true, placeholder: 'Select field name...', rememberSelection: false});
 
     const mappingButton = document.createElement('button');
     mappingButton.classList.add('toolbar-button', 'options-mapping-button');
@@ -202,6 +202,12 @@ function updateAuxiliaryComponents(selectedField, mappingButton, uid) {
 
         columnInput.disabled = true;
         columnInput.value = "";
+        // The editable SearchableDropdown mirrors the wrapped <input> into its own visible trigger and
+        // does not observe programmatic value changes, so clear the trigger too (the disabled state is
+        // already mirrored via the dropdown's disabled MutationObserver).
+        if (columnInput._searchableDropdown) {
+            columnInput._searchableDropdown.trigger.value = "";
+        }
         const field = getField(selectedField);
         let insertAfter = targetRow;
         for (const option of field.options) {
@@ -289,7 +295,7 @@ function populateFieldDropdown(row, selectedValue) {
             for (const field of cache.fields) {
                 ids.push(field.id);
             }
-            populateDropdown(row, 'fields', ids, selectedValue, true);
+            populateDropdown(row, 'fields', ids, selectedValue, false);
 
             const mappingButton = row.getElementsByClassName('options-mapping-button')[0];
             updateAuxiliaryComponents(selectedValue, mappingButton, row.dataset.uid);

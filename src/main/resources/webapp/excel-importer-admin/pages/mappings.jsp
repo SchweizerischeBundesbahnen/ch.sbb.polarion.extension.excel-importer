@@ -7,7 +7,6 @@
 <head>
     <title>Mappings</title>
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
-    <link rel="stylesheet" href="../ui/generic/css/custom-select.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/configurations.css?bundle=<%= bundleTimestamp %>">
     <script type="module" src="../js/modules/mappings.js?bundle=<%= bundleTimestamp %>"></script>
     <style>
@@ -70,27 +69,12 @@
             align-items: center;
         }
 
-        /* Editable column input styled to match the shared SearchableDropdown look
-           (sharp corners, same border/font). No dropdown chevron: it stays a plain,
-           free-typing text input, not a select. */
-        .excel-column-input {
+        /* The column identifier is now the shared editable SearchableDropdown; fill the (narrow)
+           wrapper. Scoped with .mapping-row so it outranks the 250px ".mapping-row .searchable-dropdown"
+           Field Name rule below — both share the column input's row, and the column field must stay
+           small. */
+        .mapping-row .column-input-wrapper .searchable-dropdown {
             width: 100%;
-            box-sizing: border-box;
-            height: 23px;
-            padding: 2px .5rem;
-            border: 1px solid #c9c9c9;
-            border-radius: 0;
-            background-color: #fff;
-            font-family: inherit;
-            font-size: 13px;
-            font-weight: 600;
-            color: #1a1a1a;
-        }
-
-        .excel-column-input:focus {
-            border-color: #1491EB;
-            box-shadow: 0 3px 6px 0 rgba(0, 0, 0, 0.3);
-            outline: none;
         }
 
         .field-name, .field-name-select {
@@ -98,45 +82,23 @@
             box-sizing: border-box;
         }
 
-        .dropdown-menu {
-            position: absolute;
-            top: 100%; /* Position right below the input field */
-            background-color: #fff;
-            border: 1px solid #CCCCD4;
-            border-radius: 0;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            max-height: 180px;
-            overflow-y: auto;
-            z-index: 10;
-        }
-
-        .dropdown-item {
-            padding: 6px 12px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #1a1a1a;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .dropdown-item:hover {
-            background-color: #ebf7f8;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        /* Keep the column input, the Field Name dropdown and the button on one baseline,
-           and give the "Options mapping" button breathing room from the dropdown. */
-        .mapping-row td {
+        /* Common: vertically center every inline control on its row, page-wide
+           (labels, inputs, native selects, our dropdowns, toolbar buttons, table cells). */
+        .standard-admin-page label,
+        .standard-admin-page input:not([type="hidden"]),
+        .standard-admin-page select,
+        .standard-admin-page .searchable-dropdown,
+        .standard-admin-page .toolbar-button,
+        .standard-admin-page .action-buttons,
+        .standard-admin-page .column-input-wrapper,
+        .standard-admin-page td {
             vertical-align: middle;
         }
 
-        .mapping-row .column-input-wrapper,
-        .mapping-row .searchable-dropdown,
-        .mapping-row label {
-            vertical-align: middle;
+        /* Configuration row (generic configurations.jsp) — center label + dropdown + buttons
+           whether it lays out inline-block or flex. */
+        #configurations-pane {
+            align-items: center;
         }
 
         /* Field Name dropdown fixed width. */
@@ -182,7 +144,7 @@
     </table>
     <h2 class="align-left">Workitem Type To Create</h2>
     <div id="workitem-types-container">
-        <label for="wi-types">Import rows as: </label><select class="fs-14" id="wi-types"></select>
+        <label for="wi-types">Import rows as: </label><select class="fs-14" id="wi-types" style="width: 260px"></select>
     </div>
     <h2 class="align-left">Column Name To Workitem Field Mapping</h2>
     <table id="mapping-table">
