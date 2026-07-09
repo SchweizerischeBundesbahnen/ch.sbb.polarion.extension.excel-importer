@@ -106,7 +106,7 @@
             width: 250px;
         }
 
-        .mapping-row .options-mapping-button {
+        .mapping-row .options-mapping-button, .mapping-row .unlink-existing-label {
             margin-left: 12px;
             height: 23px;
             box-sizing: border-box;
