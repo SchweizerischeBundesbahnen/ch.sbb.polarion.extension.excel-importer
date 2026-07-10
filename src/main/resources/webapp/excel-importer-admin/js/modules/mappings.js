@@ -306,9 +306,14 @@ function populateFieldDropdown(row, selectedValue) {
 
 function createRemoveButtonCell(tableRow) {
     const buttonCell = document.createElement('td');
-    const removeButton = document.createElement('div');
-    const image = document.createElement('img');
-    image.setAttribute('src', '/polarion/ria/images/control/tableMinus.png');
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.classList.add('toolbar-button', 'mapping-icon-button');
+    removeButton.title = 'Remove';
+    const image = document.createElement('span');
+    image.className = 'sbb-icon-table-minus';
+    image.setAttribute('role', 'img');
+    image.setAttribute('aria-label', 'Remove');
     removeButton.appendChild(image);
     removeButton.addEventListener('click', function () {
         // tear down the row's field-name dropdown so its body-level portal isn't orphaned
@@ -329,7 +334,9 @@ function createAddButton() {
     const cell = document.createElement('td');
     cell.colSpan = 3;
     row.appendChild(cell);
-    const div = document.createElement('div');
+    const div = document.createElement('button');
+    div.type = 'button';
+    div.classList.add('toolbar-button', 'mapping-icon-button');
     div.title = 'Add';
     div.addEventListener('click', () => {
         if (ctx.getValueById('wi-types').trim().length === 0) {
@@ -339,8 +346,10 @@ function createAddButton() {
             updateLinkColumnDropdown();
         }
     })
-    const image = document.createElement('img');
-    image.src = '/polarion/ria/images/control/tablePlus.png';
+    const image = document.createElement('span');
+    image.className = 'sbb-icon-table-plus';
+    image.setAttribute('role', 'img');
+    image.setAttribute('aria-label', 'Add');
     div.appendChild(image);
     cell.appendChild(div);
     ctx.getElementById('mapping-table').appendChild(row);
