@@ -114,6 +114,12 @@
             padding-top: 0;
             padding-bottom: 0;
         }
+
+        /* Framed add/remove icon buttons, matching pdf-exporter webhooks' .webhook-button. */
+        .mapping-icon-button {
+            padding: 5px;
+            width: 29px;
+        }
     </style>
 </head>
 
