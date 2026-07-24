@@ -36,7 +36,7 @@ public class ExcelImporterNavigationExtender extends NavigationExtender {
     public String getPageUrl(@NotNull IContextId contextId) {
         String contextName = contextId.getContextName();
         String scope = contextName == null ? "" : "project/%s/".formatted(contextName);
-        return "/polarion/excel-importer-admin/pages/import_file.jsp?scope=" + scope;
+        return "/polarion/excel-importer-app/ui/app/index.html?feature=import-file&embedded=true&scope=" + scope;
     }
 
     @Override

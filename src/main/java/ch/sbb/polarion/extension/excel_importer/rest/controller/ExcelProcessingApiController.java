@@ -1,7 +1,10 @@
 package ch.sbb.polarion.extension.excel_importer.rest.controller;
 
 import ch.sbb.polarion.extension.excel_importer.service.ImportResult;
+import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
 import ch.sbb.polarion.extension.generic.rest.filter.Secured;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.Path;
@@ -20,7 +23,21 @@ public class ExcelProcessingApiController extends ExcelProcessingInternalControl
 
     @Override
     public Response startImportJob(String projectId, String mappingName, InputStream inputStream) {
+        // Async case: the background job uses the current subject after this request returns, so the
+        // response-filter logout must be deactivated here. The job itself logs out once it finishes
+        // (see ImportJobsService.isJobLogoutRequired). Without this the token principal is destroyed
+        // before the job runs (DestroyedPrincipalException).
+        deactivateLogoutFilter();
+
         return polarionServiceExt.callPrivileged(() -> super.startImportJob(projectId, mappingName, inputStream));
+    }
+
+    private void deactivateLogoutFilter() {
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (requestAttributes != null) {
+            requestAttributes.setAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, Boolean.TRUE, RequestAttributes.SCOPE_REQUEST);
+            RequestContextHolder.setRequestAttributes(requestAttributes);
+        }
     }
 
     @Override
