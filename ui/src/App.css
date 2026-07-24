@@ -1,0 +1,348 @@
+:root {
+  --ei-fg: var(--sbb-color-text, #1a1a1a);
+  --ei-muted: var(--sbb-color-text-muted, #6b6b6b);
+  --ei-accent: var(--sbb-color-accent, #0d5c9e);
+  --ei-border: var(--sbb-color-border, #d5d5d5);
+  --ei-bg-hover: var(--sbb-color-bg-hover, #f2f6fa);
+  /* Polarion admin-page look (from the generic common.css / about.css). */
+  --ei-heading: #000028;
+  --ei-heading-bar: #f3f3f0;
+  --ei-table-border: #cccccc;
+  --ei-table-header: #f0f0f0;
+  --ei-code-border: #dfe1e6;
+  --ei-code-bg: #f4f5f7;
+}
+
+/* Body-margin reset, outer page padding and the admin `.page > h1` heading now come from RSP
+   (PageLayout.css), shared across all extensions; `.app` here supplies only this app's typography. */
+.app {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ei-fg);
+  /* Match the Polarion admin base font (generic common.css `body, input, select { font-size: 13px }`).
+     We don't load common.css, so without this the page inherits the browser default (16px) and every
+     text element — paragraphs, lists, and the .markdown-body help article — renders too large. Headings
+     and table cells use explicit px sizes, so they are unaffected. */
+  font-size: 13px;
+}
+
+.feature-list a {
+  color: var(--ei-accent);
+  text-decoration: none;
+}
+
+.feature-list a:hover {
+  text-decoration: underline;
+}
+
+.landing-intro {
+  color: var(--ei-muted);
+  line-height: 1.5;
+}
+
+.landing-scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 8px;
+}
+
+.landing-scope select,
+.landing-scope .searchable-dropdown {
+  width: 260px;
+  min-width: 260px;
+  max-width: 100%;
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+}
+
+.feature-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--ei-border);
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.feature-list li:hover {
+  background: var(--ei-bg-hover);
+}
+
+.feature-list a {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.feature-desc {
+  color: var(--ei-muted);
+  font-size: 13px;
+}
+
+code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9em;
+  border: 1px solid var(--ei-code-border);
+  background-color: var(--ei-code-bg);
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
+/* --- Import File page --- */
+.import-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 560px;
+}
+
+.import-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.import-panel select {
+  min-width: 330px;
+  padding: 3px 4px;
+}
+
+/* The mapping picker upgrades to a SearchableDropdown; size it to match the widened select (+50%). */
+.import-panel .searchable-dropdown {
+  min-width: 330px;
+}
+
+/* Native file input is hidden; the styled <label> triggers it. The label itself is a
+   .sbb-btn .sbb-btn--control (unified generic button system, see buttons.css). */
+.upload-button input[type='file'] {
+  display: none;
+}
+
+/* The .sbb-btn .button-image icon-label gap now lives in react-sbb-polarion (bundled in the library
+   stylesheet), so the shared control buttons render self-contained; the local rule was removed. */
+
+.file-name {
+  color: var(--ei-muted);
+  font-size: 13px;
+}
+
+.no-mapping-note {
+  color: var(--ei-muted);
+}
+
+.import-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ei-muted);
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--ei-border);
+  border-top-color: var(--ei-accent);
+  border-radius: 50%;
+  animation: ei-spin 0.8s linear infinite;
+}
+
+@keyframes ei-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.alert {
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.alert-error {
+  background: #fdeaea;
+  border: 1px solid #e6b0b0;
+  color: #a12020;
+}
+
+.alert-success {
+  background: #eaf6ec;
+  border: 1px solid #a9d5b2;
+  color: #256a34;
+}
+
+/* --- Polarion admin-page headings (match the generic common.css look) --- */
+/* Section bar (h2): dark bold text on a light bar, matching .standard-admin-page h2. The
+   .markdown-body article headings (About README / User Guide) are styled in the react-sbb-polarion lib. */
+.mappings-form h2,
+.quick-help h2 {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: bold;
+  color: var(--ei-heading);
+  background-color: var(--ei-heading-bar);
+  padding: 8px 14px;
+  margin: 24px 0 12px;
+}
+
+/* Sub-heading (h3): dark bold, no bar. */
+.quick-help-text h3 {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: bold;
+  color: var(--ei-heading);
+  margin: 20px 0 8px;
+  padding-left: 4px;
+}
+
+.alert a {
+  color: inherit;
+  font-weight: 600;
+}
+
+/* --- Mappings page --- */
+.mappings-form.dimmed {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.general-settings td {
+  padding: 3px 8px 3px 0;
+  vertical-align: middle;
+}
+
+.general-settings input[type='text'],
+.general-settings input[type='number'] {
+  padding: 3px 4px;
+}
+
+.general-settings label {
+  margin-left: 4px;
+}
+
+.wi-types-row,
+.link-column-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wi-types-row select,
+.link-column-row select {
+  min-width: 260px;
+}
+
+#mapping-table {
+  border-collapse: collapse;
+  min-height: 1px;
+}
+
+#mapping-table td {
+  padding: 5px 6px 5px 0;
+  vertical-align: middle;
+}
+
+.mapping-row label {
+  color: var(--ei-muted);
+  font-size: 13px;
+}
+
+.column-input-wrapper {
+  position: relative;
+  width: 70px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.column-input-wrapper .excel-column-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mapping-row .field-name,
+.mapping-row select {
+  width: 250px;
+  box-sizing: border-box;
+}
+
+.mapping-row .column-input-wrapper .searchable-dropdown {
+  width: 100%;
+}
+
+.mapping-row .searchable-dropdown {
+  width: 250px;
+}
+
+/* Compound selector so the left gap beats the base `.sbb-btn { margin: 0 }` shorthand
+   (single-class specificity would otherwise be overridden depending on stylesheet load order). */
+.sbb-btn.options-mapping-button {
+  margin-left: 12px;
+}
+
+.unlink-existing-label {
+  margin-left: 12px;
+  font-size: 13px;
+  color: var(--ei-fg);
+}
+
+/* Square +/− row buttons: keep the .sbb-btn control chrome but override its size/padding. The
+   compound selector beats the single-class .sbb-btn rule regardless of stylesheet load order. */
+.sbb-btn.mapping-icon-button {
+  width: 29px;
+  min-width: 29px;
+  padding: 4px;
+}
+
+/* The action toolbar (.actions-pane gray bar + .action-buttons) and the revisions table styling now
+   live in react-sbb-polarion (ConfigurationButtons.css / RevisionsTable.css, bundled in the library
+   stylesheet); the local rules were removed with the component moves. */
+
+.quick-help {
+  border-top: 1px solid var(--ei-border);
+  margin-top: 28px;
+  padding-top: 8px;
+}
+
+.quick-help-text {
+  line-height: 1.5;
+}
+
+/* --- Options mapping modal content (the modal shell itself lives in @grigoriev/react-sbb-polarion) --- */
+.option-mapping-hint-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.option-mapping-hint {
+  font-size: 11px;
+  color: #999;
+  padding-bottom: 15px;
+}
+
+.options-mapping-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.options-mapping-table td {
+  padding: 3px 6px 3px 0;
+  vertical-align: middle;
+}
+
+.option-mapping-key {
+  display: inline-block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.option-mapping-value {
+  width: 100%;
+  box-sizing: border-box;
+}

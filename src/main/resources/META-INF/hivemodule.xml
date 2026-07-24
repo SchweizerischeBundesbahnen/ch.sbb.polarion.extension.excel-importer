@@ -17,7 +17,7 @@
                   parentNodeName="Excel Importer"
                   parentNodeIconUrl="/polarion/excel-importer-admin/ui/images/menu/30x30/_parent.svg"
                   iconUrl="/polarion/excel-importer-admin/ui/images/menu/16x16/about.svg"
-                  pageUrl="/polarion/excel-importer-admin/pages/about.jsp?scope=$scope$"
+                  pageUrl="/polarion/excel-importer-app/ui/app/index.html?feature=about&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
@@ -27,7 +27,7 @@
                   parentNodeId="excel-importer"
                   parentNodeName="Excel Importer"
                   iconUrl="/polarion/excel-importer-admin/ui/images/menu/16x16/user_guide.svg"
-                  pageUrl="/polarion/excel-importer-admin/pages/user-guide.jsp?scope=$scope$"
+                  pageUrl="/polarion/excel-importer-app/ui/app/index.html?feature=user-guide&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
@@ -45,7 +45,7 @@
                   name="Mappings"
                   parentNodeId="excel-importer"
                   iconUrl="/polarion/excel-importer-admin/ui/images/menu/16x16/mapping.svg"
-                  pageUrl="/polarion/excel-importer-admin/pages/mappings.jsp?scope=$scope$"
+                  pageUrl="/polarion/excel-importer-app/ui/app/index.html?feature=mappings&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="false"/>
@@ -54,7 +54,7 @@
                   name="Import File"
                   parentNodeId="excel-importer"
                   iconUrl="/polarion/excel-importer-admin/ui/images/menu/16x16/import.svg"
-                  pageUrl="/polarion/excel-importer-admin/pages/import_file.jsp?scope=$scope$"
+                  pageUrl="/polarion/excel-importer-app/ui/app/index.html?feature=import-file&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="false"/>

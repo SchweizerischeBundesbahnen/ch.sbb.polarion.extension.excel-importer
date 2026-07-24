@@ -50,6 +50,25 @@
 
         <web.app.name>${maven-jar-plugin.Extension-Context}</web.app.name>
 
+        <!-- Vite/React app (experimental UI, served under the excel-importer-app webapp context) -->
+        <node.version>v24.16.0</node.version>
+        <frontend-maven-plugin.version>2.0.1</frontend-maven-plugin.version>
+        <!-- Set -DskipJsTests to skip the ui/ Vitest tests (and the Playwright browser install) that
+             otherwise run in the `test` phase alongside the Java tests. -->
+        <skipJsTests>false</skipJsTests>
+        <!-- The npm invocation for the ui/ tests in the `test` phase, run as `npm ${jsTestCommand} ${jsTestExtraArgs}`.
+             Split into two independent pieces so the -DjsTestsNoDocker and -DskipVisualJsTests profiles can
+             each set their own part without clobbering the other:
+               jsTestCommand  - the npm command; defaults to the dockerized full suite (test:docker),
+                                -DjsTestsNoDocker switches it to a plain `npm test`.
+               jsTestExtraArgs - extra args forwarded to Vitest; empty by default, -DskipVisualJsTests adds
+                                the exclude that drops the visual-regression tests. Only takes effect on the
+                                non-docker command (it is passed through `npm test`, not the test:docker wrapper). -->
+        <jsTestCommand>run test:docker</jsTestCommand>
+        <jsTestExtraArgs> </jsTestExtraArgs>
+        <vite.sources.root>${project.basedir}/ui</vite.sources.root>
+        <vite.destination.root>${project.basedir}/src/main/resources/webapp/excel-importer-app</vite.destination.root>
+
         <!-- Extension-specific Require-Bundle (in addition to common ones from parent POM):
             org.apache.commons.commons-collections4
             org.apache.commons.lang3
@@ -122,6 +141,14 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>${vite.destination.root}/app</directory>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                    </filesets>
+                </configuration>
             </plugin>
 
             <plugin>
@@ -239,7 +266,202 @@
                 <groupId>io.github.grigoriev</groupId>
                 <artifactId>pre-commit-run-maven-plugin</artifactId>
             </plugin>
+
+            <!-- Build the experimental Vite/React app: install a local node/npm, install deps,
+                 and produce the production bundle under ui/dist/app. -->
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>${frontend-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>install node and npm</id>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                    </execution>
+                    <execution>
+                        <id>npm install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                    </execution>
+                    <execution>
+                        <id>npm build</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                    <!-- JS tests run in the `test` phase (alongside the Java tests), skippable with
+                         -DskipJsTests. Runs the FULL suite (behavior + visual regression) inside the
+                         pinned Playwright Docker image via test:docker - the same reproducible
+                         environment react-sbb-polarion's pre-commit uses, so the visual screenshots
+                         match their committed references (a plain local run would diff on OS fonts).
+                         Requires Docker on the build host; skip with -DskipJsTests where it is absent. -->
+                    <execution>
+                        <id>npm test (dockerized)</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>test</phase>
+                        <configuration>
+                            <arguments>${jsTestCommand} ${jsTestExtraArgs}</arguments>
+                            <skip>${skipJsTests}</skip>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <nodeVersion>${node.version}</nodeVersion>
+                    <workingDirectory>ui</workingDirectory>
+                </configuration>
+            </plugin>
+
+            <!-- Copy the Vite bundle (ui/dist/app) into the excel-importer-app webapp resources so
+                 it is packaged and served by ExcelImporterAppServlet. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-vite-build</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${vite.destination.root}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${vite.sources.root}/dist</directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>**/*</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                            <overwrite>true</overwrite>
+                            <includeEmptyDirs>true</includeEmptyDirs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Activate with -DjsTestsNoDocker to run the ui/ tests via a plain `npm test`
+             instead of the dockerized full suite (test:docker). The Vitest suite runs in Playwright
+             browser mode (real Chromium), so the browser the Docker image normally provides must be
+             present on the build host - install it with the separate -DinstallPlaywright flag (see the
+             playwright-install profile). The visual-regression screenshots are pixel-locked to the pinned
+             Docker image and will diff on any other host - drop them with -DskipVisualJsTests (see the
+             skip-visual-js-tests profile below). Sets only jsTestCommand, so it composes with that flag. -->
+        <profile>
+            <id>js-tests-no-docker</id>
+            <activation>
+                <property>
+                    <name>jsTestsNoDocker</name>
+                </property>
+            </activation>
+            <properties>
+                <jsTestCommand>test</jsTestCommand>
+            </properties>
+        </profile>
+
+        <!-- Activate with -DskipVisualJsTests to run the ui/ tests without the pixel-based visual-regression
+             tests (*.visual.test.tsx), which only reproduce inside the pinned Playwright Docker image and
+             diff on any other host. Adds a Vitest exclude arg, passed through `npm test`, so it only takes
+             effect together with -DjsTestsNoDocker (the test:docker wrapper does not forward extra args).
+             Behavior tests still run in Chromium browser mode, so -DinstallPlaywright is still needed on a
+             host without the browser. Sets only jsTestExtraArgs, so it never clobbers jsTestCommand. -->
+        <profile>
+            <id>skip-visual-js-tests</id>
+            <activation>
+                <property>
+                    <name>skipVisualJsTests</name>
+                </property>
+            </activation>
+            <properties>
+                <jsTestExtraArgs>-- --exclude **/*.visual.test.tsx</jsTestExtraArgs>
+            </properties>
+        </profile>
+
+        <!-- The Chromium browser that Vitest browser mode needs, installed before the tests run. Kept
+             separate from -DjsTestsNoDocker so a host with the browser already cached can run the no-docker
+             tests without reinstalling. Not needed for the dockerized path; the pinned Playwright image
+             already ships the browser. Both variants run after `npm install` (generate-resources) and before
+             `npm test` (test phase). Use exactly one:
+
+               -DinstallPlaywright        browser + its OS libraries (the with-deps variant). Needs a
+                                          Debian/Ubuntu host with apt-get and root/sudo.
+               -DinstallPlaywrightNoDeps  browser binary only. For hosts without apt-get/root; the host must
+                                          already provide Chromium's system libraries. -->
+        <profile>
+            <id>playwright-install</id>
+            <activation>
+                <property>
+                    <name>installPlaywright</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.github.eirslett</groupId>
+                        <artifactId>frontend-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>playwright install (with deps)</id>
+                                <goals>
+                                    <goal>npx</goal>
+                                </goals>
+                                <phase>process-test-resources</phase>
+                                <configuration>
+                                    <arguments>playwright install --with-deps chromium</arguments>
+                                    <skip>${skipJsTests}</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Browser binary only (no OS libraries). See the comment above the playwright-install profile. -->
+        <profile>
+            <id>playwright-install-no-deps</id>
+            <activation>
+                <property>
+                    <name>installPlaywrightNoDeps</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.github.eirslett</groupId>
+                        <artifactId>frontend-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>playwright install (no deps)</id>
+                                <goals>
+                                    <goal>npx</goal>
+                                </goals>
+                                <phase>process-test-resources</phase>
+                                <configuration>
+                                    <arguments>playwright install chromium</arguments>
+                                    <skip>${skipJsTests}</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

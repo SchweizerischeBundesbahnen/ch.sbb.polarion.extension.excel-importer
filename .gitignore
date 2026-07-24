@@ -43,6 +43,9 @@ src/main/resources/webapp/*-admin/html/user-guide.html
 src/main/resources/webapp/*-admin/html/disclaimer.html
 README.html
 
+# Vite/React app bundle (generated at build time by frontend-maven-plugin)
+src/main/resources/webapp/excel-importer-app/app/
+
 node/
 node_modules/
 

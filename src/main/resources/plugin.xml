@@ -16,4 +16,12 @@
                 contextRoot="webapp/excel-importer-admin">
         </webapp>
     </extension>
+
+    <extension
+            point="com.polarion.portal.tomcat.webapps">
+        <webapp
+                name="polarion/excel-importer-app"
+                contextRoot="webapp/excel-importer-app">
+        </webapp>
+    </extension>
 </plugin>
