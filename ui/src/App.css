@@ -16,7 +16,8 @@
 /* Body-margin reset, outer page padding and the admin `.page > h1` heading now come from RSP
    (PageLayout.css), shared across all extensions; `.app` here supplies only this app's typography. */
 .app {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  /* font-family comes from RSP (control-tokens.css applies --sbb-control-font-family to
+     .standard-admin-page) so every extension shares one typeface — don't override it here. */
   color: var(--ei-fg);
   /* Match the Polarion admin base font (generic common.css `body, input, select { font-size: 13px }`).
      We don't load common.css, so without this the page inherits the browser default (16px) and every
