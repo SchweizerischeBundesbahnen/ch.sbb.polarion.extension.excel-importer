@@ -17,7 +17,7 @@ afterEach(() => {
   window.top?.document.querySelectorAll('script[id$="-breadcrumb-bridge"]').forEach((s) => s.remove());
 });
 
-describe('Import File page visual', () => {
+describe.skipIf(!__PIXEL_REFERENCES__)('Import File page visual', () => {
   it('loaded (mapping picker + choose-file + import)', async () => {
     installFetchMock([
       {

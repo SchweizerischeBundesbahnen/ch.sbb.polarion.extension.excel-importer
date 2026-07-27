@@ -11,7 +11,15 @@ import { defineConfig } from 'vitest/config';
 // Per-component subfolder derived from the test file name (e.g. "Mappings.visual.test.tsx" -> "Mappings").
 const componentDir = (testFileName: string): string => testFileName.split(/[\\/]/).pop()!.split('.')[0];
 
+// The committed reference screenshots are pixel-locked to the pinned Playwright image, so the visual
+// assertions are meaningful only there. scripts/docker-test.mjs sets PIXEL_REFERENCES=1 inside the
+// container; everywhere else (a developer's macOS/Windows box, a plain CI runner) the visual suites
+// skip themselves rather than failing on the host's font metrics - which shift both the antialiasing
+// and the rendered element height, i.e. a red run that says nothing about the code.
+const pixelReferences = process.env.PIXEL_REFERENCES === '1';
+
 export default defineConfig({
+  define: { __PIXEL_REFERENCES__: JSON.stringify(pixelReferences) },
   plugins: [react()],
   // Single instance of each shared dep (react-sbb-polarion is a file: symlink with its own copies):
   // React avoids the dual-React invalid-hook-call; sonner ensures this app's `toast()` and RSP's
