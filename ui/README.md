@@ -114,7 +114,9 @@ npm run test:coverage          # fast local loop: behavior only + the gate, no D
 npm run test:update:docker     # regenerate the committed reference PNGs after an intentional UI change
 ```
 
-> Do **not** run `npm run test:coverage:full` directly outside a container. It is the inner command the
-> Docker wrapper invokes; on macOS/Windows its visual tests always fail - the references are pixel-locked
-> to the pinned image, and different font metrics change both antialiasing and the rendered element
-> height. A red run there means "wrong environment", not "broken code".
+> `npm run test:coverage:full` is the inner command the Docker wrapper invokes. Run outside a container
+> it is green, but it proves less than it looks: the reference screenshots are pixel-locked to the
+> pinned image, so the visual suites detect that they are not in the reference environment and **skip
+> themselves** rather than failing on the host's font metrics. It therefore reports the behavior suite
+> and the coverage gate only - which is exactly what the `-DjsTestsNoDocker` Maven profile needs on a
+> Docker-less host. To check the screenshots, use `test:coverage:docker`.
