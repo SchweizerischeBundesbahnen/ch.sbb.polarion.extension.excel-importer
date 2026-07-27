@@ -78,7 +78,8 @@ on Windows/macOS would commit references with mismatching (non-Linux) pixels.
 
 ### As part of the Maven build
 
-`mvn install` runs the dockerized JS tests (`npm run test:docker`) in the Maven `test` phase, alongside
+`mvn install` runs the dockerized JS tests WITH the coverage gate (`npm run test:coverage:docker`) in the
+Maven `test` phase, alongside
 the Java tests (so `ui/` also needs Docker during a full build). Skip just the JS tests with:
 
 ```bash

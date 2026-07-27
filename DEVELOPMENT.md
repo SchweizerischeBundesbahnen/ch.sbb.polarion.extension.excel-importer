@@ -117,7 +117,7 @@ The `ui/` Vitest suite runs in the `test` phase alongside the Java tests. By def
 | Flag | Effect |
 | --- | --- |
 | `-DskipJsTests` | Skip all UI tests (Java tests still run). Use on a host without Docker. |
-| `-DjsTestsNoDocker` | Run the tests via a plain `npm test` instead of the Docker image. Needs the Playwright browser on the host (see the install flags below). |
+| `-DjsTestsNoDocker` | Run the tests natively (`npm run test:coverage:full`) instead of the Docker image. Needs the Playwright browser on the host (see the install flags below). |
 | `-DinstallPlaywright` | Install the Chromium browser plus its OS libraries (the with-deps variant) before the tests. Needs a Debian/Ubuntu host with `apt-get` and root/sudo. |
 | `-DinstallPlaywrightNoDeps` | Install the Chromium browser binary only. For hosts without `apt-get`/root; the host must already provide Chromium's system libraries. |
 | `-DskipVisualJsTests` | Exclude the pixel-based visual-regression tests (`*.visual.test.tsx`), which only reproduce inside the Docker image. Only effective together with `-DjsTestsNoDocker`. |
