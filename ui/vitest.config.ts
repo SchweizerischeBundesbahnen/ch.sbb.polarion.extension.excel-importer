@@ -64,7 +64,11 @@ export default defineConfig({
       reportsDirectory: './coverage',
       all: false,
       include: ['src/**'],
-      exclude: ['src/**/*.d.ts', 'src/**/*.css', 'src/main.tsx', 'src/types.ts'],
+      // Excluded: declaration files, CSS, the bootstrap entry (main.tsx), and the dev-only Landing page
+      // (vite-dev scaffolding never opened in Polarion; the router test covers its selection logic).
+      // Do NOT exclude real product code to hit the gate - and do not exclude `types.ts`: it holds only
+      // interfaces, which erase at transpile, so listing it hides nothing and blurs this list.
+      exclude: ['src/**/*.d.ts', 'src/**/*.css', 'src/main.tsx', 'src/pages/Landing.tsx'],
       // Uniform 80% gate (currently ~94 stmts / ~92 funcs / ~97 lines / ~80 branches). ColumnInput now
       // builds its editable combobox from react-sbb-polarion's bundled createEditableSelect (no runtime
       // fetch), so it is exercised in tests too; the branches left uncovered are defensive ref guards
