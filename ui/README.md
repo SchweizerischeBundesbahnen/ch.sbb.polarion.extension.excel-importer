@@ -101,3 +101,20 @@ Every admin extender in `hivemodule.xml` points at
 project-navigation extender (`ExcelImporterNavigationExtender`) opens `feature=import-file`. The
 feature ids there must stay in sync with [`src/features.tsx`](src/features.tsx) - a mismatch shows up
 as a blank page in Polarion and no test catches it.
+
+### Running the tests
+
+**One command, locally and in CI: `npm run test:coverage:docker`.** It runs the full suite (behavior +
+visual regression) plus the 80% istanbul coverage gate inside the pinned Playwright Docker image, which
+is what the Maven `test` phase and the pre-commit hook execute. Docker must be running.
+
+```bash
+npm run test:coverage:docker   # the canonical run: full suite + coverage gate, in the pinned image
+npm run test:coverage          # fast local loop: behavior only + the gate, no Docker, no pixels
+npm run test:update:docker     # regenerate the committed reference PNGs after an intentional UI change
+```
+
+> Do **not** run `npm run test:coverage:full` directly outside a container. It is the inner command the
+> Docker wrapper invokes; on macOS/Windows its visual tests always fail - the references are pixel-locked
+> to the pinned image, and different font metrics change both antialiasing and the rendered element
+> height. A red run there means "wrong environment", not "broken code".
