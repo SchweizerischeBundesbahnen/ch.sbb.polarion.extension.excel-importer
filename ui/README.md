@@ -1,7 +1,9 @@
-# Excel Importer UI (experimental)
+# Excel Importer UI
 
-A React + Vite single-page app that will progressively replace the legacy JSP admin pages
-(`about`, `mappings`, `user-guide`, `import-file`).
+A React + Vite single-page app on [react-sbb-polarion](https://github.com/grigoriev/react-sbb-polarion)
+(RSP). It replaces the legacy JSP admin pages (`about`, `mappings`, `user-guide`, `import-file`), which
+have been removed; `excel-importer-admin/` now only serves the admin-menu icons and the
+build-generated help HTML.
 
 ## Feature routing
 
@@ -76,7 +78,8 @@ on Windows/macOS would commit references with mismatching (non-Linux) pixels.
 
 ### As part of the Maven build
 
-`mvn install` runs the dockerized JS tests (`npm run test:docker`) in the Maven `test` phase, alongside
+`mvn install` runs the dockerized JS tests WITH the coverage gate (`npm run test:coverage:docker`) in the
+Maven `test` phase, alongside
 the Java tests (so `ui/` also needs Docker during a full build). Skip just the JS tests with:
 
 ```bash
@@ -93,6 +96,27 @@ maven-resources-plugin) runs this automatically and copies the bundle into
 
 ## Hooking into Polarion
 
-The app is not yet wired into `hivemodule.xml`; the JSP pages remain in place. To flip a page
-over, point its admin extender's `pageUrl` at
-`/polarion/excel-importer-app/ui/app/index.html?feature=<id>&scope=$scope$`.
+Every admin extender in `hivemodule.xml` points at
+`/polarion/excel-importer-app/ui/app/index.html?feature=<id>&embedded=true&scope=$scope$`, and the
+project-navigation extender (`ExcelImporterNavigationExtender`) opens `feature=import-file`. The
+feature ids there must stay in sync with [`src/features.tsx`](src/features.tsx) - a mismatch shows up
+as a blank page in Polarion and no test catches it.
+
+### Running the tests
+
+**One command, locally and in CI: `npm run test:coverage:docker`.** It runs the full suite (behavior +
+visual regression) plus the 80% istanbul coverage gate inside the pinned Playwright Docker image, which
+is what the Maven `test` phase and the pre-commit hook execute. Docker must be running.
+
+```bash
+npm run test:coverage:docker   # the canonical run: full suite + coverage gate, in the pinned image
+npm run test:coverage          # fast local loop: behavior only + the gate, no Docker, no pixels
+npm run test:update:docker     # regenerate the committed reference PNGs after an intentional UI change
+```
+
+> `npm run test:coverage:full` is the inner command the Docker wrapper invokes. Run outside a container
+> it is green, but it proves less than it looks: the reference screenshots are pixel-locked to the
+> pinned image, so the visual suites detect that they are not in the reference environment and **skip
+> themselves** rather than failing on the host's font metrics. It therefore reports the behavior suite
+> and the coverage gate only - which is exactly what the `-DjsTestsNoDocker` Maven profile needs on a
+> Docker-less host. To check the screenshots, use `test:coverage:docker`.

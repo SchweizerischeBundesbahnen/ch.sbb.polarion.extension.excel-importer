@@ -59,12 +59,14 @@
         <!-- The npm invocation for the ui/ tests in the `test` phase, run as `npm ${jsTestCommand} ${jsTestExtraArgs}`.
              Split into two independent pieces so the -DjsTestsNoDocker and -DskipVisualJsTests profiles can
              each set their own part without clobbering the other:
-               jsTestCommand  - the npm command; defaults to the dockerized full suite (test:docker),
-                                -DjsTestsNoDocker switches it to a plain `npm test`.
+               jsTestCommand  - the npm command; defaults to the dockerized full suite WITH the coverage
+                                gate (test:coverage:docker), -DjsTestsNoDocker switches it to the native
+                                equivalent (test:coverage:full). Running the plain test:docker variant
+                                executes the suite but never evaluates the istanbul thresholds.
                jsTestExtraArgs - extra args forwarded to Vitest; empty by default, -DskipVisualJsTests adds
                                 the exclude that drops the visual-regression tests. Only takes effect on the
                                 non-docker command (it is passed through `npm test`, not the test:docker wrapper). -->
-        <jsTestCommand>run test:docker</jsTestCommand>
+        <jsTestCommand>run test:coverage:docker</jsTestCommand>
         <jsTestExtraArgs> </jsTestExtraArgs>
         <vite.sources.root>${project.basedir}/ui</vite.sources.root>
         <vite.destination.root>${project.basedir}/src/main/resources/webapp/excel-importer-app</vite.destination.root>
@@ -370,7 +372,7 @@
                 </property>
             </activation>
             <properties>
-                <jsTestCommand>test</jsTestCommand>
+                <jsTestCommand>run test:coverage:full</jsTestCommand>
             </properties>
         </profile>
 

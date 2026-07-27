@@ -1,5 +1,4 @@
 :root {
-  --ei-fg: var(--sbb-color-text, #1a1a1a);
   --ei-muted: var(--sbb-color-text-muted, #6b6b6b);
   --ei-accent: var(--sbb-color-accent, #0d5c9e);
   --ei-border: var(--sbb-color-border, #d5d5d5);
@@ -7,24 +6,15 @@
   /* Polarion admin-page look (from the generic common.css / about.css). */
   --ei-heading: #000028;
   --ei-heading-bar: #f3f3f0;
-  --ei-table-border: #cccccc;
-  --ei-table-header: #f0f0f0;
   --ei-code-border: #dfe1e6;
   --ei-code-bg: #f4f5f7;
 }
 
-/* Body-margin reset, outer page padding and the admin `.page > h1` heading now come from RSP
-   (PageLayout.css), shared across all extensions; `.app` here supplies only this app's typography. */
-.app {
-  /* font-family comes from RSP (control-tokens.css applies --sbb-control-font-family to
-     .standard-admin-page) so every extension shares one typeface — don't override it here. */
-  color: var(--ei-fg);
-  /* Match the Polarion admin base font (generic common.css `body, input, select { font-size: 13px }`).
-     We don't load common.css, so without this the page inherits the browser default (16px) and every
-     text element — paragraphs, lists, and the .markdown-body help article — renders too large. Headings
-     and table cells use explicit px sizes, so they are unaffected. */
-  font-size: 13px;
-}
+/* App root (App.tsx: <div class="app standard-admin-page">). Nothing is declared for `.app` here on
+   purpose: react-sbb-polarion's PageLayout.css owns the whole page shell — the body-margin reset, the
+   outer padding, the font family, the 13px admin base size and the text color — so every extension
+   shares one look. `standard-admin-page` (also from RSP's bundled style.css) supplies the --sbb-*
+   control tokens and the Polarion-styled checkboxes, so no per-app checkbox rules here either. */
 
 .feature-list a {
   color: var(--ei-accent);
@@ -284,10 +274,11 @@ code {
   margin-left: 12px;
 }
 
+/* Only the gap is this label's own: it is a <label> inside .mapping-row, so its size and muted color
+   come from the `.mapping-row label` rule above (which outranks a single class), exactly like its
+   sibling labels. */
 .unlink-existing-label {
   margin-left: 12px;
-  font-size: 13px;
-  color: var(--ei-fg);
 }
 
 /* Square +/− row buttons: keep the .sbb-btn control chrome but override its size/padding. The

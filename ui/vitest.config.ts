@@ -11,7 +11,15 @@ import { defineConfig } from 'vitest/config';
 // Per-component subfolder derived from the test file name (e.g. "Mappings.visual.test.tsx" -> "Mappings").
 const componentDir = (testFileName: string): string => testFileName.split(/[\\/]/).pop()!.split('.')[0];
 
+// The committed reference screenshots are pixel-locked to the pinned Playwright image, so the visual
+// assertions are meaningful only there. scripts/docker-test.mjs sets PIXEL_REFERENCES=1 inside the
+// container; everywhere else (a developer's macOS/Windows box, a plain CI runner) the visual suites
+// skip themselves rather than failing on the host's font metrics - which shift both the antialiasing
+// and the rendered element height, i.e. a red run that says nothing about the code.
+const pixelReferences = process.env.PIXEL_REFERENCES === '1';
+
 export default defineConfig({
+  define: { __PIXEL_REFERENCES__: JSON.stringify(pixelReferences) },
   plugins: [react()],
   // Single instance of each shared dep (react-sbb-polarion is a file: symlink with its own copies):
   // React avoids the dual-React invalid-hook-call; sonner ensures this app's `toast()` and RSP's
@@ -64,7 +72,11 @@ export default defineConfig({
       reportsDirectory: './coverage',
       all: false,
       include: ['src/**'],
-      exclude: ['src/**/*.d.ts', 'src/**/*.css', 'src/main.tsx', 'src/types.ts'],
+      // Excluded: declaration files, CSS, the bootstrap entry (main.tsx), and the dev-only Landing page
+      // (vite-dev scaffolding never opened in Polarion; the router test covers its selection logic).
+      // Do NOT exclude real product code to hit the gate - and do not exclude `types.ts`: it holds only
+      // interfaces, which erase at transpile, so listing it hides nothing and blurs this list.
+      exclude: ['src/**/*.d.ts', 'src/**/*.css', 'src/main.tsx', 'src/pages/Landing.tsx'],
       // Uniform 80% gate (currently ~94 stmts / ~92 funcs / ~97 lines / ~80 branches). ColumnInput now
       // builds its editable combobox from react-sbb-polarion's bundled createEditableSelect (no runtime
       // fetch), so it is exercised in tests too; the branches left uncovered are defensive ref guards

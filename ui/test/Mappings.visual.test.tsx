@@ -46,7 +46,7 @@ afterEach(() => {
   window.top?.document.querySelectorAll('script[id$="-breadcrumb-bridge"]').forEach((s) => s.remove());
 });
 
-describe('Mappings page visual', () => {
+describe.skipIf(!__PIXEL_REFERENCES__)('Mappings page visual', () => {
   it('fully loaded (config pane, general settings, work-item type, column->field rows, link column, toolbar, quick help)', async () => {
     await mountLoaded();
     // The page is taller than the default 720px viewport; an element screenshot of a below-the-fold

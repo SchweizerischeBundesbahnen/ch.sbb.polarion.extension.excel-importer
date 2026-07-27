@@ -15,7 +15,7 @@ afterEach(() => {
   window.top?.document.querySelectorAll('script[id$="-breadcrumb-bridge"]').forEach((s) => s.remove());
 });
 
-describe('User Guide page visual', () => {
+describe.skipIf(!__PIXEL_REFERENCES__)('User Guide page visual', () => {
   it('renders the help article', async () => {
     installFetchMock([
       {
