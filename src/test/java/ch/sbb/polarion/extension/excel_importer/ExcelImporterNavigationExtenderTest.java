@@ -21,7 +21,7 @@ class ExcelImporterNavigationExtenderTest {
         ExcelImporterNavigationExtender navigationExtender = new ExcelImporterNavigationExtender();
         assertEquals(ExcelImporterNavigationExtender.EXCEL_IMPORTER, navigationExtender.getId());
         assertEquals("Excel Importer", navigationExtender.getLabel());
-        assertEquals("/polarion/excel-importer-admin/ui/images/menu/30x30/_parent.svg", navigationExtender.getIconUrl());
+        assertEquals("/polarion/excel-importer-app/ui/images/menu/30x30/_parent.svg", navigationExtender.getIconUrl());
         assertFalse(navigationExtender.requiresToken());
 
         List<NavigationExtenderNode> rootNodes = navigationExtender.getRootNodes(contextId);
