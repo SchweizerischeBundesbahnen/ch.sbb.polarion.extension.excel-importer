@@ -283,12 +283,21 @@
                         </goals>
                         <phase>generate-resources</phase>
                     </execution>
+                    <!-- `ci`, not the plugin's default `install`: the production bundle must come
+                         from the committed package-lock.json, which is the graph the dockerized tests
+                         exercise (they run `npm ci` too). With `install` the caret ranges could resolve
+                         differently here than in the tests, so we would ship something we never ran.
+                         It also turns a package.json/lock mismatch into a failed build instead of
+                         silently repairing it. -->
                     <execution>
                         <id>npm install</id>
                         <goals>
                             <goal>npm</goal>
                         </goals>
                         <phase>generate-resources</phase>
+                        <configuration>
+                            <arguments>ci</arguments>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>npm build</id>
