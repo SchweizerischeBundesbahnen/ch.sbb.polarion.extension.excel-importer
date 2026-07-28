@@ -23,7 +23,7 @@ export default function App() {
       <BreadcrumbInjector
         marker="excel-importer"
         title="Excel Importer"
-        icon="/polarion/excel-importer-admin/ui/images/menu/30x30/_parent.svg"
+        icon="/polarion/excel-importer-app/ui/images/menu/30x30/_parent.svg"
       />
       {/* App-wide toast host: the shared react-sbb-polarion Toaster (top-center + richColors, so
           success toasts are green, errors red). Toasts are fired with `toast()` from sonner. */}

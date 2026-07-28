@@ -20,7 +20,7 @@ try {
   console.error('Cannot read node_modules/playwright - run `npm install` first.');
   process.exit(1);
 }
-const image = `mcr.microsoft.com/playwright:v${playwrightVersion}-jammy`;
+const image = `mcr.microsoft.com/playwright:v${playwrightVersion}-noble`;
 
 const args = [
   'run',
