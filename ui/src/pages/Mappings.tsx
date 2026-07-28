@@ -6,6 +6,7 @@ import {
   PageLayout,
   RevisionsTable,
   SearchableSelect,
+  useConfirm,
 } from '@grigoriev/react-sbb-polarion';
 import { toast } from 'sonner';
 import MappingRow from '../components/MappingRow';
@@ -35,6 +36,7 @@ function isTestStepsField(field: FieldMetadata | null): boolean {
 export default function Mappings() {
   const settings = useSettings();
   const scope = getScope();
+  const { confirm, confirmDialog } = useConfirm();
   const projectId = getProjectIdFromScope(scope);
   const paneRef = useRef<ConfigurationsPaneHandle>(null);
 
@@ -317,7 +319,7 @@ export default function Mappings() {
 
   const handleCancel = async () => {
     if (!selectedConfig) return;
-    if (!window.confirm('Cancel editing and revert to the last persisted state?')) return;
+    if (!(await confirm('Cancel editing and revert to the last persisted state?'))) return;
     try {
       const model = await settings.loadContent(selectedConfig, scope);
       applySettings(model);
@@ -603,6 +605,8 @@ export default function Mappings() {
         onAccept={acceptOptions}
         onCancel={() => setOptionsFieldId(null)}
       />
+
+      {confirmDialog}
     </PageLayout>
   );
 }

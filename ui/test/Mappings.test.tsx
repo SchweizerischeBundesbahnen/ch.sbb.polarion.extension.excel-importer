@@ -65,6 +65,16 @@ afterEach(() => {
   window.top?.document.querySelectorAll('script[id$="-breadcrumb-bridge"]').forEach((s) => s.remove());
 });
 
+/** Answer the confirmation dialog the page renders in place of the former window.confirm. */
+async function answerDialog(label: 'OK' | 'Cancel') {
+  await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
+  const button = Array.from(document.querySelectorAll<HTMLButtonElement>('.rsp-modal-footer .sbb-btn')).find(
+    (b) => (b.textContent ?? '').trim() === label,
+  );
+  if (!button) throw new Error(`dialog button "${label}" not found`);
+  button.click();
+}
+
 describe('Mappings page', () => {
   it('loads the selected configuration, its content, and the work-item fields', async () => {
     await mountLoaded();
@@ -146,8 +156,8 @@ describe('Mappings page', () => {
       { method: 'GET', match: /\/projects\/[^/]+\/workitem_types\/[^/]+\/fields/, json: FIELDS },
       { method: 'GET', match: /\/projects\/[^/]+\/workitem_types(\?|$)/, json: WORKITEM_TYPES },
     ]);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     sbbButton('Cancel').click();
+    await answerDialog('OK');
     await vi.waitFor(() => expect(document.body.textContent).toContain('Error occurred loading the data'));
   });
 
@@ -182,10 +192,10 @@ describe('Mappings page', () => {
 
   it('reloads the persisted content when Cancel is confirmed', async () => {
     await mountLoaded();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const contentCalls = () => fetchMock.mock.calls.filter((c) => /\/content/.test(String(c[0]))).length;
     const before = contentCalls();
     sbbButton('Cancel').click();
+    await answerDialog('OK');
     await vi.waitFor(() => expect(contentCalls()).toBeGreaterThan(before));
   });
 
