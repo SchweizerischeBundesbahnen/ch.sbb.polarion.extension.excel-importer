@@ -81,6 +81,27 @@
         ]
       }
     },
+    "/api/disclaimer": {
+      "get": {
+        "operationId": "getDisclaimer",
+        "responses": {
+          "default": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "HTML help article"
+          }
+        },
+        "summary": "Returns the build-generated DISCLAIMER help article shown on the Usage Disclaimer page",
+        "tags": [
+          "Extension Information"
+        ]
+      }
+    },
     "/api/excel-tool/export-html-table": {
       "post": {
         "operationId": "exportHtmlTable",
@@ -1034,6 +1055,12 @@
             "type": "boolean"
           },
           "required": {
+            "type": "boolean"
+          },
+          "richText": {
+            "type": "boolean"
+          },
+          "textType": {
             "type": "boolean"
           },
           "type": {
