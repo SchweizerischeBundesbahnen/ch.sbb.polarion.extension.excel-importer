@@ -43,9 +43,10 @@ npm run lint            # ESLint: report problems
 npm run lint:fix        # ESLint: auto-fix what it can
 ```
 
-The repo's pre-commit hooks run `format:check` + `lint` (and the Dockerized Vitest suite) on any
-change under `ui/`. They are **check-only** and never modify your files - fix locally with
-`npm run format` / `npm run lint:fix` before committing.
+The repo's pre-commit hooks run `format:check` + `lint` on any change under `ui/`. They are
+**check-only** and never modify your files - fix locally with `npm run format` / `npm run lint:fix`
+before committing. The Vitest suite is not a hook: it needs Docker and takes too long for a commit,
+so run it yourself (see [Testing](#testing)) before you push.
 
 ## Testing
 
@@ -69,7 +70,7 @@ the visual snapshots match their references. **Docker must be running.**
 ```bash
 cd ui
 npm run test:docker            # full suite (behavior + visual) in the pinned image
-npm run test:coverage:docker   # full suite + the 80% coverage gate (what pre-commit runs)
+npm run test:coverage:docker   # full suite + the 80% coverage gate (what the Maven build runs)
 npm run test:update:docker     # regenerate the committed visual reference PNGs (do this in Docker only)
 ```
 
@@ -106,7 +107,8 @@ as a blank page in Polarion and no test catches it.
 
 **One command, locally and in CI: `npm run test:coverage:docker`.** It runs the full suite (behavior +
 visual regression) plus the 80% istanbul coverage gate inside the pinned Playwright Docker image, which
-is what the Maven `test` phase and the pre-commit hook execute. Docker must be running.
+is what the Maven `test` phase executes. Docker must be running. No pre-commit hook runs the tests, so
+run this yourself before you push.
 
 ```bash
 npm run test:coverage:docker   # the canonical run: full suite + coverage gate, in the pinned image
