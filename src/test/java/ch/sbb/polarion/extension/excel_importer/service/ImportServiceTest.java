@@ -336,10 +336,22 @@ class ImportServiceTest {
         assertEquals("aaa\nbbb", service.prepareValue("aaa\nbbb", stringMetadata));
 
         // in case of rich text some characters must be converted to their HTML equivalents
-        FieldMetadata richMetadata = FieldMetadata.builder().id("fieldId").type(FieldType.RICH.getType()).build();
-        assertEquals("aaa<br/>bbb", service.prepareValue("aaa\nbbb", richMetadata));
-        assertEquals("aaa&nbsp;&nbsp;&nbsp;&nbsp;bbb", service.prepareValue("aaa\tbbb", richMetadata));
-        assertEquals("&lt;tag&gt;&amp;", service.prepareValue("<tag>&", richMetadata));
+        FieldMetadata richMetadata = FieldMetadata.builder().id("fieldId").type(FieldType.RICH.getType()).custom(true).build();
+        assertEquals(Text.html("aaa<br/>bbb"), service.prepareValue("aaa\nbbb", richMetadata));
+        assertEquals(Text.html("aaa&nbsp;&nbsp;&nbsp;&nbsp;bbb"), service.prepareValue("aaa\tbbb", richMetadata));
+        assertEquals(Text.html("&lt;tag&gt;&amp;"), service.prepareValue("<tag>&", richMetadata));
+
+        // a built-in Text field like 'description' declares no 'html' subtype, but Polarion still treats it as rich text
+        FieldMetadata descriptionMetadata = FieldMetadata.builder().id("description").type(FieldType.TEXT.getType()).custom(false).build();
+        assertEquals(Text.html("aaa<br/>bbb"), service.prepareValue("aaa\nbbb", descriptionMetadata));
+
+        // a custom Text field without the 'html' subtype stays plain text
+        FieldMetadata customTextMetadata = FieldMetadata.builder().id("fieldId").type(FieldType.TEXT.getType()).custom(true).build();
+        assertEquals(Text.plain("aaa\nbbb"), service.prepareValue("aaa\nbbb", customTextMetadata));
+
+        // non-string values are left to the converters of the generic extension
+        assertEquals(42d, service.prepareValue(42d, descriptionMetadata));
+        assertNull(service.prepareValue(null, descriptionMetadata));
     }
 
     @Test
@@ -409,6 +421,44 @@ class ImportServiceTest {
         verify(polarionService).setFieldValue(eq(workItem), eq("priority"), eq("high"), any());
         // column C has no mapping and no prefix → skipped, so exactly 2 calls total
         verify(polarionService, times(2)).setFieldValue(any(IWorkItem.class), anyString(), any(), any());
+    }
+
+    @Test
+    void testFillWorkItemFieldsWritesDescriptionAsHtml() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        // 'description' is a built-in Text field: its type carries no 'html' subtype, yet Polarion stores it as HTML
+        FieldMetadata descriptionField = FieldMetadata.builder().id("description").type(FieldType.TEXT.getType()).custom(false).build();
+        when(polarionService.getWorkItemsFields("projectId", "requirement")).thenReturn(Set.of(descriptionField));
+
+        IWorkItem workItem = mock(IWorkItem.class);
+        when(workItem.getProjectId()).thenReturn("projectId");
+        ITypeOpt typeOpt = mock(ITypeOpt.class);
+        when(typeOpt.getId()).thenReturn("requirement");
+        when(workItem.getType()).thenReturn(typeOpt);
+
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .columnsMapping(Map.of("A", "description"))
+                .stepsMapping(Map.of())
+                .overwriteWithEmpty(true)
+                .build();
+
+        Map<String, Object> mappingRecord = new HashMap<>();
+        mappingRecord.put("A", "line1\nline2");
+
+        service.fillWorkItemFields(workItem, mappingRecord, contextFor(model), "linkField");
+
+        verify(polarionService).setFieldValue(eq(workItem), eq("description"), eq(Text.html("line1<br/>line2")), any());
+
+        // the same value again must not be written a second time, it would only increment the work item revision
+        clearInvocations(polarionService);
+        when(polarionService.getWorkItemsFields("projectId", "requirement")).thenReturn(Set.of(descriptionField));
+        when(polarionService.getFieldValue(workItem, "description")).thenReturn(Text.html("line1<br/>line2"));
+
+        service.fillWorkItemFields(workItem, mappingRecord, contextFor(model), "linkField");
+
+        verify(polarionService, never()).setFieldValue(any(IWorkItem.class), anyString(), any(), any());
     }
 
     @Test
@@ -1013,6 +1063,12 @@ class ImportServiceTest {
         assertTrue(service.existingValueDiffers(workItem, "fieldId", "42", floatMetadata, false));
         assertTrue(service.existingValueDiffers(workItem, "fieldId", null, floatMetadata, false));
 
+        // text fields are compared as Text instances, otherwise an unchanged value would be rewritten on every import
+        FieldMetadata descriptionMetadata = FieldMetadata.builder().id("description").type(FieldType.TEXT.getType()).build();
+        when(polarionService.getFieldValue(workItem, "description")).thenReturn(Text.html("aaa<br/>bbb"));
+        assertFalse(service.existingValueDiffers(workItem, "description", Text.html("aaa<br/>bbb"), descriptionMetadata, false));
+        assertTrue(service.existingValueDiffers(workItem, "description", Text.html("aaa<br/>ccc"), descriptionMetadata, false));
+        assertTrue(service.existingValueDiffers(workItem, "description", Text.plain("aaa<br/>bbb"), descriptionMetadata, false));
     }
 
     @Test
