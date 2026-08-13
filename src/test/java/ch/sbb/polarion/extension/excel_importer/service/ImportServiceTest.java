@@ -502,7 +502,7 @@ class ImportServiceTest {
     }
 
     @Test
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("rawtypes")
     void testFillWorkItemFieldsWithHyperlinks() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ImportService service = new ImportService(polarionService);
