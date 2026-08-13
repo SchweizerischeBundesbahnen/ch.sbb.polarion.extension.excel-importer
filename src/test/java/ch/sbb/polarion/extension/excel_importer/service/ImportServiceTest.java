@@ -502,6 +502,47 @@ class ImportServiceTest {
     }
 
     @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    void testFillWorkItemFieldsWithHyperlinks() {
+        PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
+        ImportService service = new ImportService(polarionService);
+
+        FieldMetadata hyperlinksField = FieldMetadata.builder().id("hyperlinks").type(FieldType.LIST.getType()).build();
+        when(polarionService.getWorkItemsFields("projectId", "requirement")).thenReturn(Set.of(hyperlinksField));
+
+        IWorkItem workItem = mock(IWorkItem.class, RETURNS_DEEP_STUBS);
+        when(workItem.getProjectId()).thenReturn("projectId");
+        ITypeOpt typeOpt = mock(ITypeOpt.class);
+        when(typeOpt.getId()).thenReturn("requirement");
+        when(workItem.getType()).thenReturn(typeOpt);
+
+        // an outdated hyperlink is present, it must be dropped before the imported one is added
+        IHyperlinkStruct outdatedHyperlink = mock(IHyperlinkStruct.class);
+        when(outdatedHyperlink.getUri()).thenReturn("https://outdated.com");
+        java.util.Collection existingHyperlinks = new ArrayList<>(List.of(outdatedHyperlink));
+        when(workItem.getHyperlinks()).thenReturn(existingHyperlinks);
+
+        IHyperlinkRoleOpt roleEnum = mock(IHyperlinkRoleOpt.class);
+        when(workItem.getProject().getHyperlinkRoleEnum().wrapOption("ref_ext")).thenReturn(roleEnum);
+
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .columnsMapping(Map.of("A", "hyperlinks"))
+                .stepsMapping(Map.of())
+                .overwriteWithEmpty(true)
+                .build();
+
+        Map<String, Object> mappingRecord = new HashMap<>();
+        mappingRecord.put("A", "My Link;ref_ext;https://example.com");
+
+        service.fillWorkItemFields(workItem, mappingRecord, contextFor(model), "linkField");
+
+        // hyperlinks go through addHyperlinks, not setFieldValue
+        verify(polarionService, never()).setFieldValue(any(IWorkItem.class), anyString(), any(), any());
+        verify(workItem).addHyperlink("https://example.com", roleEnum, "My Link");
+        assertTrue(existingHyperlinks.isEmpty());
+    }
+
+    @Test
     void testFillWorkItemFieldsNullTypeAndTestStepsPrefix() {
         PolarionServiceExt polarionService = mock(PolarionServiceExt.class);
         ImportService service = new ImportService(polarionService);
