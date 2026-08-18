@@ -1,4 +1,4 @@
-import { BreadcrumbInjector, Toaster } from '@grigoriev/react-sbb-polarion';
+import { BreadcrumbInjector, Toaster } from '@sbb-polarion/react-sbb-polarion';
 import { findFeature } from './features';
 import Landing from './pages/Landing';
 

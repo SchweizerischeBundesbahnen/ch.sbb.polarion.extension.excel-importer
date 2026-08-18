@@ -8,6 +8,6 @@
 // github-markdown-light.css) are NOT bundled and are not loaded here; they are baseline chrome / help
 // article styling and do not materially affect the Mappings page (its config-pane + toolbar styling
 // now lives in react-sbb-polarion). Also registers jest-dom matchers.
-import '@grigoriev/react-sbb-polarion/style.css';
+import '@sbb-polarion/react-sbb-polarion/style.css';
 import '@testing-library/jest-dom/vitest';
 import '../src/App.css';

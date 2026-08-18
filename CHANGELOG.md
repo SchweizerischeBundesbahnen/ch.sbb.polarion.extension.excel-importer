@@ -10,7 +10,7 @@
 
 ### Bug Fixes
 
-* **deps:** update dependency @grigoriev/react-sbb-polarion to ^0.2.0 ([#275](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/275)) ([12aca2b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/12aca2b47ea07e4747ebd380abd7b2df9eea96d3))
+* **deps:** update dependency @sbb-polarion/react-sbb-polarion to ^0.2.0 ([#275](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/275)) ([12aca2b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/12aca2b47ea07e4747ebd380abd7b2df9eea96d3))
 * **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.10.0 ([#265](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/265)) ([0c3bf8f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/0c3bf8ff0ebe6ad5d747846d89ab11cfe92db8b1))
 * **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.10.1 ([#272](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/272)) ([94d79e9](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/94d79e94fc44c0853c4fb33dc4bcde961fe75b47))
 * **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.11.0 ([#287](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/287)) ([0643626](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/0643626227fdfac4f2cf5959630b5ed22813dc1a))
