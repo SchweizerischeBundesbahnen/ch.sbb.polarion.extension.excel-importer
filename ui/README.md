@@ -1,6 +1,6 @@
 # Excel Importer UI
 
-A React + Vite single-page app on [react-sbb-polarion](https://github.com/grigoriev/react-sbb-polarion)
+A React + Vite single-page app on [react-sbb-polarion](https://github.com/SchweizerischeBundesbahnen/react-sbb-polarion)
 (RSP). It replaces the legacy JSP admin pages (`about`, `mappings`, `user-guide`, `import-file`), which
 have been removed together with the whole `excel-importer-admin/` webapp - the admin-menu icons and the
 build-generated help HTML are served from this app's own context now.

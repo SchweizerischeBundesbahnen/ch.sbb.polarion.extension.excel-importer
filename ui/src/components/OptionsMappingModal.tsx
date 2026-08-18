@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Modal } from '@grigoriev/react-sbb-polarion';
+import { Modal } from '@sbb-polarion/react-sbb-polarion';
 import type { FieldMetadata } from '../types';
 
 interface OptionsMappingModalProps {

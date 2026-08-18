@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PageLayout } from '@grigoriev/react-sbb-polarion';
-import { SearchableSelect } from '@grigoriev/react-sbb-polarion';
+import { PageLayout } from '@sbb-polarion/react-sbb-polarion';
+import { SearchableSelect } from '@sbb-polarion/react-sbb-polarion';
 import { getProjectIdFromScope, getScope } from '../services/scope';
 import useRemote from '../services/useRemote';
 import type { ImportResult, MappingName } from '../types';

@@ -1,4 +1,4 @@
-import { SearchableSelect, type SelectOption } from '@grigoriev/react-sbb-polarion';
+import { SearchableSelect, type SelectOption } from '@sbb-polarion/react-sbb-polarion';
 import ColumnInput from './ColumnInput';
 
 /** One row of the column-to-field mapping table. A root row maps an Excel column to a work item
