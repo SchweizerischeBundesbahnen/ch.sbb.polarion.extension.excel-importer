@@ -1,4 +1,4 @@
-import { copyFileSync } from 'node:fs';
+import { copyFileSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -10,6 +10,15 @@ import react from '@vitejs/plugin-react';
 function copyRspShellScripts() {
   return {
     name: 'copy-rsp-shell-scripts',
+    // `vite dev` serves nothing out of the build output, so without this the same request 404s and the
+    // breadcrumb just never appears - silently, since the injector treats the shell as optional chrome.
+    configureServer(server) {
+      const require = createRequire(import.meta.url);
+      server.middlewares.use('/breadcrumb-bridge.js', (_req, res) => {
+        res.setHeader('Content-Type', 'text/javascript');
+        res.end(readFileSync(require.resolve('@sbb-polarion/react-sbb-polarion/breadcrumb-bridge.js')));
+      });
+    },
     writeBundle(options) {
       const require = createRequire(import.meta.url);
       copyFileSync(
@@ -34,7 +43,7 @@ export default defineConfig(({ command, mode }) => {
 
   if (command === 'serve') {
     return {
-      plugins: [react()],
+      plugins: [react(), copyRspShellScripts()],
       resolve,
       server: {
         proxy: {
