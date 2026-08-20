@@ -4,10 +4,9 @@
 //   1. react-sbb-polarion's bundled control CSS (tokens + buttons/inputs/checkboxes/searchable-dropdown/
 //      alerts + the shared component styles), the same import main.tsx uses.
 //   2. this app's own App.css.
-// The Polarion-served stylesheets linked in index.html (presentation.css, configurations.css,
-// github-markdown-light.css) are NOT bundled and are not loaded here; they are baseline chrome / help
-// article styling and do not materially affect the Mappings page (its config-pane + toolbar styling
-// now lives in react-sbb-polarion). Also registers jest-dom matchers.
+// The Polarion-served stylesheet linked in index.html (presentation.css) is NOT bundled and is not loaded
+// here; it is baseline chrome. configurations.css and github-markdown-light.css used to be linked next to
+// it and are now part of the bundle imported below. Also registers jest-dom matchers.
 import '@sbb-polarion/react-sbb-polarion/style.css';
 import '@testing-library/jest-dom/vitest';
 import '../src/App.css';
