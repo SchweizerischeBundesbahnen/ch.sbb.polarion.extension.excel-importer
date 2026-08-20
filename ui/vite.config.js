@@ -1,5 +1,33 @@
+import { copyFileSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+
+// react-sbb-polarion's BreadcrumbInjector loads breadcrumb-bridge.js from next to the running page. It
+// runs in the Polarion shell window rather than in this app's frame, so it stays a classic script and
+// cannot be bundled - it is copied next to the built app instead. See "Shell scripts" in the library's
+// README.
+function copyRspShellScripts() {
+  return {
+    name: 'copy-rsp-shell-scripts',
+    // `vite dev` serves nothing out of the build output, so without this the same request 404s and the
+    // breadcrumb just never appears - silently, since the injector treats the shell as optional chrome.
+    configureServer(server) {
+      const require = createRequire(import.meta.url);
+      server.middlewares.use('/breadcrumb-bridge.js', (_req, res) => {
+        res.setHeader('Content-Type', 'text/javascript');
+        res.end(readFileSync(require.resolve('@sbb-polarion/react-sbb-polarion/breadcrumb-bridge.js')));
+      });
+    },
+    writeBundle(options) {
+      const require = createRequire(import.meta.url);
+      copyFileSync(
+        require.resolve('@sbb-polarion/react-sbb-polarion/breadcrumb-bridge.js'),
+        `${options.dir}/breadcrumb-bridge.js`,
+      );
+    },
+  };
+}
 
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -15,17 +43,10 @@ export default defineConfig(({ command, mode }) => {
 
   if (command === 'serve') {
     return {
-      plugins: [react()],
+      plugins: [react(), copyRspShellScripts()],
       resolve,
       server: {
         proxy: {
-          // Generic UI toolkit (SearchableDropdown JS + its CSS) served by GenericUiServlet. Served
-          // unauthenticated in Polarion (see the excel-importer-app web.xml), so the dev proxy can
-          // fetch it without a session. Lets the shared component/styles render exactly as in prod.
-          '/polarion/excel-importer-app/ui/generic': {
-            target: polarionUrl,
-            changeOrigin: true,
-          },
           '/polarion/excel-importer/rest': {
             target: polarionUrl,
             changeOrigin: true,
@@ -48,7 +69,7 @@ export default defineConfig(({ command, mode }) => {
   }
 
   return {
-    plugins: [react()],
+    plugins: [react(), copyRspShellScripts()],
     resolve,
     // Never let a developer's personal access token reach a shipped bundle. VITE_BEARER_TOKEN is a
     // `vite dev` convenience (it switches useRemote to the token-authenticated /api endpoints); Vite
