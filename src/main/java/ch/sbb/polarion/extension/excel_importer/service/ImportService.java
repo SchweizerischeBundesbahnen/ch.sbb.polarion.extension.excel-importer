@@ -219,17 +219,21 @@ public class ImportService {
         // The linkColumn field's value can't change, therefore it doesn't need to be overwritten.
         // However, it must be saved to the newly created work item otherwise sequential imports will produce several objects.
         String fieldId = fieldMetadata.getId();
+        // The value is prepared upfront because the value which gets written must also be the one compared with the
+        // existing value. Otherwise text fields always look different - a String never equals the stored Text - and
+        // every import rewrites them, incrementing the work item revision.
+        Object preparedValue = prepareValue(value, fieldMetadata);
         if (!IUniqueObject.KEY_ID.equals(fieldId) && (!linkColumnId.equals(fieldId) || !workItem.isPersisted()) &&
                 (context.settings.isOverwriteWithEmpty() || !isEmpty(value)) &&
                 ensureValidValue(value, fieldMetadata) &&
-                existingValueDiffers(workItem, fieldId, value, fieldMetadata, context.settings.isUnlinkExisting())) {
+                existingValueDiffers(workItem, fieldId, preparedValue, fieldMetadata, context.settings.isUnlinkExisting())) {
             if (IWorkItem.KEY_LINKED_WORK_ITEMS.equals(fieldId)) {
                 setLinkedWorkItems(workItem, value, context);
             } else if (IWorkItem.KEY_HYPERLINKS.equals(fieldId)) {
                 workItem.getHyperlinks().clear();
-                addHyperlinks(workItem, prepareValue(value, fieldMetadata));
+                addHyperlinks(workItem, preparedValue);
             } else {
-                polarionServiceExt.setFieldValue(workItem, fieldId, prepareValue(value, fieldMetadata), context.settings.getEnumsMapping());
+                polarionServiceExt.setFieldValue(workItem, fieldId, preparedValue, context.settings.getEnumsMapping());
             }
         } else if (IUniqueObject.KEY_ID.equals(fieldId) && !linkColumnId.equals(fieldId)) {
             // If the work item id is imported, it must be the Link Column. Its value also can't be set by imported data unlike other possible Link Column fields.
@@ -313,8 +317,11 @@ public class ImportService {
 
     @VisibleForTesting
     Object prepareValue(Object value, @NotNull FieldMetadata fieldMetadata) {
-        if (FieldType.RICH.getType().equals(fieldMetadata.getType()) && value instanceof String richTextString) {
-            return HTMLHelper.convertPlainToHTML(richTextString);
+        if (value instanceof String stringValue && fieldMetadata.isTextType()) {
+            // Text fields are set as Text instances rather than as strings: this is what Polarion stores, it fixes the
+            // text type of the stored value, and it lets existingValueDiffers() compare like with like.
+            // Imported cells always hold plain text, hence rich text fields require conversion of their content to HTML.
+            return fieldMetadata.isRichText() ? Text.html(HTMLHelper.convertPlainToHTML(stringValue)) : Text.plain(stringValue);
         }
         return value;
     }

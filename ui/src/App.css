@@ -303,7 +303,7 @@ code {
   line-height: 1.5;
 }
 
-/* --- Options mapping modal content (the modal shell itself lives in @grigoriev/react-sbb-polarion) --- */
+/* --- Options mapping modal content (the modal shell itself lives in @sbb-polarion/react-sbb-polarion) --- */
 .option-mapping-hint-wrapper {
   display: flex;
   justify-content: center;

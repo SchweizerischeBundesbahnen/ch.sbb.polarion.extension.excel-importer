@@ -7,7 +7,7 @@ import {
   RevisionsTable,
   SearchableSelect,
   useConfirm,
-} from '@grigoriev/react-sbb-polarion';
+} from '@sbb-polarion/react-sbb-polarion';
 import { toast } from 'sonner';
 import MappingRow from '../components/MappingRow';
 import type { MappingRowData } from '../components/MappingRow';

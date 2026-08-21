@@ -22,7 +22,7 @@ export interface SettingName {
 
 // The Revision type is owned by react-sbb-polarion (used by its shared RevisionsTable); re-exported
 // here so this app's local imports (settings.ts, Mappings.tsx) keep a single `../types` source.
-export type { Revision } from '@grigoriev/react-sbb-polarion';
+export type { Revision } from '@sbb-polarion/react-sbb-polarion';
 
 /** One selectable option of an enum / test-steps field (generic fields.model.Option). */
 export interface FieldOption {
