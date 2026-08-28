@@ -3,6 +3,7 @@ import { cleanup, render } from 'vitest-browser-react';
 import { page } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock } from './mockFetch';
+import { settleBeforeCapture } from './visualHelpers';
 
 // Docker-only full-page snapshot of the Import File page (REST mocked). See Mappings.visual.test.tsx
 // for the CSS-fidelity note (App.css + bundled RSP style.css; Polarion-served CSS is not included).
@@ -31,6 +32,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Import File page visual', () => {
     await vi.waitFor(() => expect(document.querySelector('.import-panel')).not.toBeNull());
     const app = document.querySelector('.app') as HTMLElement;
     await page.viewport(1280, Math.ceil(app.scrollHeight) + 40);
+    await settleBeforeCapture();
     await expect(page.elementLocator(app)).toMatchScreenshot('import-file-loaded');
   });
 });

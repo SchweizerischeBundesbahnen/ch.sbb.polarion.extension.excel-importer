@@ -6,6 +6,7 @@ import OptionsMappingModal from '../src/components/OptionsMappingModal';
 import type { FieldMetadata } from '../src/types';
 import { CONTENT, FIELDS, NAMES, SCOPE, WORKITEM_TYPES, mappingsRoutes } from './fixtures/mappings';
 import { installFetchMock } from './mockFetch';
+import { settleBeforeCapture } from './visualHelpers';
 
 // Full-page visual snapshot of the Mappings page, rendered through the real App with the REST layer
 // mocked at the fetch boundary. Docker-only, like the react-sbb-polarion visual tests (any
@@ -54,6 +55,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Mappings page visual', () => {
     // capture it in one shot.
     const app = document.querySelector('.app') as HTMLElement;
     await page.viewport(1280, Math.ceil(app.scrollHeight) + 40);
+    await settleBeforeCapture();
     await expect(page.elementLocator(app)).toMatchScreenshot('mappings-loaded');
   });
 
@@ -79,6 +81,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Mappings page visual', () => {
     );
     await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
     await page.viewport(1280, 720);
+    await settleBeforeCapture();
     await expect(page.elementLocator(document.body)).toMatchScreenshot('mappings-options-modal');
   });
 
@@ -98,6 +101,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Mappings page visual', () => {
     setUrl(`?feature=mappings&embedded=true&scope=${encodeURIComponent(SCOPE)}`);
     render(<App />);
     await vi.waitFor(() => expect(triggers()).toContain(fieldId));
+    await settleBeforeCapture();
     await expect(page.elementLocator(document.querySelector('#mapping-table') as HTMLElement)).toMatchScreenshot(name);
   }
 
