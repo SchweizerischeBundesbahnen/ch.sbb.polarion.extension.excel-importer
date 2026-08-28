@@ -3,7 +3,7 @@ import { cleanup, render } from 'vitest-browser-react';
 import { page } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock } from './mockFetch';
-import { settleBeforeCapture } from './visualHelpers';
+import { settleBeforeCapture, settleLayout } from './visualHelpers';
 
 // Docker-only snapshot of the User Guide page (shared RSP UserGuide fed the /user-guide HTML, mocked).
 
@@ -34,6 +34,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('User Guide page visual', () => {
     render(<App />);
     await vi.waitFor(() => expect(document.querySelector('article.user-guide-page')).not.toBeNull());
     const app = document.querySelector('.app') as HTMLElement;
+    await settleLayout();
     await page.viewport(1280, Math.ceil(app.scrollHeight) + 40);
     await settleBeforeCapture();
     await expect(page.elementLocator(app)).toMatchScreenshot('user-guide-loaded');
