@@ -95,7 +95,9 @@ public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.servic
             return List.of();
         }
         String query = LuceneUtils.and(LuceneUtils.projectTerm(projectId), identifierTerms);
-        return trackerService.queryWorkItems(query, "id").stream().toList();
+        return trackerService.queryWorkItems(query, "id").stream()
+                .filter(IWorkItem.class::isInstance)
+                .toList();
     }
 
     public IWorkItem createWorkItem(ITrackerProject project, ITypeOpt workItemCreationType) {
