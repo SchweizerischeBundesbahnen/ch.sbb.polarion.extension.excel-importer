@@ -140,8 +140,8 @@ class PolarionServiceExtTest {
 
     @Test
     void testFindWorkItemsByIdWithoutUsableIdentifiers() {
-        // The link column may hold no value at all, which used to produce "project.id:X AND ()" and a
-        // Lucene parse error for the whole chunk of rows.
+        // The link column may hold no value when 'id' is the link column. That used to produce
+        // "project.id:X AND (fieldId:null)", a well-formed query matching nothing. Now no query runs.
         List<IWorkItem> workItems = new PolarionServiceExt().findWorkItemsById("testProjectId", "fieldId", Collections.singletonList(null));
         assertTrue(workItems.isEmpty());
         verify(trackerService, never()).queryWorkItems(anyString(), anyString());
