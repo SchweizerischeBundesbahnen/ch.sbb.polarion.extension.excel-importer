@@ -25,6 +25,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -120,10 +121,30 @@ class PolarionServiceExtTest {
     @Test
     void testFindWorkItemsById() {
         IWorkItem testWorkItem = mock(IWorkItem.class);
-        when(trackerService.queryWorkItems(eq("project.id:testProjectId AND (fieldId:T-123 OR fieldId:T-456)"), anyString())).thenReturn(new PObjectListStub<>(List.of(testWorkItem)));
+        when(trackerService.queryWorkItems(eq("(project.id:testProjectId) AND (fieldId:T\\-123 OR fieldId:T\\-456)"), anyString())).thenReturn(new PObjectListStub<>(List.of(testWorkItem)));
         List<IWorkItem> workItems = new PolarionServiceExt().findWorkItemsById("testProjectId", "fieldId", List.of("T-123", "T-456"));
         assertEquals(1, workItems.size());
         assertSame(testWorkItem, workItems.get(0));
+    }
+
+    @Test
+    void testFindWorkItemsByIdEscapesCellValues() {
+        IWorkItem testWorkItem = mock(IWorkItem.class);
+        // That the cell values are escaped at all. The escaping rules themselves are covered by
+        // LuceneUtilsTest in the generic extension.
+        String expectedQuery = "(project.id:testProjectId) AND (fieldId:\"ABC 123\" OR fieldId:A\\(B\\) OR fieldId:AB\\*)";
+        when(trackerService.queryWorkItems(eq(expectedQuery), anyString())).thenReturn(new PObjectListStub<>(List.of(testWorkItem)));
+        List<IWorkItem> workItems = new PolarionServiceExt().findWorkItemsById("testProjectId", "fieldId", List.of("ABC 123", "A(B)", "AB*"));
+        assertEquals(1, workItems.size());
+    }
+
+    @Test
+    void testFindWorkItemsByIdWithoutUsableIdentifiers() {
+        // The link column may hold no value at all, which used to produce "project.id:X AND ()" and a
+        // Lucene parse error for the whole chunk of rows.
+        List<IWorkItem> workItems = new PolarionServiceExt().findWorkItemsById("testProjectId", "fieldId", Collections.singletonList(null));
+        assertTrue(workItems.isEmpty());
+        verify(trackerService, never()).queryWorkItems(anyString(), anyString());
     }
 
     @Test

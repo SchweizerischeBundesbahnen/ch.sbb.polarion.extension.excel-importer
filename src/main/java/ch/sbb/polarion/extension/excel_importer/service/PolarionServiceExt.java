@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.excel_importer.service;
 
 import ch.sbb.polarion.extension.generic.fields.model.FieldMetadata;
 import ch.sbb.polarion.extension.generic.fields.model.Option;
+import ch.sbb.polarion.extension.generic.util.LuceneUtils;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
@@ -13,7 +14,6 @@ import com.polarion.alm.tracker.model.IWithAttachments;
 import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.persistence.IEnumeration;
-import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import com.polarion.portal.internal.server.navigation.TestManagementServiceAccessor;
@@ -85,16 +85,17 @@ public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.servic
         return typeOpt;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings("unchecked") // ITrackerService.queryWorkItems is declared with a raw IPObjectList
     public List<IWorkItem> findWorkItemsById(String projectId, String identifierCustomFieldId, Collection<String> ids) {
-        String query = "project.id:" + projectId + " AND (" + ids.stream()
-                .map(i -> identifierCustomFieldId + ":" + i)
-                .collect(Collectors.joining(" OR ")) + ")";
-
-        IPObjectList workItemsList = trackerService.queryWorkItems(query, "id");
-        return workItemsList.stream()
-                .filter(IWorkItem.class::isInstance)
-                .toList();
+        // The identifiers are raw spreadsheet cell values. Unescaped they either stop matching a value
+        // carrying a space, which makes the importer create a duplicate work item, or they break the query
+        // and take the whole chunk of rows down with them.
+        String identifierTerms = LuceneUtils.anyOf(identifierCustomFieldId, ids);
+        if (identifierTerms == null) {
+            return List.of();
+        }
+        String query = LuceneUtils.and(LuceneUtils.projectTerm(projectId), identifierTerms);
+        return trackerService.queryWorkItems(query, "id").stream().toList();
     }
 
     public IWorkItem createWorkItem(ITrackerProject project, ITypeOpt workItemCreationType) {
