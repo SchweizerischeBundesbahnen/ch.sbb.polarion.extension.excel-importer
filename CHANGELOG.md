@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.2.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v6.2.1...v6.2.2) (2026-09-04)
+
+
+### Bug Fixes
+
+* **deps:** update dependency globals to v17.12.0 ([#325](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/325)) ([298441e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/298441e3b2e5695315a7f97c5c7290c0ad9926fd))
+* **deps:** update dependency typescript-eslint to v8.69.0 ([#320](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/320)) ([b24347b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/b24347baf45145b8a858c9cdbe54eaee58785981))
+
 ## [6.2.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v6.2.0...v6.2.1) (2026-08-21)
 
 
