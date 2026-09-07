@@ -17,7 +17,7 @@ export default tseslint.config(
       'test/expected',
       'test/__diff__',
       'test/__screenshots__',
-      '.vitest-attachments',
+      '.vitest',
     ],
   },
   // TypeScript + React sources.
