@@ -118,6 +118,12 @@ describe('Import File page', () => {
     expect(statusCalls).toBeGreaterThanOrEqual(2); // polled at least twice (202 then 303)
     // The (log) link downloads the log; clicking it must not throw.
     const logLink = document.querySelector<HTMLButtonElement>('.alert-success button')!;
+    // The (log) button must render as the inline link it replaced; no visual reference covers this state.
+    const style = getComputedStyle(logLink);
+    expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(style.borderTopWidth).toBe('0px');
+    expect(style.paddingLeft).toBe('0px');
+    expect(style.color).toBe(getComputedStyle(logLink.parentElement!).color);
     logLink.click();
     expect(document.querySelector('.alert-success')).not.toBeNull();
   });
