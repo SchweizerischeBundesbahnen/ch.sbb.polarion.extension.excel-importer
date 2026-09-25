@@ -435,8 +435,9 @@ export default function Mappings() {
 
         <h2 className="align-left">Workitem Type To Create</h2>
         <div id="workitem-types-container" className="wi-types-row">
-          <label>Import rows as: </label>
+          <label htmlFor="workitem-type">Import rows as: </label>
           <SearchableSelect
+            id="workitem-type"
             value={selectedWiType}
             onChange={setSelectedWiType}
             options={wiTypeOptions}
@@ -516,8 +517,9 @@ export default function Mappings() {
 
         <h2 className="align-left">Link Column</h2>
         <div id="link-column-container" className="link-column-row">
-          <label>Column name to link Excel row with Polarion workitem: </label>
+          <label htmlFor="link-column">Column name to link Excel row with Polarion workitem: </label>
           <SearchableSelect
+            id="link-column"
             value={linkColumn}
             onChange={setLinkColumn}
             options={linkColumnOptions}

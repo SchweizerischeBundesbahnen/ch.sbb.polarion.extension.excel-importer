@@ -173,8 +173,9 @@ export default function ImportFile() {
       ) : (
         <div className="import-panel">
           <div className="import-row">
-            <label>Mapping:</label>
+            <label htmlFor="import-mapping">Mapping:</label>
             <SearchableSelect
+              id="import-mapping"
               value={selectedMapping}
               onChange={setSelectedMapping}
               options={mappings.map((name) => ({ id: name, name }))}
@@ -220,15 +221,9 @@ export default function ImportFile() {
             <div className="alert alert-success">
               File successfully imported. Created: {result.createdIds.length}, updated: {result.updatedIds.length},
               unchanged: {result.unchangedIds.length}, skipped: {result.skippedIds.length}.{' '}
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  downloadText(result.log, logFileName);
-                }}
-              >
+              <button type="button" className="sbb-btn--link" onClick={() => downloadText(result.log, logFileName)}>
                 (log)
-              </a>
+              </button>
             </div>
           )}
         </div>

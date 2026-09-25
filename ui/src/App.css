@@ -190,7 +190,8 @@ code {
   padding-left: 4px;
 }
 
-.alert a {
+.alert a,
+.alert .sbb-btn--link {
   color: inherit;
   font-weight: 600;
 }

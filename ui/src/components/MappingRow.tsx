@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { SearchableSelect, type SelectOption } from '@sbb-polarion/react-sbb-polarion';
 import ColumnInput from './ColumnInput';
 
@@ -47,6 +48,8 @@ export default function MappingRow({
   onUnlinkChange,
 }: MappingRowProps) {
   const isSubRow = !!row.parentUid;
+  const columnId = useId();
+  const fieldId = useId();
 
   return (
     <tr className="mapping-row">
@@ -64,9 +67,10 @@ export default function MappingRow({
         )}
       </td>
       <td>
-        <label>Column: </label>
+        <label htmlFor={columnId}>Column: </label>
         <div className="column-input-wrapper">
           <ColumnInput
+            id={columnId}
             value={row.column}
             disabled={columnDisabled}
             onChange={(value) => onColumnChange(row.uid, value)}
@@ -74,12 +78,13 @@ export default function MappingRow({
         </div>
       </td>
       <td>
-        <label> Field Name: </label>
+        <label htmlFor={fieldId}> Field Name: </label>
         {isSubRow ? (
-          <input type="text" className="fs-14 field-name" value={row.stepName ?? ''} disabled readOnly />
+          <input id={fieldId} type="text" className="fs-14 field-name" value={row.stepName ?? ''} disabled readOnly />
         ) : (
           <>
             <SearchableSelect
+              id={fieldId}
               value={row.fieldId}
               onChange={(value) => onFieldChange(row.uid, value)}
               options={fieldOptions}
