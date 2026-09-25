@@ -1,5 +1,7 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
+import { page } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock, jsonResponse } from './mockFetch';
 
@@ -65,5 +67,22 @@ describe('Landing page', () => {
     render(<App />);
     await vi.waitFor(() => expect(document.querySelector('.landing .alert-error')).not.toBeNull());
     expect(document.querySelector('.alert-error')!.textContent).toContain('Could not load projects');
+  });
+});
+
+describe('Landing page, accessibility', () => {
+  it('has no WCAG A/AA violations', async () => {
+    installFetchMock([{ method: 'GET', match: /\/polarion\/rest\/v1\/projects/, json: PROJECTS }]);
+    window.history.replaceState({}, '', '?');
+    render(<App />);
+    await vi.waitFor(() => expect(document.querySelector('.landing-scope .sd-trigger')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('names the scope picker after its label', async () => {
+    installFetchMock([{ method: 'GET', match: /\/polarion\/rest\/v1\/projects/, json: PROJECTS }]);
+    window.history.replaceState({}, '', '?');
+    render(<App />);
+    await expect.element(page.getByRole('combobox', { name: 'Project scope:', exact: true })).toBeVisible();
   });
 });

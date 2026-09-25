@@ -1,3 +1,4 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import App from '../src/App';
@@ -35,5 +36,29 @@ describe('User Guide page (wrapper)', () => {
     render(<App />);
     await vi.waitFor(() => expect(document.querySelector('.alert-error')).not.toBeNull());
     expect(document.querySelector('.alert-error')!.textContent).toContain('HTTP 404');
+  });
+});
+
+describe('User Guide page, accessibility', () => {
+  it('has no WCAG A/AA violations', async () => {
+    installFetchMock([
+      {
+        method: 'GET',
+        match: /\/user-guide$/,
+        respond: () => new Response('<h2>Guide</h2><p>Body</p>', { status: 200 }),
+      },
+    ]);
+    window.history.replaceState({}, '', '?feature=user-guide&embedded=true');
+    render(<App />);
+    await vi.waitFor(() => expect(document.querySelector('article.user-guide-page')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the error alert shown', async () => {
+    installFetchMock([{ method: 'GET', match: /\/user-guide$/, respond: () => new Response('', { status: 404 }) }]);
+    window.history.replaceState({}, '', '?feature=user-guide&embedded=true');
+    render(<App />);
+    await vi.waitFor(() => expect(document.querySelector('.alert-error')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
   });
 });

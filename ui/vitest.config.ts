@@ -38,6 +38,8 @@ export default defineConfig({
       'sonner',
       'vitest-browser-react',
       '@sbb-polarion/react-sbb-polarion',
+      '@sbb-polarion/react-sbb-polarion/testing',
+      'axe-core',
     ],
   },
   test: {

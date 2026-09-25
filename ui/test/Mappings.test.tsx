@@ -1,6 +1,7 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
-import { userEvent } from 'vitest/browser';
+import { page, userEvent } from 'vitest/browser';
 import App from '../src/App';
 import { CONTENT, FIELDS, NAMES, REVISIONS, SCOPE, WORKITEM_TYPES, mappingsRoutes } from './fixtures/mappings';
 import { type FetchMock, installFetchMock, jsonResponse } from './mockFetch';
@@ -454,5 +455,97 @@ describe('Mappings page', () => {
     await userEvent.fill(document.querySelector<HTMLInputElement>('.option-mapping-value')!, 'yes,y');
     sbbButton('Accept').click();
     await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).toBeNull());
+  });
+});
+
+describe('Mappings page, accessibility', () => {
+  /** The routes of a configuration with the given column mapping and extra work item fields. */
+  async function mountWith(columnsMapping: Record<string, string>, extraFields: object[]) {
+    await mountLoaded([
+      { method: 'GET', match: /\/settings\/mappings\/names\?/, json: NAMES },
+      { method: 'GET', match: /\/settings\/mappings\/names\/[^/]+\/content/, json: { ...CONTENT, columnsMapping } },
+      { method: 'GET', match: /\/projects\/[^/]+\/workitem_types\/[^/]+\/fields/, json: [...FIELDS, ...extraFields] },
+      { method: 'GET', match: /\/projects\/[^/]+\/workitem_types(\?|$)/, json: WORKITEM_TYPES },
+    ]);
+  }
+
+  it('has no WCAG A/AA violations', async () => {
+    await mountLoaded();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('names every control after its label', async () => {
+    await mountLoaded();
+    const combobox = (name: string) => page.getByRole('combobox', { name, exact: true });
+    await expect.element(combobox('Import rows as:')).toBeVisible();
+    await expect.element(combobox('Column name to link Excel row with Polarion workitem:')).toBeVisible();
+    // One pair per mapping row (A -> title, B -> description).
+    expect(combobox('Column:').elements()).toHaveLength(2);
+    expect(combobox('Field Name:').elements()).toHaveLength(2);
+  });
+
+  it('has no WCAG A/AA violations with the revisions table open', async () => {
+    await mountLoaded();
+    sbbButton('Revisions').click();
+    await vi.waitFor(() => expect(document.querySelectorAll('.revisions-table tbody tr').length).toBe(2));
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the configuration name editor open', async () => {
+    await mountLoaded();
+    sbbButton('Add new').click();
+    await vi.waitFor(() => expect(document.querySelector('.mappings-form.dimmed')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the cancel confirmation open', async () => {
+    await mountLoaded();
+    sbbButton('Cancel').click();
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a validation error shown', async () => {
+    await mountLoaded();
+    await userEvent.clear(sheetNameInput()!);
+    sbbButton('Save').click();
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Sheet name cannot be empty'));
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with Test Steps sub-rows', async () => {
+    const stepsField = {
+      id: 'teststeps',
+      type: { structTypeId: 'TestSteps' },
+      options: [
+        { key: 'action', name: 'Action' },
+        { key: 'expected', name: 'Expected Result' },
+      ],
+    };
+    await mountWith({ A: 'title', B: 'description', C: 'teststeps' }, [stepsField]);
+    await vi.waitFor(() => expect(document.querySelectorAll('input.field-name[readonly]').length).toBe(2));
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the Unlink existing checkbox', async () => {
+    await mountWith({ A: 'title', B: 'description', C: 'linkedWorkItems' }, [{ id: 'linkedWorkItems', type: {} }]);
+    await vi.waitFor(() => expect(document.querySelector('.unlink-existing-label')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the Options mapping dialog open', async () => {
+    const enumField = {
+      id: 'status',
+      type: {},
+      options: [
+        { key: 'open', name: 'Open' },
+        { key: 'done', name: 'Done' },
+      ],
+    };
+    await mountWith({ A: 'title', B: 'description', C: 'status' }, [enumField]);
+    await vi.waitFor(() => expect(triggers()).toContain('status'));
+    sbbButton('Options mapping').click();
+    await vi.waitFor(() => expect(document.querySelectorAll('.options-mapping-row').length).toBe(2));
+    expect(await pageViolations()).toEqual([]);
   });
 });

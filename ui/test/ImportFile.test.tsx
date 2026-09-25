@@ -1,5 +1,7 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
+import { page } from 'vitest/browser';
 import App from '../src/App';
 import { type FetchMock, installFetchMock } from './mockFetch';
 
@@ -115,7 +117,7 @@ describe('Import File page', () => {
     await vi.waitFor(() => expect(document.querySelector('.alert-success')).not.toBeNull(), { timeout: 8000 });
     expect(statusCalls).toBeGreaterThanOrEqual(2); // polled at least twice (202 then 303)
     // The (log) link downloads the log; clicking it must not throw.
-    const logLink = document.querySelector<HTMLAnchorElement>('.alert-success a')!;
+    const logLink = document.querySelector<HTMLButtonElement>('.alert-success button')!;
     logLink.click();
     expect(document.querySelector('.alert-success')).not.toBeNull();
   });
@@ -189,5 +191,68 @@ describe('Import File page', () => {
     await vi.waitFor(() => expect(sbbButton('Import')!.disabled).toBe(false));
     sbbButton('Import')!.click();
     await vi.waitFor(() => expect(document.body.textContent).toContain('Import error (bad file)'));
+  });
+});
+
+describe('Import File page, accessibility', () => {
+  const namesRoute = { method: 'GET', match: /\/settings\/mappings\/names\?/, json: NAMES };
+
+  it('has no WCAG A/AA violations', async () => {
+    mount([namesRoute]);
+    await vi.waitFor(() => expect(document.querySelector('.import-panel .sd-trigger')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('names the mapping picker after its label', async () => {
+    mount([namesRoute]);
+    await expect.element(page.getByRole('combobox', { name: 'Mapping:', exact: true })).toBeVisible();
+  });
+
+  it('has no WCAG A/AA violations with the empty-state note shown', async () => {
+    mount([{ ...namesRoute, json: [] }]);
+    await vi.waitFor(() => expect(document.querySelector('.no-mapping-note')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the load-error alert shown', async () => {
+    mount([{ ...namesRoute, respond: () => new Response('{}', { status: 500 }) }]);
+    await vi.waitFor(() => expect(document.querySelector('.alert-error')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the import summary and log link shown', async () => {
+    mount([
+      namesRoute,
+      { method: 'GET', match: /\/import\/jobs\/1\/result$/, json: RESULT },
+      { method: 'GET', match: /\/import\/jobs\/1$/, respond: () => new Response(null, { status: 303 }) },
+      {
+        method: 'POST',
+        match: /\/import\/jobs$/,
+        respond: () => new Response(null, { status: 202, headers: { Location: JOB } }),
+      },
+    ]);
+    await vi.waitFor(() => expect(document.querySelector('.import-panel')).not.toBeNull());
+    setFile();
+    await vi.waitFor(() => expect(sbbButton('Import')!.disabled).toBe(false));
+    sbbButton('Import')!.click();
+    await vi.waitFor(() => expect(document.querySelector('.alert-success')).not.toBeNull(), { timeout: 6000 });
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the import error shown', async () => {
+    mount([
+      namesRoute,
+      {
+        method: 'POST',
+        match: /\/import\/jobs$/,
+        respond: () => new Response(JSON.stringify({ errorMessage: 'bad file' }), { status: 409 }),
+      },
+    ]);
+    await vi.waitFor(() => expect(document.querySelector('.import-panel')).not.toBeNull());
+    setFile();
+    await vi.waitFor(() => expect(sbbButton('Import')!.disabled).toBe(false));
+    sbbButton('Import')!.click();
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Import error (bad file)'));
+    expect(await pageViolations()).toEqual([]);
   });
 });

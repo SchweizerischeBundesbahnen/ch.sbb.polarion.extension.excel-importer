@@ -7,6 +7,8 @@ function sanitize(value: string): string {
 }
 
 interface ColumnInputProps {
+  /** Id of the wrapped input. A `<label htmlFor>` pointing at it names the dropdown trigger. */
+  id?: string;
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
@@ -24,7 +26,7 @@ interface ColumnInputProps {
  * React's onChange (React maps a text input's onChange to the `input` event, which the dropdown does
  * not fire).
  */
-export default function ColumnInput({ value, onChange, disabled = false, placeholder = '' }: ColumnInputProps) {
+export default function ColumnInput({ id, value, onChange, disabled = false, placeholder = '' }: ColumnInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const sdRef = useRef<SearchableDropdownInstance | null>(null);
   const onChangeRef = useRef(onChange);
@@ -52,7 +54,13 @@ export default function ColumnInput({ value, onChange, disabled = false, placeho
       const letter = String.fromCharCode('A'.charCodeAt(0) + i);
       return { value: letter, label: letter };
     });
-    sdRef.current = createEditableSelect(input, { placeholder, inputFilter: sanitize, items: columns });
+    // The dropdown reads a <select>'s own labels, but not those of a wrapped <input>: pass the label in.
+    sdRef.current = createEditableSelect(input, {
+      placeholder,
+      inputFilter: sanitize,
+      items: columns,
+      label: input.labels?.[0],
+    });
 
     return () => {
       input.removeEventListener('change', emit);
@@ -84,6 +92,7 @@ export default function ColumnInput({ value, onChange, disabled = false, placeho
   return (
     <input
       ref={inputRef}
+      id={id}
       type="text"
       className="excel-column-input"
       maxLength={5}
