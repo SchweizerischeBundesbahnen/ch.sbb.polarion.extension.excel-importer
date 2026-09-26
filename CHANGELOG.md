@@ -1,5 +1,30 @@
 # Changelog
 
+## [6.2.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v6.2.1...v6.2.2) (2026-09-26)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @types/node to v24.13.4 ([#336](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/336)) ([e04616c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/e04616ca6374f6a353526be96b4e33cb0de71ee7))
+* **deps:** update dependency @types/node to v24.13.5 ([#344](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/344)) ([65dcaad](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/65dcaad340b4611d088e11f4a38c4749c6fa9b0a))
+* **deps:** update dependency @types/node to v24.13.6 ([#349](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/349)) ([c90037d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/c90037d5e8a94cd8c0cbd0f744c5ae008fc86888))
+* **deps:** update dependency @types/react-dom to v19.2.7 ([#327](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/327)) ([50c80bf](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/50c80bf34a4773eaa9544d5afb1172aa877a27fc))
+* **deps:** update dependency eslint to v10.10.0 ([#331](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/331)) ([aa3a307](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/aa3a307859f43ebbbc65dfefb3dbc852cf5650ca))
+* **deps:** update dependency eslint to v10.11.0 ([#348](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/348)) ([3916688](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/39166881d91dad911c341214800820024f5d2fe7))
+* **deps:** update dependency globals to v17.12.0 ([#325](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/325)) ([298441e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/298441e3b2e5695315a7f97c5c7290c0ad9926fd))
+* **deps:** update dependency playwright to v1.63.0 ([#332](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/332)) ([c3b2694](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/c3b26949a66c793b0239c5d59377e24403770993))
+* **deps:** update dependency prettier to v3.9.7 ([#345](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/345)) ([0d800ef](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/0d800ef0147bfdbadfe35dd756bd7b8e3ba956a3))
+* **deps:** update dependency prettier to v3.9.8 ([#346](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/346)) ([00b05f1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/00b05f15334360ae9030f297bba4c9fea2cf0256))
+* **deps:** update dependency prettier to v3.9.9 ([#356](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/356)) ([890a719](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/890a719b4a64e3f0d0c025ffe58130b589841924))
+* **deps:** update dependency typescript-eslint to v8.69.0 ([#320](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/320)) ([b24347b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/b24347baf45145b8a858c9cdbe54eaee58785981))
+* **deps:** update dependency typescript-eslint to v8.70.0 ([#333](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/333)) ([a040af9](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/a040af98c74cac988319cd51c6cba3c9179eb352))
+* **deps:** update dependency typescript-eslint to v8.70.1 ([#351](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/351)) ([53209eb](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/53209eb360c6eb8b89ffd417ba88a95f7fcf8b34))
+* **deps:** update dependency vite to v8.3.0 ([#338](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/338)) ([0b7aa80](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/0b7aa80114d267015210ebf2100260ccaa7b6f2c))
+* **deps:** update dependency vitest-browser-react to v2.3.0 ([#330](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/330)) ([3a7a4a4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/3a7a4a448de5319f6e1ea2d0f7637eb96542886a))
+* **deps:** update npm to v12.1.0 ([#355](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/355)) ([22f0dae](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/22f0dae3fd92d56a4ea093368b55f7cae0295d6c))
+* **deps:** update react monorepo to v19.3.0 ([#337](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/337)) ([adfc502](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/adfc5027f4705c9ffb1fb3845de1466993558e41))
+* **deps:** update vitest monorepo to v5.0.1 ([#343](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/343)) ([bd7b61c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/bd7b61cc2d7432f78c1e6244b9da75d21298eeb6))
+
 ## [6.2.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v6.2.0...v6.2.1) (2026-08-21)
 
 
