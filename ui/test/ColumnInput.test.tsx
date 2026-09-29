@@ -58,6 +58,31 @@ describe('ColumnInput', () => {
     expect(backing().value).toBe('ABC');
   });
 
+  it('emits a suggestion picked from the list', async () => {
+    const onValue = vi.fn();
+    render(<Host onValue={onValue} />);
+    await vi.waitFor(() => expect(document.querySelector('.searchable-dropdown')).not.toBeNull());
+    const mousedown = (el: Element) =>
+      el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, composed: true }));
+    await userEvent.click(trigger());
+    await vi.waitFor(() => expect(document.querySelector('.sd-portal .option')).not.toBeNull());
+    const option = Array.from(document.querySelectorAll<HTMLElement>('.sd-portal .option')).find(
+      (o) => (o.textContent ?? '').trim() === 'C',
+    )!;
+    mousedown(option); // the shared dropdown selects on mousedown
+    await vi.waitFor(() => expect(onValue).toHaveBeenCalledWith('C'));
+    expect(trigger().value).toBe('C');
+  });
+
+  it('emits the typed value when the trigger loses focus', async () => {
+    const onValue = vi.fn();
+    render(<Host onValue={onValue} />);
+    await vi.waitFor(() => expect(document.querySelector('.searchable-dropdown')).not.toBeNull());
+    await userEvent.fill(trigger(), 'de');
+    trigger().blur();
+    await vi.waitFor(() => expect(onValue).toHaveBeenCalledWith('DE'));
+  });
+
   it('reflects a programmatic value change onto the dropdown trigger', async () => {
     render(<Host initial="" />);
     await vi.waitFor(() => expect(document.querySelector('.searchable-dropdown')).not.toBeNull());
