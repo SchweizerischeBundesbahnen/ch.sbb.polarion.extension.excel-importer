@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
+import { userEvent } from 'vitest/browser';
 import ColumnInput from '../src/components/ColumnInput';
 
 // ColumnInput builds an editable (free-text) combobox from react-sbb-polarion's bundled
@@ -51,11 +52,35 @@ describe('ColumnInput', () => {
     const onValue = vi.fn();
     render(<Host onValue={onValue} />);
     await vi.waitFor(() => expect(document.querySelector('.searchable-dropdown')).not.toBeNull());
-    // Commit a value on the backing input (the dropdown mirrors and dispatches `change` here).
-    backing().value = 'ab3c';
-    backing().dispatchEvent(new Event('change', { bubbles: true }));
+    await userEvent.fill(trigger(), 'ab3c');
+    await userEvent.keyboard('{Enter}');
     await vi.waitFor(() => expect(onValue).toHaveBeenCalledWith('ABC'));
     expect(backing().value).toBe('ABC');
+  });
+
+  it('emits a suggestion picked from the list', async () => {
+    const onValue = vi.fn();
+    render(<Host onValue={onValue} />);
+    await vi.waitFor(() => expect(document.querySelector('.searchable-dropdown')).not.toBeNull());
+    const mousedown = (el: Element) =>
+      el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, composed: true }));
+    await userEvent.click(trigger());
+    await vi.waitFor(() => expect(document.querySelector('.sd-portal .option')).not.toBeNull());
+    const option = Array.from(document.querySelectorAll<HTMLElement>('.sd-portal .option')).find(
+      (o) => (o.textContent ?? '').trim() === 'C',
+    )!;
+    mousedown(option); // the shared dropdown selects on mousedown
+    await vi.waitFor(() => expect(onValue).toHaveBeenCalledWith('C'));
+    expect(trigger().value).toBe('C');
+  });
+
+  it('emits the typed value when the trigger loses focus', async () => {
+    const onValue = vi.fn();
+    render(<Host onValue={onValue} />);
+    await vi.waitFor(() => expect(document.querySelector('.searchable-dropdown')).not.toBeNull());
+    await userEvent.fill(trigger(), 'de');
+    trigger().blur();
+    await vi.waitFor(() => expect(onValue).toHaveBeenCalledWith('DE'));
   });
 
   it('reflects a programmatic value change onto the dropdown trigger', async () => {
@@ -71,7 +96,7 @@ describe('ColumnInput', () => {
     expect(backing().disabled).toBe(true);
   });
 
-  it('uses default props and emits an already-sanitized value unchanged', async () => {
+  it('uses default props and emits an already-sanitized value as typed', async () => {
     const onValue = vi.fn();
     // Rendered directly (no disabled / placeholder) to exercise the default parameters.
     render(
@@ -80,8 +105,8 @@ describe('ColumnInput', () => {
       </div>,
     );
     await vi.waitFor(() => expect(document.querySelector('.searchable-dropdown')).not.toBeNull());
-    backing().value = 'AB'; // already sanitized -> emit takes the "unchanged" branch
-    backing().dispatchEvent(new Event('change', { bubbles: true }));
+    await userEvent.fill(trigger(), 'AB');
+    await userEvent.keyboard('{Enter}');
     await vi.waitFor(() => expect(onValue).toHaveBeenCalledWith('AB'));
     expect(backing().disabled).toBe(false);
   });

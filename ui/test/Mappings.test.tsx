@@ -274,20 +274,20 @@ describe('Mappings page', () => {
     // Editing a sub-row column feeds setStepColumn (the step-column map).
     const cols = columnInputs();
     const subRowColumn = cols[cols.length - 1];
-    subRowColumn.value = 'X';
-    subRowColumn.dispatchEvent(new Event('change', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 0));
+    await commitColumn(subRowColumn, 'X');
     expect(subRowColumn.value).toBe('X');
   });
 
-  // The backing input of each ColumnInput (one per row); the editable dropdown mirrors + dispatches
-  // `change` on it, so setting its value and firing `change` drives the column value through onChange.
+  // The backing input of each ColumnInput (one per row) is hidden; type into its dropdown trigger and
+  // press Enter to commit, which drives the column value through onChange.
   const columnInputs = () => Array.from(document.querySelectorAll<HTMLInputElement>('.excel-column-input'));
+  async function commitColumn(input: HTMLInputElement, value: string) {
+    const trigger = (input.nextElementSibling as HTMLElement).querySelector<HTMLInputElement>('.sd-trigger')!;
+    await userEvent.fill(trigger, value);
+    await userEvent.keyboard('{Enter}');
+  }
   async function setColumn(index: number, value: string) {
-    const input = columnInputs()[index];
-    input.value = value;
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 0)); // let the resulting React state update flush
+    await commitColumn(columnInputs()[index], value);
   }
 
   async function mountRaw(routes: Parameters<typeof installFetchMock>[0]) {

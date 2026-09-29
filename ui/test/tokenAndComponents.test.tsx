@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
+import { userEvent } from 'vitest/browser';
 import ColumnInput from '../src/components/ColumnInput';
 import MappingRow from '../src/components/MappingRow';
 import type { MappingRowData } from '../src/components/MappingRow';
@@ -149,11 +150,10 @@ describe('ColumnInput', () => {
       expect(el).not.toBeNull();
       return el!;
     }))!;
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'a1b!');
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-    // Digits and punctuation are stripped and the rest upper-cased, both in the field and in the
-    // reported value.
-    expect(input.value).toBe('AB');
-    expect(onChange).toHaveBeenLastCalledWith('AB');
+    const trigger = (input.nextElementSibling as HTMLElement).querySelector<HTMLInputElement>('.sd-trigger')!;
+    await userEvent.fill(trigger, 'a1b!');
+    await userEvent.keyboard('{Enter}');
+    // Digits and punctuation are stripped and the rest upper-cased in the reported value.
+    await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith('AB'));
   });
 });

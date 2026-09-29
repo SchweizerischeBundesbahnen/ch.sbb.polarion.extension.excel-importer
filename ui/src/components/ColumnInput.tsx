@@ -21,34 +21,17 @@ interface ColumnInputProps {
  * user can type any identifier (A, B, …, AA) or pick a letter from the suggestions; input is sanitised
  * to upper-case Latin letters.
  *
- * The wrapped <input> is the source of truth. The dropdown mirrors the committed value back onto it
- * and dispatches a native `change` event — which is why we listen for `change` directly instead of
- * React's onChange (React maps a text input's onChange to the `input` event, which the dropdown does
- * not fire).
+ * The wrapped <input> is React-controlled. The dropdown commits a value through the native setter and
+ * fires `input` and `change`, so React's onChange sees it like typed text.
  */
 export default function ColumnInput({ id, value, onChange, disabled = false, placeholder = '' }: ColumnInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const sdRef = useRef<SearchableDropdownInstance | null>(null);
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+  const sanitized = sanitize(value);
 
   useEffect(() => {
     const input = inputRef.current;
     if (!input) return;
-
-    // Seed the initial value BEFORE wrapping: the editable dropdown copies the wrapped input's value
-    // into its trigger at construction, so a value set afterwards would not appear.
-    input.value = sanitize(value);
-
-    const emit = () => {
-      const sanitized = sanitize(input.value);
-      if (sanitized !== input.value) {
-        input.value = sanitized;
-      }
-      onChangeRef.current(sanitized);
-    };
-    input.addEventListener('change', emit);
-    input.addEventListener('input', emit);
 
     const columns = Array.from({ length: 26 }, (_, i) => {
       const letter = String.fromCharCode('A'.charCodeAt(0) + i);
@@ -63,8 +46,6 @@ export default function ColumnInput({ id, value, onChange, disabled = false, pla
     });
 
     return () => {
-      input.removeEventListener('change', emit);
-      input.removeEventListener('input', emit);
       if (sdRef.current) {
         sdRef.current.destroy();
         sdRef.current = null;
@@ -73,27 +54,22 @@ export default function ColumnInput({ id, value, onChange, disabled = false, pla
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reflect programmatic value changes (loading a config, clearing on Test Steps) onto both the
-  // wrapped input and the dropdown's visible trigger — the editable dropdown does not observe
-  // programmatic value changes.
+  // The editable dropdown does not observe its wrapped input, so copy programmatic value changes
+  // (loading a config, clearing on Test Steps) onto the visible trigger.
   useEffect(() => {
-    const input = inputRef.current;
-    if (!input) return;
-    const next = sanitize(value);
-    if (input.value !== next) {
-      input.value = next;
-    }
     const trigger = sdRef.current?.trigger as HTMLInputElement | undefined;
     if (trigger) {
-      trigger.value = next;
+      trigger.value = sanitized;
     }
-  }, [value]);
+  }, [sanitized]);
 
   return (
     <input
       ref={inputRef}
       id={id}
       type="text"
+      value={sanitized}
+      onChange={(e) => onChange(sanitize(e.target.value))}
       className="excel-column-input"
       maxLength={5}
       autoComplete="off"
