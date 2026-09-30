@@ -330,7 +330,7 @@
             "content": {
               "application/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ImportJobDetails"
+                  "$ref": "#/components/schemas/JobDetails"
                 }
               }
             },
@@ -340,7 +340,7 @@
             "content": {
               "application/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ImportJobDetails"
+                  "$ref": "#/components/schemas/JobDetails"
                 }
               }
             },
@@ -1105,27 +1105,6 @@
         },
         "type": "object"
       },
-      "ImportJobDetails": {
-        "description": "Details of the import job including status and error message if any",
-        "properties": {
-          "errorMessage": {
-            "description": "Error message if the import failed",
-            "type": "string"
-          },
-          "status": {
-            "description": "Status of the import job",
-            "enum": [
-              "IN_PROGRESS",
-              "SUCCESSFULLY_FINISHED",
-              "FAILED",
-              "CANCELLED"
-            ],
-            "example": "IN_PROGRESS",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
       "ImportResult": {
         "description": "Represents the result of an Excel import operation",
         "properties": {
@@ -1164,6 +1143,31 @@
               "type": "string"
             },
             "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "JobDetails": {
+        "description": "Details of an asynchronous job: its status, its progress and the error message if it failed",
+        "properties": {
+          "errorMessage": {
+            "description": "Error message if the job failed or was cancelled",
+            "type": "string"
+          },
+          "progressMessage": {
+            "description": "What the job is doing right now, as long as it is running",
+            "type": "string"
+          },
+          "status": {
+            "description": "Status of an asynchronous job",
+            "enum": [
+              "IN_PROGRESS",
+              "SUCCESSFULLY_FINISHED",
+              "FAILED",
+              "CANCELLED"
+            ],
+            "example": "IN_PROGRESS",
+            "type": "string"
           }
         },
         "type": "object"

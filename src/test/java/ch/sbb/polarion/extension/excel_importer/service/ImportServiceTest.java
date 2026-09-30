@@ -47,10 +47,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -111,6 +113,57 @@ class ImportServiceTest {
                 () -> new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]),
                 "Expected IllegalArgumentException thrown, but it didn't");
         assertEquals(String.format("Cannot find WorkItem type '%s' in scope of the project '%s'", "requirement", TEST_PROJECT_ID), exception.getMessage());
+    }
+
+    /**
+     * An import asked to stop before its write transaction does not start one.
+     */
+    @Test
+    void testImportAskedToStopBeforeWritingStartsNoTransaction() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1")));
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            ImportService importService = new ImportService(polarionServiceExt);
+            assertThrows(CancellationException.class,
+                    () -> importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0], () -> true));
+
+            executor.verifyNoInteractions();
+        }
+    }
+
+    /**
+     * An import asked to stop while it writes throws out of its write transaction, which rolls back what it wrote.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    void testImportAskedToStopWhileWritingThrowsOutOfTransaction() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1")));
+        // not yet when the transaction is about to start, then at the first rows
+        Iterator<Boolean> answers = List.of(false, true).iterator();
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            executor.when(() -> TransactionalExecutor.executeInWriteTransaction(any())).thenAnswer(invocation -> {
+                RunnableInWriteTransaction<Object> runnable = invocation.getArgument(0);
+                return runnable.run(mock(WriteTransaction.class));
+            });
+            ImportService importService = new ImportService(polarionServiceExt);
+
+            assertThrows(CancellationException.class,
+                    () -> importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0], answers::next));
+
+            verify(polarionServiceExt, never()).findWorkItemsById(any(), any(), any());
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    private PolarionServiceExt polarionServiceWithProject() {
+        PolarionServiceExt polarionServiceExt = mock(PolarionServiceExt.class);
+        ITrackerProject project = mock(ITrackerProject.class);
+        when(polarionServiceExt.findProject(TEST_PROJECT_ID)).thenReturn(project);
+        lenient().when(polarionServiceExt.findWorkItemTypeInProject(any(), any())).thenReturn(mock(ITypeOpt.class));
+        return polarionServiceExt;
     }
 
     @Test

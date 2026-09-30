@@ -1,2 +1,3 @@
+Bundle-Activator: ch.sbb.polarion.extension.excel_importer.ExtensionBundleActivator
 Bundle-Name: Excel Importer for Polarion ALM
 Export-Package: ch.sbb.polarion.extension.excel_importer

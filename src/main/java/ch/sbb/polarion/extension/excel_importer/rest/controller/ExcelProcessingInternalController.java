@@ -1,12 +1,12 @@
 package ch.sbb.polarion.extension.excel_importer.rest.controller;
 
-import ch.sbb.polarion.extension.excel_importer.rest.model.jobs.ImportJobDetails;
-import ch.sbb.polarion.extension.excel_importer.rest.model.jobs.ImportJobStatus;
 import ch.sbb.polarion.extension.excel_importer.service.ImportJobParams;
 import ch.sbb.polarion.extension.excel_importer.service.ImportResult;
 import ch.sbb.polarion.extension.excel_importer.service.ImportService;
 import ch.sbb.polarion.extension.excel_importer.service.ImportJobsService;
 import ch.sbb.polarion.extension.excel_importer.service.PolarionServiceExt;
+import ch.sbb.polarion.extension.generic.rest.JobResponses;
+import ch.sbb.polarion.extension.generic.rest.model.jobs.JobDetails;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import com.polarion.platform.core.PlatformContext;
 import com.polarion.platform.security.ISecurityService;
@@ -109,11 +109,11 @@ public class ExcelProcessingInternalController {
                     // OpenAPI response MediaTypes for 303 and 202 response codes are generic to satisfy automatic redirect in SwaggerUI
                     @ApiResponse(responseCode = "303",
                             description = "Import job is finished successfully, Location header contains result URL",
-                            content = {@Content(mediaType = "application/*", schema = @Schema(implementation = ImportJobDetails.class))}
+                            content = {@Content(mediaType = "application/*", schema = @Schema(implementation = JobDetails.class))}
                     ),
                     @ApiResponse(responseCode = "202",
                             description = "Import job is still in progress",
-                            content = {@Content(mediaType = "application/*", schema = @Schema(implementation = ImportJobDetails.class))}
+                            content = {@Content(mediaType = "application/*", schema = @Schema(implementation = JobDetails.class))}
                     ),
                     @ApiResponse(responseCode = "409",
                             description = "Import job is failed or cancelled"
@@ -123,23 +123,7 @@ public class ExcelProcessingInternalController {
                     )
             })
     public Response getImportJobStatus(@PathParam("id") String jobId) {
-        ImportJobsService.JobState jobState = jobsService.getJobState(jobId);
-
-        ImportJobStatus jobStatus = convertToJobStatus(jobState);
-        ImportJobDetails jobDetails = ImportJobDetails.builder()
-                .status(jobStatus)
-                .errorMessage(jobState.errorMessage()).build();
-
-        Response.ResponseBuilder responseBuilder;
-        switch (jobStatus) {
-            case IN_PROGRESS -> responseBuilder = Response.accepted();
-            case SUCCESSFULLY_FINISHED -> {
-                URI jobUri = UriBuilder.fromUri(uriInfo.getRequestUri().getPath()).path("result").build();
-                responseBuilder = Response.status(HttpStatus.SEE_OTHER.value()).location(jobUri);
-            }
-            default -> responseBuilder = Response.status(HttpStatus.CONFLICT.value());
-        }
-        return responseBuilder.entity(jobDetails).build();
+        return JobResponses.jobStatus(JobDetails.from(jobsService.getJobState(jobId)), uriInfo);
     }
 
     @GET
@@ -183,26 +167,9 @@ public class ExcelProcessingInternalController {
                     )
             })
     public Response getAllImporterJobs() {
-        Map<String, ImportJobsService.JobState> jobsStates = jobsService.getAllJobsStates();
-        Map<String, ImportJobDetails> jobsDetails = jobsStates.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry ->
-                        ImportJobDetails.builder()
-                                .status(convertToJobStatus(entry.getValue()))
-                                .errorMessage(entry.getValue().errorMessage())
-                                .build()));
+        Map<String, JobDetails> jobsDetails = jobsService.getAllJobsStates().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> JobDetails.from(entry.getValue())));
         return Response.ok(jobsDetails).build();
-    }
-
-    private ImportJobStatus convertToJobStatus(ImportJobsService.JobState jobState) {
-        if (!jobState.isDone()) {
-            return ImportJobStatus.IN_PROGRESS;
-        } else if (!jobState.isCancelled() && !jobState.isCompletedExceptionally()) {
-            return ImportJobStatus.SUCCESSFULLY_FINISHED;
-        } else if (jobState.isCancelled()) {
-            return ImportJobStatus.CANCELLED;
-        } else {
-            return ImportJobStatus.FAILED;
-        }
     }
 
 }

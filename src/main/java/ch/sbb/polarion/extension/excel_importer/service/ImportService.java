@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -57,8 +59,18 @@ public class ImportService {
         this.polarionServiceExt = polarionServiceExt;
     }
 
-    @SuppressWarnings("unchecked")
     public ImportResult processFile(String projectId, String mappingName, byte[] fileContent) {
+        return processFile(projectId, mappingName, fileContent, () -> false);
+    }
+
+    /**
+     * Imports the rows of the file, as one write transaction: either all rows are imported, or none.
+     *
+     * @param abortRequested checked before the write transaction and before each row. Once it answers {@code true},
+     *                       the import throws out of the transaction, which is rolled back, so nothing is imported
+     */
+    @SuppressWarnings("unchecked")
+    public ImportResult processFile(String projectId, String mappingName, byte[] fileContent, @NotNull BooleanSupplier abortRequested) {
         ITrackerProject trackerProject = polarionServiceExt.findProject(projectId);
         ExcelSheetMappingSettingsModel settings = new ExcelSheetMappingSettings().load(projectId, SettingId.fromName(mappingName));
         ITypeOpt workItemType = polarionServiceExt.findWorkItemTypeInProject(trackerProject, settings.getDefaultWorkItemType());
@@ -71,16 +83,18 @@ public class ImportService {
                 ), true).get(PARAM_RESULT);
         context.log("Xlsx file parsed successfully, found %d rows".formatted(xlsxData.size()));
 
-        TransactionalExecutor.executeInWriteTransaction(transaction -> processData(xlsxData, context));
+        stopIfAbortRequested(abortRequested);
+        TransactionalExecutor.executeInWriteTransaction(transaction -> processData(xlsxData, context, abortRequested));
         context.log("Transaction completed");
         return context.toResult();
     }
 
     @SuppressWarnings("java:S3776") // ignore cognitive complexity complaint
-    private Void processData(@NotNull List<Map<String, Object>> xlsxData, ImportContext context) {
+    private Void processData(@NotNull List<Map<String, Object>> xlsxData, ImportContext context, @NotNull BooleanSupplier abortRequested) {
         String identifierFieldId = context.settings.getColumnsMapping().get(context.settings.getLinkColumn());
         List<List<Map<String, Object>>> xlsxDataChunked = ListUtils.partition(xlsxData.stream().toList(), 100);
         for (List<Map<String, Object>> chunk : xlsxDataChunked) {
+            stopIfAbortRequested(abortRequested);
             Set<String> workItemIds = chunk.stream()
                     .map(dataRow -> getIdentifierValue(dataRow, context.settings.getLinkColumn(), identifierFieldId))
                     .collect(Collectors.toSet());
@@ -90,6 +104,7 @@ public class ImportService {
 
             List<IWorkItem> foundWorkItems = polarionServiceExt.findWorkItemsById(context.project.getId(), identifierFieldId, workItemIds);
             for (Map<String, Object> columnMappingRecord : chunk) {
+                stopIfAbortRequested(abortRequested);
                 Object idValue = columnMappingRecord.get(context.settings.getLinkColumn());
                 String idString = String.valueOf(idValue);
                 List<String> logEntries = new ArrayList<>();
@@ -126,6 +141,16 @@ public class ImportService {
         }
         context.log("Work items processing completed");
         return null;
+    }
+
+    /**
+     * Stops an import that ran out of time or was cancelled. Thrown inside the write transaction, it rolls back what
+     * the import wrote so far.
+     */
+    private static void stopIfAbortRequested(@NotNull BooleanSupplier abortRequested) {
+        if (abortRequested.getAsBoolean()) {
+            throw new CancellationException("Import was asked to stop before it imported all rows, nothing was imported");
+        }
     }
 
     // temporary solution: should be clarified how to compare values of fields depending on field types
