@@ -1,178 +1,93 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import ch.sbb.polarion.extension.excel_importer.utils.PropertiesUtility;
-import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
-import com.polarion.core.util.logging.Logger;
+import ch.sbb.polarion.extension.generic.jobs.AsyncJobsService;
+import ch.sbb.polarion.extension.generic.jobs.JobsProperties;
+import ch.sbb.polarion.extension.generic.jobs.JobsRegistry;
+import ch.sbb.polarion.extension.generic.jobs.TimeoutPolicy;
 import com.polarion.platform.security.ISecurityService;
-import lombok.Builder;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
 
-import javax.security.auth.Subject;
-import java.security.PrivilegedAction;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
-public class ImportJobsService {
-    private final Logger logger = Logger.getLogger(ImportJobsService.class);
-    // Static maps are necessary for per-request scoped InternalController and ApiController. In case of singletons static can be removed
-    private static final Map<String, JobDetails> jobs = new ConcurrentHashMap<>();
-    private static final Map<String, String> failedJobsReasons = new ConcurrentHashMap<>();
-    private static final String UNKNOWN_JOB_MESSAGE = "Importer Job is unknown: %s";
+/**
+ * Runs Excel imports in the background. The job mechanics are generic's {@link AsyncJobsService}.
+ * <p>
+ * An import writes work items, so it is never declared over from the outside ({@link TimeoutPolicy#COOPERATIVE}):
+ * at its timeout it is asked to stop, and {@link ImportService} stops before the next row, rolling back what it wrote.
+ * The caller is never told that nothing was imported while the import still writes.
+ * <p>
+ * The job keeps no payload: the uploaded file is not needed once the import has read it.
+ */
+public class ImportJobsService extends AsyncJobsService<Void, ImportResult> {
+
+    public static final String JOBS_PROPERTIES_FILE = "/import-jobs.properties";
+
+    // Static, so that the jobs survive the controller instance which started them
+    private static final JobsRegistry<Void, ImportResult> REGISTRY = registryBuilder().build();
 
     private final ImportService importService;
-    private final ISecurityService securityService;
-    private final PropertiesUtility propertiesUtility = new PropertiesUtility();
 
-    public ImportJobsService(ImportService importService, ISecurityService securityService) {
+    public ImportJobsService(@NotNull ImportService importService, @NotNull ISecurityService securityService) {
+        this(importService, securityService, REGISTRY);
+    }
+
+    @VisibleForTesting
+    ImportJobsService(@NotNull ImportService importService, @NotNull ISecurityService securityService,
+                      @NotNull JobsRegistry<Void, ImportResult> registry) {
+        super(registry, securityService);
         this.importService = importService;
-        this.securityService = securityService;
     }
 
-    public String startJob(ImportJobParams jobParams) {
-        String jobId = UUID.randomUUID().toString();
-        Subject userSubject = securityService.getCurrentSubject();
-        boolean isJobLogoutRequired = isJobLogoutRequired();
-        long timeoutInMinutes = propertiesUtility.getInProgressJobTimeout();
-
-        CompletableFuture<ImportResult> asyncImportJob = CompletableFuture.supplyAsync(() -> {
-            try {
-                return securityService.doAsUser(userSubject, (PrivilegedAction<ImportResult>) () -> importService.processFile(jobParams.getProjectId(), jobParams.getMappingName(), jobParams.getFileContent()));
-            } catch (Exception e) {
-                failedJobsReasons.put(jobId, StringUtils.defaultString(ExceptionUtils.getRootCause(e).getMessage()));
-                throw e;
-            } finally {
-                if ((userSubject != null) && isJobLogoutRequired) {
-                    securityService.logout(userSubject);
-                }
-                logger.info("Import job '%s' is finished".formatted(jobId));
-            }
-        }, Executors.newSingleThreadExecutor());
-        asyncImportJob
-                .orTimeout(timeoutInMinutes, TimeUnit.MINUTES)
-                .exceptionally(e -> {
-                    String failedReason;
-                    if (e instanceof TimeoutException) {
-                        failedReason = String.format("Timeout after %d min", timeoutInMinutes);
-                    } else {
-                        failedReason = StringUtils.defaultString(ExceptionUtils.getRootCause(e).getMessage());
-                    }
-                    failedJobsReasons.put(jobId, failedReason);
-                    logger.error(String.format("Import job '%s' is failed with error: %s", jobId, failedReason), e);
-                    asyncImportJob.completeExceptionally(e);
-                    return null;
-                });
-        JobDetails jobDetails = JobDetails.builder()
-                .future(asyncImportJob)
-                .user(securityService.getCurrentUser())
-                .jobParams(jobParams)
-                .startingTime(Instant.now()).build();
-        jobs.put(jobId, jobDetails);
-        return jobId;
+    /**
+     * @return the job timeouts of this extension
+     */
+    public static @NotNull JobsProperties jobsProperties() {
+        return new JobsProperties(ImportJobsService.class, JOBS_PROPERTIES_FILE);
     }
 
-    public JobState getJobState(String jobId) {
-        CompletableFuture<ImportResult> future = getJobDetails(jobId).future();
-        return JobState.builder()
-                .isDone(future.isDone())
-                .isCompletedExceptionally(future.isCompletedExceptionally())
-                .isCancelled(future.isCancelled())
-                .errorMessage(failedJobsReasons.get(jobId)).build();
+    /**
+     * Starts dropping finished imports once they are older than the finished job timeout.
+     */
+    public static void startCleaner() {
+        REGISTRY.startCleaner(jobsProperties().getFinishedJobTimeout());
     }
 
-    public Optional<ImportResult> getJobResult(String jobId) {
-        CompletableFuture<ImportResult> future = getJobDetails(jobId).future();
-        if (!future.isDone()) {
-            return Optional.empty();
-        }
-        if (future.isCancelled() || future.isCompletedExceptionally()) {
-            throw new IllegalStateException("Job was cancelled or failed: " + failedJobsReasons.get(jobId));
-        }
-        try {
-            return Optional.of(future.get());
-        } catch (InterruptedException | ExecutionException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Cannot extract result for job " + jobId + " :" + e.getMessage(), e);
-        } catch (Exception e) {
-            throw new IllegalStateException("Cannot extract result for job " + jobId + " :" + e.getMessage(), e);
-        }
+    /**
+     * Stops the cleaner and the import threads.
+     */
+    public static void shutdown() {
+        REGISTRY.shutdown();
     }
 
-    public Map<String, JobState> getAllJobsStates() {
-        return jobs.entrySet().stream()
-                .filter(entry -> Objects.equals(entry.getValue().user, securityService.getCurrentUser()))
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> getJobState(entry.getKey())));
+    /**
+     * Starts an import with the in-progress timeout of this extension.
+     */
+    public @NotNull String startJob(@NotNull ImportJobParams jobParams) {
+        return startJob(jobParams, jobsProperties().getInProgressJobTimeout());
     }
 
-    public static void cleanupExpiredJobs(int timeout) {
-        Instant currentTime = Instant.now();
-
-        jobs.entrySet().stream()
-                .filter(entry -> entry.getValue().future.isDone()
-                        && entry.getValue().startingTime.plus(timeout, ChronoUnit.MINUTES).isBefore(currentTime))
-                .map(Map.Entry::getKey)
-                .forEach(ImportJobsService::removeKeyFromJobMaps);
+    public @NotNull String startJob(@NotNull ImportJobParams jobParams, int timeoutInMinutes) {
+        return startJob(null, timeoutInMinutes, control -> importService.processFile(
+                jobParams.getProjectId(), jobParams.getMappingName(), jobParams.getFileContent(), control::isAbortRequested));
     }
 
-    private static void removeKeyFromJobMaps(String id) {
-        jobs.remove(id);
-        failedJobsReasons.remove(id);
+    /**
+     * @return the message of the innermost cause, or its class where it carries no message: an import fails deep
+     * inside Polarion or the Excel parser, and the wrappers around that say little
+     */
+    @Override
+    protected @NotNull String describeFailure(@NotNull Throwable thrown) {
+        // older commons-lang3 versions answer null for a throwable without a cause
+        Throwable rootCause = Objects.requireNonNullElse(ExceptionUtils.getRootCause(thrown), thrown);
+        String message = rootCause.getMessage();
+        return message == null || message.isBlank() ? rootCause.getClass().getName() : message;
     }
 
     @VisibleForTesting
-    void cancelJobsAndCleanMap() {
-        jobs.values().forEach(j -> j.future().cancel(true));
-        jobs.clear();
-    }
-
-    @Builder
-    public record JobDetails(
-            CompletableFuture<ImportResult> future,
-            String user,
-            ImportJobParams jobParams,
-            Instant startingTime) {
-    }
-
-    @Builder
-    public record JobState(
-            boolean isDone,
-            boolean isCompletedExceptionally,
-            boolean isCancelled,
-            String errorMessage) {
-    }
-
-    @VisibleForTesting
-    JobDetails getJobDetails(String jobId) {
-        JobDetails jobDetails = jobs.get(jobId);
-        if (jobDetails == null || !Objects.equals(jobDetails.user, securityService.getCurrentUser())) {
-            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
-        }
-        return jobDetails;
-    }
-
-    private boolean isJobLogoutRequired() {
-        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-        if (requestAttributes != null) {
-            if (requestAttributes.getAttribute(LogoutFilter.XSRF_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST) == Boolean.TRUE) {
-                return false;
-            }
-            return requestAttributes.getAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST) == Boolean.TRUE;
-        }
-        return false;
+    static @NotNull JobsRegistry.Builder<Void, ImportResult> registryBuilder() {
+        return JobsRegistry.<Void, ImportResult>builder("Import")
+                .timeoutPolicy(TimeoutPolicy.COOPERATIVE);
     }
 }

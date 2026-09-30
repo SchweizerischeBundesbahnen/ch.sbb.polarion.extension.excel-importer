@@ -6,7 +6,7 @@ import ch.sbb.polarion.extension.excel_importer.rest.controller.ExcelToolApiCont
 import ch.sbb.polarion.extension.excel_importer.rest.controller.ExcelToolInternalController;
 import ch.sbb.polarion.extension.excel_importer.rest.controller.WorkItemsApiController;
 import ch.sbb.polarion.extension.excel_importer.rest.controller.WorkItemsInternalController;
-import ch.sbb.polarion.extension.excel_importer.service.ImportJobsCleaner;
+import ch.sbb.polarion.extension.excel_importer.service.ImportJobsService;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettings;
 import ch.sbb.polarion.extension.generic.rest.GenericRestApplication;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
@@ -24,7 +24,7 @@ public class ExcelImporterRestApplication extends GenericRestApplication {
         NamedSettingsRegistry.INSTANCE.register(List.of(new ExcelSheetMappingSettings()));
 
         try {
-            ImportJobsCleaner.startCleaningJob();
+            ImportJobsService.startCleaner();
         } catch (Exception e) {
             logger.error("Error during starting of cleaning job", e);
         }
