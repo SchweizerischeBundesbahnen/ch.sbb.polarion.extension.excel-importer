@@ -162,7 +162,8 @@ class ImportServiceTest {
         PolarionServiceExt polarionServiceExt = mock(PolarionServiceExt.class);
         ITrackerProject project = mock(ITrackerProject.class);
         when(polarionServiceExt.findProject(TEST_PROJECT_ID)).thenReturn(project);
-        lenient().when(polarionServiceExt.findWorkItemTypeInProject(any(), any())).thenReturn(mock(ITypeOpt.class));
+        ITypeOpt typeOpt = mock(ITypeOpt.class);
+        lenient().when(polarionServiceExt.findWorkItemTypeInProject(any(), any())).thenReturn(typeOpt);
         return polarionServiceExt;
     }
 
