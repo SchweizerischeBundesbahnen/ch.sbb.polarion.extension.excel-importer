@@ -76,7 +76,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
     protected void deserializeModelData(String serializedString) {
         sheetName = deserializeEntry(SHEET_NAME, serializedString);
         Integer startFromRowValue = deserializeEntry(START_FROM_ROW, serializedString, Integer.class);
-        startFromRow = startFromRowValue == null ? 0 : startFromRowValue;
+        startFromRow = startFromRowValue == null ? 1 : startFromRowValue;
         overwriteWithEmpty = !Objects.equals(Boolean.FALSE.toString(), deserializeEntry(OVERWRITE_WITH_EMPTY, serializedString));
         unlinkExisting = Objects.equals(Boolean.TRUE.toString(), deserializeEntry(UNLINK_EXISTING, serializedString));
         ignoreUnknown = Objects.equals(Boolean.TRUE.toString(), deserializeEntry(IGNORE_UNKNOWN, serializedString));
