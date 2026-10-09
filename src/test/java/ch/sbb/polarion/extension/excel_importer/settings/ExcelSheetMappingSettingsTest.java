@@ -193,6 +193,16 @@ class ExcelSheetMappingSettingsTest {
     }
 
     @Test
+    void testStartFromRowDefaultsToFirstRow() {
+        ExcelSheetMappingSettingsModel model = new ExcelSheetMappingSettingsModel();
+        model.deserialize(String.format(ExcelSheetMappingSettingsModel.BEGIN_ENTRY, ExcelSheetMappingSettingsModel.SHEET_NAME) + System.lineSeparator() +
+                "Sheet1" + System.lineSeparator() +
+                String.format(ExcelSheetMappingSettingsModel.END_ENTRY, ExcelSheetMappingSettingsModel.SHEET_NAME) + System.lineSeparator());
+        assertEquals("Sheet1", model.getSheetName());
+        assertEquals(1, model.getStartFromRow());
+    }
+
+    @Test
     void testGetUsedColumnsLetters() {
         // Regular columns + prefix keys filtered out + stepsMapping values included
         ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
