@@ -48,9 +48,9 @@ public class XlsxParser implements IParser {
         List<CellRangeAddress> mergedRegions = sheet.getMergedRegions();
         validateMergedRegions(mergedRegions, startFromRow);
         Set<String> usedColumnsLetters = parserSettings.getUsedColumnsLetters();
-        int rowNumber = 0;
         for (Row row : sheet) {
-            if (++rowNumber < startFromRow) {
+            // the sheet iterator skips rows absent from the file, so a visit counter drifts from the real row number
+            if (row.getRowNum() + 1 < startFromRow) {
                 continue;
             }
             Map<String, Object> map = parseRow(row, usedColumnsLetters, mergedRegions);

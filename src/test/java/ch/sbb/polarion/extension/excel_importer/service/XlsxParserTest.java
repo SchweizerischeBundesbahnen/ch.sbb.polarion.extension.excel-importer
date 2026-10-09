@@ -213,6 +213,30 @@ class XlsxParserTest {
         }
     }
 
+    @Test
+    @SneakyThrows
+    void testBlankRowBeforeStartRow() {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("gap");
+            // row 1 is never created, so the file does not store it
+            sheet.createRow(1).createCell(0).setCellValue("header");
+            sheet.createRow(2).createCell(0).setCellValue("a3");
+            sheet.createRow(3).createCell(0).setCellValue("a4");
+            sheet.createRow(4).createCell(0).setCellValue("a5");
+            workbook.write(bos);
+        }
+
+        try (InputStream is = new ByteArrayInputStream(bos.toByteArray())) {
+            List<Map<String, Object>> result = new XlsxParser().parseFileStream(is, generateSettings("gap", 3, "A"));
+            assertEquals(List.of(
+                    Map.of("A", "a3"),
+                    Map.of("A", "a4"),
+                    Map.of("A", "a5")
+            ), result);
+        }
+    }
+
     private IParserSettings generateSettings(String sheetName, int startingRow, String... customUsedColumnsLetters) {
         return new IParserSettings() {
             @Override
