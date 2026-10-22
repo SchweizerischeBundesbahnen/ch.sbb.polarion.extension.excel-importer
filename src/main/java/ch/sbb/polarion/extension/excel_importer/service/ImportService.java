@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
+import ch.sbb.polarion.extension.excel_importer.service.parser.impl.XlsxParser;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettings;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettingsModel;
 import ch.sbb.polarion.extension.excel_importer.utils.LinkInfo;
@@ -28,6 +29,7 @@ import com.polarion.core.util.xml.HTMLHelper;
 import com.polarion.platform.persistence.model.IStructure;
 import com.polarion.subterra.base.data.model.IType;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -107,6 +109,7 @@ public class ImportService {
                 stopIfAbortRequested(abortRequested);
                 Object idValue = columnMappingRecord.get(context.settings.getLinkColumn());
                 String idString = String.valueOf(idValue);
+                String rowLabel = isEmpty(idValue) ? "row %s".formatted(columnMappingRecord.get(XlsxParser.ROW_NUMBER_KEY)) : idString;
                 List<String> logEntries = new ArrayList<>();
                 List<IWorkItem> workItems = isEmpty(idValue) ? List.of() : foundWorkItems.stream().filter(findWorkItemByFieldValue(identifierFieldId, idValue)).toList();
                 if (workItems.isEmpty()) { //WorkItem not found - create a new one
@@ -116,9 +119,15 @@ public class ImportService {
                     } else {
                         IWorkItem createdWorkItem = polarionServiceExt.createWorkItem(context.project, context.workItemType);
                         fillWorkItemFields(createdWorkItem, columnMappingRecord, context, identifierFieldId);
-                        createdWorkItem.save();
-                        logEntries.add("new work item '%s' is being created".formatted(createdWorkItem.getId()));
-                        context.createdIds.add(createdWorkItem.getId());
+                        String dependencyError = validateEnumDependencies(createdWorkItem, context);
+                        if (dependencyError != null) {
+                            context.skippedIds.add(rowLabel);
+                            logEntries.add("new work item was not created: %s".formatted(dependencyError));
+                        } else {
+                            createdWorkItem.save();
+                            logEntries.add("new work item '%s' is being created".formatted(createdWorkItem.getId()));
+                            context.createdIds.add(createdWorkItem.getId());
+                        }
                     }
                 } else {
                     if (workItems.size() > 1) {
@@ -130,17 +139,35 @@ public class ImportService {
                             logEntries.add("no changes were made to '%s'".formatted(workItem.getId()));
                             context.unchangedIds.add(workItem.getId());
                         } else {
+                            String errorMessage = validateResultingObjectAndRunWorkflow(workItem, context);
+                            if (errorMessage != null) {
+                                workItem.forget();
+                                logEntries.add("the data was not updated for '%s': %s".formatted(workItem.getId(), errorMessage));
+                                context.skippedIds.add(workItem.getId());
+                                continue;
+                            }
                             logEntries.add("the data was updated for '%s'".formatted(workItem.getId()));
                             context.updatedIds.add(workItem.getId());
                         }
                         workItem.save();
                     }
                 }
-                context.log((isEmpty(idValue) ? "" : idString + ": ") + String.join(", ", logEntries));
+                context.log(rowLabel + ": " + String.join(", ", logEntries));
             }
         }
         context.log("Work items processing completed");
         return null;
+    }
+
+    private String validateResultingObjectAndRunWorkflow(IWorkItem workItem, ImportContext context) {
+        return ObjectUtils.getFirstNonNull(
+                () -> validateEnumDependencies(workItem, context),
+                () -> context.settings.isSkipWorkflowOnStatusChange() ? null : polarionServiceExt.runWorkflowIfNeeded(workItem)
+        );
+    }
+
+    private String validateEnumDependencies(IWorkItem workItem, ImportContext context) {
+        return context.settings.isDisableEnumDependenciesValidation() ? null : polarionServiceExt.validateEnumDependencies(workItem, context.settings.getColumnsMapping().values());
     }
 
     /**

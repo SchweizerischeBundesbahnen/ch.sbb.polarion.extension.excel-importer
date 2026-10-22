@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static ch.sbb.polarion.extension.excel_importer.service.parser.impl.XlsxParser.ROW_NUMBER_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,17 +41,17 @@ class XlsxParserTest {
     @Test
     void testSuccessfulParse() {
         assertEquals(List.of(
-                Map.of("A", "a1", "B", "b1", "C", "c1"),
-                Map.of("A", "a2", "C", "c2"),
-                Map.of("A", "a3", "B", "b3", "D", "d4")
+                Map.of("A", "a1", "B", "b1", "C", "c1", ROW_NUMBER_KEY, 1),
+                Map.of("A", "a2", "C", "c2", ROW_NUMBER_KEY, 2),
+                Map.of("A", "a3", "B", "b3", "D", "d4", ROW_NUMBER_KEY, 3)
         ), cleanNulls(new XlsxParser().parseFileStream(getClass().getClassLoader().getResourceAsStream("test.xlsx"), generateSettings(SHEET_FIRST, 1))));
         assertEquals(List.of(
-                Map.of("A", "a2", "C", "c2"),
-                Map.of("A", "a3", "B", "b3", "D", "d4")
+                Map.of("A", "a2", "C", "c2", ROW_NUMBER_KEY, 2),
+                Map.of("A", "a3", "B", "b3", "D", "d4", ROW_NUMBER_KEY, 3)
         ), cleanNulls(new XlsxParser().parseFileStream(getClass().getClassLoader().getResourceAsStream("test.xlsx"), generateSettings(SHEET_FIRST, 2))));
         assertEquals(List.of(
-                Map.of("A", "a2", "C", "c2"),
-                Map.of("A", "a3", "B", "b3", "D", "d4")
+                Map.of("A", "a2", "C", "c2", ROW_NUMBER_KEY, 2),
+                Map.of("A", "a3", "B", "b3", "D", "d4", ROW_NUMBER_KEY, 3)
         ), cleanNulls(new XlsxParser().parseFileStream(getClass().getClassLoader().getResourceAsStream("test.xlsx"), generateSettings(null, 2))));
     }
 
@@ -72,9 +73,9 @@ class XlsxParserTest {
         InputStream fileAttempt2 = getClass().getClassLoader().getResourceAsStream("error.xlsx");
         IParserSettings settingsAttempt2 = generateSettings(SHEET_FIRST, 1, "A", "B", "C", "D");
         assertEquals(
-                List.of(Map.of("A", "id1", "B", "1.5", "C", "3.5", "D", "5"),
-                        Map.of("A", "id2", "B", "0", "C", "12", "D", "12"),
-                        Map.of("A", "id3", "B", "7", "C", "2", "D", "9")),
+                List.of(Map.of("A", "id1", "B", "1.5", "C", "3.5", "D", "5", ROW_NUMBER_KEY, 1),
+                        Map.of("A", "id2", "B", "0", "C", "12", "D", "12", ROW_NUMBER_KEY, 2),
+                        Map.of("A", "id3", "B", "7", "C", "2", "D", "9", ROW_NUMBER_KEY, 3)),
                 cleanNulls(xlsxParser.parseFileStream(fileAttempt2, settingsAttempt2)));
     }
 
@@ -92,7 +93,7 @@ class XlsxParserTest {
     @Test
     void testWideTable() {
         assertEquals(List.of(
-                Map.of("A", "a1", "AA", "aa1", "AAA", "aaa1")
+                Map.of("A", "a1", "AA", "aa1", "AAA", "aaa1", ROW_NUMBER_KEY, 1)
         ), cleanNulls(new XlsxParser().parseFileStream(getClass().getClassLoader().getResourceAsStream("test.xlsx"), generateSettings(SHEET_WIDE, 1, "A", "AA", "AAA"))));
     }
 
@@ -120,9 +121,9 @@ class XlsxParserTest {
     void testMixed() {
         List<Map<String, Object>> result = new XlsxParser().parseFileStream(getClass().getClassLoader().getResourceAsStream("test.xlsx"), generateSettings(SHEET_MERGED_MIXED, 1, "A", "B", "C", "D"));
         assertEquals(List.of(
-                Map.of("A", "A1-3", "B", List.of("B11", "B12", "B13"), "C", "C1-3+D1-3", "D", "C1-3+D1-3"),
-                Map.of("A", "A4", "B", "B4", "C", "C4", "D", "D4"),
-                Map.of("A", "A5-6", "B", "B5-6", "C", Arrays.asList("C5", null), "D", Arrays.asList(null, null))
+                Map.of("A", "A1-3", "B", List.of("B11", "B12", "B13"), "C", "C1-3+D1-3", "D", "C1-3+D1-3", ROW_NUMBER_KEY, 1),
+                Map.of("A", "A4", "B", "B4", "C", "C4", "D", "D4", ROW_NUMBER_KEY, 4),
+                Map.of("A", "A5-6", "B", "B5-6", "C", Arrays.asList("C5", null), "D", Arrays.asList(null, null), ROW_NUMBER_KEY, 5)
         ), result);
     }
 
@@ -230,9 +231,9 @@ class XlsxParserTest {
         try (InputStream is = new ByteArrayInputStream(bos.toByteArray())) {
             List<Map<String, Object>> result = new XlsxParser().parseFileStream(is, generateSettings("gap", 3, "A"));
             assertEquals(List.of(
-                    Map.of("A", "a3"),
-                    Map.of("A", "a4"),
-                    Map.of("A", "a5")
+                    Map.of("A", "a3", ROW_NUMBER_KEY, 3),
+                    Map.of("A", "a4", ROW_NUMBER_KEY, 4),
+                    Map.of("A", "a5", ROW_NUMBER_KEY, 5)
             ), result);
         }
     }

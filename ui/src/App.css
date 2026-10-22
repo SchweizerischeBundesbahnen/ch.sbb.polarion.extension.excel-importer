@@ -216,6 +216,10 @@ code {
   margin-left: 4px;
 }
 
+.general-settings td.skip-option {
+  padding-left: 24px;
+}
+
 .wi-types-row,
 .link-column-row {
   display: flex;

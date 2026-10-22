@@ -57,6 +57,8 @@ export interface MappingSettings {
   startFromRow: number;
   overwriteWithEmpty: boolean;
   ignoreUnknown: boolean;
+  disableEnumDependenciesValidation: boolean;
+  skipWorkflowOnStatusChange: boolean;
   unlinkExisting: boolean;
   columnsMapping: Record<string, string>;
   enumsMapping?: Record<string, Record<string, string>>;

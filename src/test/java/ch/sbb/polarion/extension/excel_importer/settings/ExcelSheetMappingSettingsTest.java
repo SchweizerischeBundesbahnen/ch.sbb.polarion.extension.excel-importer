@@ -200,6 +200,23 @@ class ExcelSheetMappingSettingsTest {
                 String.format(ExcelSheetMappingSettingsModel.END_ENTRY, ExcelSheetMappingSettingsModel.SHEET_NAME) + System.lineSeparator());
         assertEquals("Sheet1", model.getSheetName());
         assertEquals(1, model.getStartFromRow());
+        assertFalse(model.isDisableEnumDependenciesValidation());
+        assertFalse(model.isSkipWorkflowOnStatusChange());
+    }
+
+    @Test
+    void testSkipFlagsSurviveSerialization() {
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .sheetName("Sheet1")
+                .disableEnumDependenciesValidation(true)
+                .skipWorkflowOnStatusChange(true)
+                .build();
+
+        ExcelSheetMappingSettingsModel restored = new ExcelSheetMappingSettingsModel();
+        restored.deserialize(model.serialize());
+
+        assertTrue(restored.isDisableEnumDependenciesValidation());
+        assertTrue(restored.isSkipWorkflowOnStatusChange());
     }
 
     @Test

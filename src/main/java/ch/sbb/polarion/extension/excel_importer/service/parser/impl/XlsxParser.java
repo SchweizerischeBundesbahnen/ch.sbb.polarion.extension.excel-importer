@@ -26,6 +26,11 @@ import java.util.Set;
 
 public class XlsxParser implements IParser {
 
+    /**
+     * Key of the 1-based Excel row number in each parsed row. It cannot clash with a column letter.
+     */
+    public static final String ROW_NUMBER_KEY = "#row";
+
     @Override
     @SneakyThrows
     @SuppressWarnings("java:S1166")
@@ -58,6 +63,7 @@ public class XlsxParser implements IParser {
             // also we skip rows with empty (or visually empty) strings
             if (map != null && !map.values().stream().allMatch(v -> v == null || (v instanceof String s && StringUtils.isEmptyTrimmed(s))
                     || v instanceof List<?> l && l.stream().allMatch(i -> i == null || (i instanceof String str && StringUtils.isEmptyTrimmed(str))))) {
+                map.put(ROW_NUMBER_KEY, row.getRowNum() + 1);
                 result.add(map);
             }
         }

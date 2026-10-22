@@ -35,6 +35,8 @@ const CONTENT: MappingSettings = {
   startFromRow: 1,
   overwriteWithEmpty: false,
   ignoreUnknown: false,
+  disableEnumDependenciesValidation: false,
+  skipWorkflowOnStatusChange: false,
   unlinkExisting: false,
   columnsMapping: { A: 'title' },
   defaultWorkItemType: 'requirement',

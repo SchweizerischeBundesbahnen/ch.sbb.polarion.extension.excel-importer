@@ -157,6 +157,224 @@ class ImportServiceTest {
         }
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void testImportSkipsUpdateBreakingEnumDependency() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1")));
+        when(mockedSettings.getLinkColumn()).thenReturn("A");
+        when(mockedSettings.getColumnsMapping()).thenReturn(Map.of("A", "excelId"));
+
+        IWorkItem workItem = mock(IWorkItem.class);
+        when(workItem.getId()).thenReturn("EL-1");
+        when(workItem.getValue("excelId")).thenReturn("a1");
+        when(workItem.isModified()).thenReturn(true);
+        when(polarionServiceExt.findWorkItemsById(any(), any(), any())).thenReturn(List.of(workItem));
+        when(polarionServiceExt.validateEnumDependencies(eq(workItem), argThat(fieldIds -> fieldIds.contains("excelId")))).thenReturn("Can not set 'Cough syrup' into 'Product' field when 'Shop' is 'Grocery store'");
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            executor.when(() -> TransactionalExecutor.executeInWriteTransaction(any())).thenAnswer(invocation -> {
+                RunnableInWriteTransaction<Object> runnable = invocation.getArgument(0);
+                return runnable.run(mock(WriteTransaction.class));
+            });
+            ImportService importService = spy(new ImportService(polarionServiceExt));
+            doNothing().when(importService).fillWorkItemFields(any(), any(), any(), any());
+
+            ImportResult result = importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+
+            assertEquals(List.of("EL-1"), result.getSkippedIds());
+            assertTrue(result.getUpdatedIds().isEmpty());
+            assertTrue(result.getLog().contains("a1: the data was not updated for 'EL-1': Can not set 'Cough syrup' into 'Product' field when 'Shop' is 'Grocery store'"));
+            verify(workItem).forget();
+            verify(workItem, never()).save();
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testImportSkipsCreationBreakingEnumDependency() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1")));
+        when(mockedSettings.getLinkColumn()).thenReturn("A");
+        when(mockedSettings.getColumnsMapping()).thenReturn(Map.of("A", "excelId"));
+
+        IWorkItem createdWorkItem = mock(IWorkItem.class);
+        when(polarionServiceExt.findWorkItemsById(any(), any(), any())).thenReturn(List.of());
+        when(polarionServiceExt.createWorkItem(any(), any())).thenReturn(createdWorkItem);
+        when(polarionServiceExt.validateEnumDependencies(eq(createdWorkItem), argThat(fieldIds -> fieldIds.contains("excelId")))).thenReturn("Can not set 'Cough syrup' into 'Product' field when 'Shop' is 'Grocery store'");
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            executor.when(() -> TransactionalExecutor.executeInWriteTransaction(any())).thenAnswer(invocation -> {
+                RunnableInWriteTransaction<Object> runnable = invocation.getArgument(0);
+                return runnable.run(mock(WriteTransaction.class));
+            });
+            ImportService importService = spy(new ImportService(polarionServiceExt));
+            doNothing().when(importService).fillWorkItemFields(any(), any(), any(), any());
+
+            ImportResult result = importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+
+            assertEquals(List.of("a1"), result.getSkippedIds());
+            assertTrue(result.getCreatedIds().isEmpty());
+            assertTrue(result.getLog().contains("a1: new work item was not created: Can not set 'Cough syrup' into 'Product' field when 'Shop' is 'Grocery store'"));
+            verify(createdWorkItem, never()).save();
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testImportSkipsCreationWithEmptyIdentifierByRowNumber() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("B", "b1", XlsxParser.ROW_NUMBER_KEY, 7)));
+        when(mockedSettings.getLinkColumn()).thenReturn("A");
+        when(mockedSettings.getColumnsMapping()).thenReturn(Map.of("A", "id", "B", "title"));
+
+        IWorkItem createdWorkItem = mock(IWorkItem.class);
+        when(polarionServiceExt.findWorkItemsById(any(), any(), any())).thenReturn(List.of());
+        when(polarionServiceExt.createWorkItem(any(), any())).thenReturn(createdWorkItem);
+        when(polarionServiceExt.validateEnumDependencies(eq(createdWorkItem), any())).thenReturn("Can not set 'Cough syrup' into 'Product' field when 'Shop' is 'Grocery store'");
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            executor.when(() -> TransactionalExecutor.executeInWriteTransaction(any())).thenAnswer(invocation -> {
+                RunnableInWriteTransaction<Object> runnable = invocation.getArgument(0);
+                return runnable.run(mock(WriteTransaction.class));
+            });
+            ImportService importService = spy(new ImportService(polarionServiceExt));
+            doNothing().when(importService).fillWorkItemFields(any(), any(), any(), any());
+
+            ImportResult result = importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+
+            assertEquals(List.of("row 7"), result.getSkippedIds());
+            assertTrue(result.getCreatedIds().isEmpty());
+            assertTrue(result.getLog().contains("row 7: new work item was not created: Can not set 'Cough syrup' into 'Product' field when 'Shop' is 'Grocery store'"));
+            verify(createdWorkItem, never()).save();
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testImportLogsRowNumberForCreationWithEmptyIdentifier() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("B", "b1", XlsxParser.ROW_NUMBER_KEY, 7)));
+        when(mockedSettings.getLinkColumn()).thenReturn("A");
+        when(mockedSettings.getColumnsMapping()).thenReturn(Map.of("A", "id", "B", "title"));
+
+        IWorkItem createdWorkItem = mock(IWorkItem.class);
+        when(createdWorkItem.getId()).thenReturn("EL-3");
+        when(polarionServiceExt.findWorkItemsById(any(), any(), any())).thenReturn(List.of());
+        when(polarionServiceExt.createWorkItem(any(), any())).thenReturn(createdWorkItem);
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            executor.when(() -> TransactionalExecutor.executeInWriteTransaction(any())).thenAnswer(invocation -> {
+                RunnableInWriteTransaction<Object> runnable = invocation.getArgument(0);
+                return runnable.run(mock(WriteTransaction.class));
+            });
+            ImportService importService = spy(new ImportService(polarionServiceExt));
+            doNothing().when(importService).fillWorkItemFields(any(), any(), any(), any());
+
+            ImportResult result = importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+
+            assertEquals(List.of("EL-3"), result.getCreatedIds());
+            assertTrue(result.getLog().contains("row 7: new work item 'EL-3' is being created"));
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testImportCreatesWorkItemWhenEnumDependenciesValidationDisabled() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1")));
+        when(mockedSettings.getLinkColumn()).thenReturn("A");
+        when(mockedSettings.getColumnsMapping()).thenReturn(Map.of("A", "excelId"));
+        when(mockedSettings.isDisableEnumDependenciesValidation()).thenReturn(true);
+
+        IWorkItem createdWorkItem = mock(IWorkItem.class);
+        when(createdWorkItem.getId()).thenReturn("EL-2");
+        when(polarionServiceExt.findWorkItemsById(any(), any(), any())).thenReturn(List.of());
+        when(polarionServiceExt.createWorkItem(any(), any())).thenReturn(createdWorkItem);
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            executor.when(() -> TransactionalExecutor.executeInWriteTransaction(any())).thenAnswer(invocation -> {
+                RunnableInWriteTransaction<Object> runnable = invocation.getArgument(0);
+                return runnable.run(mock(WriteTransaction.class));
+            });
+            ImportService importService = spy(new ImportService(polarionServiceExt));
+            doNothing().when(importService).fillWorkItemFields(any(), any(), any(), any());
+
+            ImportResult result = importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+
+            assertEquals(List.of("EL-2"), result.getCreatedIds());
+            verify(polarionServiceExt, never()).validateEnumDependencies(any(), any());
+            verify(polarionServiceExt, never()).runWorkflowIfNeeded(any());
+            verify(createdWorkItem).save();
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testImportSkipsUpdateFailingWorkflow() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1")));
+        when(mockedSettings.getLinkColumn()).thenReturn("A");
+        when(mockedSettings.getColumnsMapping()).thenReturn(Map.of("A", "excelId"));
+
+        IWorkItem workItem = mock(IWorkItem.class);
+        when(workItem.getId()).thenReturn("EL-1");
+        when(workItem.getValue("excelId")).thenReturn("a1");
+        when(workItem.isModified()).thenReturn(true);
+        when(polarionServiceExt.findWorkItemsById(any(), any(), any())).thenReturn(List.of(workItem));
+        when(polarionServiceExt.runWorkflowIfNeeded(workItem)).thenReturn("Workflow function failed");
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            executor.when(() -> TransactionalExecutor.executeInWriteTransaction(any())).thenAnswer(invocation -> {
+                RunnableInWriteTransaction<Object> runnable = invocation.getArgument(0);
+                return runnable.run(mock(WriteTransaction.class));
+            });
+            ImportService importService = spy(new ImportService(polarionServiceExt));
+            doNothing().when(importService).fillWorkItemFields(any(), any(), any(), any());
+
+            ImportResult result = importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+
+            assertEquals(List.of("EL-1"), result.getSkippedIds());
+            assertTrue(result.getUpdatedIds().isEmpty());
+            assertTrue(result.getLog().contains("a1: the data was not updated for 'EL-1': Workflow function failed"));
+            verify(workItem).forget();
+            verify(workItem, never()).save();
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testImportUpdatesWorkItemWhenBothChecksSkipped() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1")));
+        when(mockedSettings.getLinkColumn()).thenReturn("A");
+        when(mockedSettings.getColumnsMapping()).thenReturn(Map.of("A", "excelId"));
+        when(mockedSettings.isDisableEnumDependenciesValidation()).thenReturn(true);
+        when(mockedSettings.isSkipWorkflowOnStatusChange()).thenReturn(true);
+
+        IWorkItem workItem = mock(IWorkItem.class);
+        when(workItem.getId()).thenReturn("EL-1");
+        when(workItem.getValue("excelId")).thenReturn("a1");
+        when(workItem.isModified()).thenReturn(true);
+        when(polarionServiceExt.findWorkItemsById(any(), any(), any())).thenReturn(List.of(workItem));
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            executor.when(() -> TransactionalExecutor.executeInWriteTransaction(any())).thenAnswer(invocation -> {
+                RunnableInWriteTransaction<Object> runnable = invocation.getArgument(0);
+                return runnable.run(mock(WriteTransaction.class));
+            });
+            ImportService importService = spy(new ImportService(polarionServiceExt));
+            doNothing().when(importService).fillWorkItemFields(any(), any(), any(), any());
+
+            ImportResult result = importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+
+            assertEquals(List.of("EL-1"), result.getUpdatedIds());
+            verify(polarionServiceExt, never()).validateEnumDependencies(any(), any());
+            verify(polarionServiceExt, never()).runWorkflowIfNeeded(any());
+            verify(workItem).save();
+        }
+    }
+
     @SuppressWarnings("rawtypes")
     private PolarionServiceExt polarionServiceWithProject() {
         PolarionServiceExt polarionServiceExt = mock(PolarionServiceExt.class);

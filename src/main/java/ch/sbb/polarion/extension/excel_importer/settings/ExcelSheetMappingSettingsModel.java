@@ -30,6 +30,8 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
     public static final String OVERWRITE_WITH_EMPTY = "OVERWRITE_WITH_EMPTY";
     public static final String UNLINK_EXISTING = "UNLINK_EXISTING";
     public static final String IGNORE_UNKNOWN = "IGNORE_UNKNOWN";
+    public static final String DISABLE_ENUM_DEPENDENCIES_VALIDATION = "DISABLE_ENUM_DEPENDENCIES_VALIDATION";
+    public static final String SKIP_WORKFLOW_ON_STATUS_CHANGE = "SKIP_WORKFLOW_ON_STATUS_CHANGE";
 
     public static final String COLUMNS_MAPPING = "COLUMNS_MAPPING";
     public static final String ENUMS_MAPPING = "ENUMS_MAPPING";
@@ -51,6 +53,8 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
     private boolean overwriteWithEmpty;
     private boolean unlinkExisting;
     private boolean ignoreUnknown;
+    private boolean disableEnumDependenciesValidation;
+    private boolean skipWorkflowOnStatusChange;
     private Map<String, String> columnsMapping;
     private Map<String, Map<String, String>> enumsMapping;
     private Map<String, Map<String, String>> stepsMapping;
@@ -64,6 +68,8 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
                 serializeEntry(OVERWRITE_WITH_EMPTY, overwriteWithEmpty) +
                 serializeEntry(UNLINK_EXISTING, unlinkExisting) +
                 serializeEntry(IGNORE_UNKNOWN, ignoreUnknown) +
+                serializeEntry(DISABLE_ENUM_DEPENDENCIES_VALIDATION, disableEnumDependenciesValidation) +
+                serializeEntry(SKIP_WORKFLOW_ON_STATUS_CHANGE, skipWorkflowOnStatusChange) +
                 serializeEntry(COLUMNS_MAPPING, columnsMapping) +
                 serializeEntry(ENUMS_MAPPING, enumsMapping) +
                 serializeEntry(STEPS_MAPPING, stepsMapping) +
@@ -80,6 +86,8 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
         overwriteWithEmpty = !Objects.equals(Boolean.FALSE.toString(), deserializeEntry(OVERWRITE_WITH_EMPTY, serializedString));
         unlinkExisting = Objects.equals(Boolean.TRUE.toString(), deserializeEntry(UNLINK_EXISTING, serializedString));
         ignoreUnknown = Objects.equals(Boolean.TRUE.toString(), deserializeEntry(IGNORE_UNKNOWN, serializedString));
+        disableEnumDependenciesValidation = Objects.equals(Boolean.TRUE.toString(), deserializeEntry(DISABLE_ENUM_DEPENDENCIES_VALIDATION, serializedString));
+        skipWorkflowOnStatusChange = Objects.equals(Boolean.TRUE.toString(), deserializeEntry(SKIP_WORKFLOW_ON_STATUS_CHANGE, serializedString));
         columnsMapping = deserializeEntry(COLUMNS_MAPPING, serializedString, Map.class);
         enumsMapping = deserializeEntry(ENUMS_MAPPING, serializedString, Map.class);
         stepsMapping = Objects.requireNonNullElse(deserializeEntry(STEPS_MAPPING, serializedString, Map.class), Map.of());

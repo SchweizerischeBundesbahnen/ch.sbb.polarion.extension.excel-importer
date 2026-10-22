@@ -17,6 +17,8 @@ export const CONTENT: MappingSettings = {
   startFromRow: 2,
   overwriteWithEmpty: false,
   ignoreUnknown: true,
+  disableEnumDependenciesValidation: false,
+  skipWorkflowOnStatusChange: false,
   unlinkExisting: false,
   columnsMapping: { A: 'title', B: 'description' },
   enumsMapping: {},
