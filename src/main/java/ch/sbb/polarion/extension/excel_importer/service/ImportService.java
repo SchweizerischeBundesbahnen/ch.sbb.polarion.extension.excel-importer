@@ -28,6 +28,7 @@ import com.polarion.core.util.xml.HTMLHelper;
 import com.polarion.platform.persistence.model.IStructure;
 import com.polarion.subterra.base.data.model.IType;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -116,9 +117,15 @@ public class ImportService {
                     } else {
                         IWorkItem createdWorkItem = polarionServiceExt.createWorkItem(context.project, context.workItemType);
                         fillWorkItemFields(createdWorkItem, columnMappingRecord, context, identifierFieldId);
-                        createdWorkItem.save();
-                        logEntries.add("new work item '%s' is being created".formatted(createdWorkItem.getId()));
-                        context.createdIds.add(createdWorkItem.getId());
+                        String dependencyError = validateEnumDependencies(createdWorkItem, context);
+                        if (dependencyError != null) {
+                            context.skippedIds.add(idString);
+                            logEntries.add("new work item was not created: %s".formatted(dependencyError));
+                        } else {
+                            createdWorkItem.save();
+                            logEntries.add("new work item '%s' is being created".formatted(createdWorkItem.getId()));
+                            context.createdIds.add(createdWorkItem.getId());
+                        }
                     }
                 } else {
                     if (workItems.size() > 1) {
@@ -130,6 +137,13 @@ public class ImportService {
                             logEntries.add("no changes were made to '%s'".formatted(workItem.getId()));
                             context.unchangedIds.add(workItem.getId());
                         } else {
+                            String errorMessage = validateResultingObjectAndRunWorkflow(workItem, context);
+                            if (errorMessage != null) {
+                                workItem.forget();
+                                logEntries.add("the data was not updated for '%s': %s".formatted(workItem.getId(), errorMessage));
+                                context.skippedIds.add(workItem.getId());
+                                continue;
+                            }
                             logEntries.add("the data was updated for '%s'".formatted(workItem.getId()));
                             context.updatedIds.add(workItem.getId());
                         }
@@ -141,6 +155,17 @@ public class ImportService {
         }
         context.log("Work items processing completed");
         return null;
+    }
+
+    private String validateResultingObjectAndRunWorkflow(IWorkItem workItem, ImportContext context) {
+        return ObjectUtils.getFirstNonNull(
+                () -> validateEnumDependencies(workItem, context),
+                () -> context.settings.isSkipWorkflowOnStatusChange() ? null : polarionServiceExt.runWorkflowIfNeeded(workItem)
+        );
+    }
+
+    private String validateEnumDependencies(IWorkItem workItem, ImportContext context) {
+        return context.settings.isDisableEnumDependenciesValidation() ? null : polarionServiceExt.validateEnumDependencies(workItem, context.settings.getColumnsMapping().values());
     }
 
     /**

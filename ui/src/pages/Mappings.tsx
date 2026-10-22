@@ -50,6 +50,8 @@ export default function Mappings() {
   const [startFromRow, setStartFromRow] = useState<number>(1);
   const [overwriteWithEmpty, setOverwriteWithEmpty] = useState(false);
   const [ignoreUnknown, setIgnoreUnknown] = useState(false);
+  const [disableEnumDependenciesValidation, setDisableEnumDependenciesValidation] = useState(false);
+  const [skipWorkflowOnStatusChange, setSkipWorkflowOnStatusChange] = useState(false);
   const [selectedWiType, setSelectedWiType] = useState('');
   const [rootRows, setRootRows] = useState<MappingRowData[]>([]);
   // Test-steps sub-row columns: fieldId -> optionKey -> column value.
@@ -123,6 +125,8 @@ export default function Mappings() {
     setStartFromRow(model.startFromRow ?? 1);
     setOverwriteWithEmpty(!!model.overwriteWithEmpty);
     setIgnoreUnknown(!!model.ignoreUnknown);
+    setDisableEnumDependenciesValidation(!!model.disableEnumDependenciesValidation);
+    setSkipWorkflowOnStatusChange(!!model.skipWorkflowOnStatusChange);
     setSelectedWiType(model.defaultWorkItemType ?? '');
     setEnumsMapping(model.enumsMapping ?? {});
     setStepColumns(model.stepsMapping ?? {});
@@ -283,6 +287,8 @@ export default function Mappings() {
       startFromRow,
       overwriteWithEmpty,
       ignoreUnknown,
+      disableEnumDependenciesValidation,
+      skipWorkflowOnStatusChange,
       columnsMapping,
       stepsMapping,
       enumsMapping,
@@ -413,6 +419,20 @@ export default function Mappings() {
                   Overwrite with empty values
                 </label>
               </td>
+              <td className="skip-option">
+                <input
+                  id="disable-enum-dependencies-validation"
+                  type="checkbox"
+                  checked={disableEnumDependenciesValidation}
+                  onChange={(e) => setDisableEnumDependenciesValidation(e.target.checked)}
+                />
+                <label
+                  htmlFor="disable-enum-dependencies-validation"
+                  title="Do not check that dependent enum values match the value of their controlling field. Without this option, a row that breaks such a dependency is skipped."
+                >
+                  Disable enum dependencies validation
+                </label>
+              </td>
             </tr>
             <tr>
               <td colSpan={2}>
@@ -427,6 +447,20 @@ export default function Mappings() {
                   title="Silently skip unresolvable items (e.g. missing linked work items) instead of failing the import."
                 >
                   Ignore unknown/nonexistent values
+                </label>
+              </td>
+              <td className="skip-option">
+                <input
+                  id="skip-workflow-on-status-change"
+                  type="checkbox"
+                  checked={skipWorkflowOnStatusChange}
+                  onChange={(e) => setSkipWorkflowOnStatusChange(e.target.checked)}
+                />
+                <label
+                  htmlFor="skip-workflow-on-status-change"
+                  title="Change the status of existing work items without workflow functions. Without this option, the workflow functions run, and a row whose workflow fails is skipped."
+                >
+                  Skip workflow function call on status change
                 </label>
               </td>
             </tr>
