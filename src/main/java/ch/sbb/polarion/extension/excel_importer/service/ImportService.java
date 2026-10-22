@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.excel_importer.service;
 
+import ch.sbb.polarion.extension.excel_importer.service.parser.impl.XlsxParser;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettings;
 import ch.sbb.polarion.extension.excel_importer.settings.ExcelSheetMappingSettingsModel;
 import ch.sbb.polarion.extension.excel_importer.utils.LinkInfo;
@@ -108,6 +109,7 @@ public class ImportService {
                 stopIfAbortRequested(abortRequested);
                 Object idValue = columnMappingRecord.get(context.settings.getLinkColumn());
                 String idString = String.valueOf(idValue);
+                String rowLabel = isEmpty(idValue) ? "row %s".formatted(columnMappingRecord.get(XlsxParser.ROW_NUMBER_KEY)) : idString;
                 List<String> logEntries = new ArrayList<>();
                 List<IWorkItem> workItems = isEmpty(idValue) ? List.of() : foundWorkItems.stream().filter(findWorkItemByFieldValue(identifierFieldId, idValue)).toList();
                 if (workItems.isEmpty()) { //WorkItem not found - create a new one
@@ -119,7 +121,7 @@ public class ImportService {
                         fillWorkItemFields(createdWorkItem, columnMappingRecord, context, identifierFieldId);
                         String dependencyError = validateEnumDependencies(createdWorkItem, context);
                         if (dependencyError != null) {
-                            context.skippedIds.add(idString);
+                            context.skippedIds.add(rowLabel);
                             logEntries.add("new work item was not created: %s".formatted(dependencyError));
                         } else {
                             createdWorkItem.save();
@@ -150,7 +152,7 @@ public class ImportService {
                         workItem.save();
                     }
                 }
-                context.log((isEmpty(idValue) ? "" : idString + ": ") + String.join(", ", logEntries));
+                context.log(rowLabel + ": " + String.join(", ", logEntries));
             }
         }
         context.log("Work items processing completed");
