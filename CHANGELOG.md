@@ -1,5 +1,22 @@
 # Changelog
 
+## [6.4.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v6.3.0...v6.4.0) (2026-10-23)
+
+
+### Features
+
+* validate enum dependencies and run workflow on status change ([#404](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/404)) ([e134846](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/e1348461f3b4407557a348daba7a6fb2e6691308)), closes [#403](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/403)
+
+
+### Bug Fixes
+
+* **deps:** update apache-poi monorepo to v6 ([#405](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/405)) ([502d7d5](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/502d7d511f951be1f06db2fff60d5ef7d297aef1))
+* **deps:** update dependency eslint to v10.13.0 ([#401](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/401)) ([94fd088](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/94fd0880c36eaf8f5ea82e52359633186e0969ab))
+* **deps:** update dependency playwright to v1.64.1 ([#393](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/393)) ([de2fdcf](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/de2fdcf574fe06d1639600c5015812e5b8612e1f))
+* **deps:** update dependency typescript-eslint to v8.72.0 ([#406](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/406)) ([16e698e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/16e698ec70da507e4c912c46b06532d20b79da88))
+* **deps:** update npm to v12.2.1 ([#402](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/402)) ([12a29c2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/12a29c26d19dd04a45a69715806f3543df1ee2f5))
+* **deps:** update vitest monorepo to v5.0.5 ([#398](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/issues/398)) ([5fbd967](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/commit/5fbd967670cfe67d827245b0cd8c171164233853))
+
 ## [6.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.excel-importer/compare/v6.2.1...v6.3.0) (2026-10-16)
 
 
