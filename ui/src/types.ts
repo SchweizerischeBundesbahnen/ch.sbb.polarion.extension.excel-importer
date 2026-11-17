@@ -55,6 +55,8 @@ export interface WorkItemType {
 export interface MappingSettings {
   sheetName: string;
   startFromRow: number;
+  /** Last row to import (inclusive). Absent or null imports up to the end of the sheet. */
+  endAtRow?: number | null;
   overwriteWithEmpty: boolean;
   ignoreUnknown: boolean;
   disableEnumDependenciesValidation: boolean;

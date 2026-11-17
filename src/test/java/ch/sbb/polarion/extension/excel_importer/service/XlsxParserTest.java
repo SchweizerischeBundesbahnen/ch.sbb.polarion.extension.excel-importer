@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.apache.poi.ss.usermodel.FormulaError;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -156,29 +157,29 @@ class XlsxParserTest {
     @Test
     void testValidateMergedRegionsConditions() throws Exception {
         XlsxParser parser = new XlsxParser();
-        Method method = XlsxParser.class.getDeclaredMethod("validateMergedRegions", List.class, int.class);
+        Method method = XlsxParser.class.getDeclaredMethod("validateMergedRegions", List.class, int.class, Integer.class);
         method.setAccessible(true);
 
         // Non-overlapping: region1 entirely before region2 (first condition true, second false)
         List<CellRangeAddress> beforeRegions = List.of(new CellRangeAddress(1, 2, 0, 0), new CellRangeAddress(4, 5, 1, 1));
-        assertDoesNotThrow(() -> method.invoke(parser, beforeRegions, 1));
+        assertDoesNotThrow(() -> method.invoke(parser, beforeRegions, 1, null));
 
         // Non-overlapping: region1 entirely after region2 (first condition false)
         List<CellRangeAddress> afterRegions = List.of(new CellRangeAddress(4, 5, 0, 0), new CellRangeAddress(1, 2, 1, 1));
-        assertDoesNotThrow(() -> method.invoke(parser, afterRegions, 1));
+        assertDoesNotThrow(() -> method.invoke(parser, afterRegions, 1, null));
 
         // Overlapping with same row range → no exception
         List<CellRangeAddress> sameRangeRegions = List.of(new CellRangeAddress(1, 3, 0, 0), new CellRangeAddress(1, 3, 1, 1));
-        assertDoesNotThrow(() -> method.invoke(parser, sameRangeRegions, 1));
+        assertDoesNotThrow(() -> method.invoke(parser, sameRangeRegions, 1, null));
 
         // Same first row, different last row → sameRowRange second condition is false → exception
         List<CellRangeAddress> sameFirstRowRegions = List.of(new CellRangeAddress(1, 3, 0, 0), new CellRangeAddress(1, 4, 1, 1));
-        InvocationTargetException ex1 = assertThrows(InvocationTargetException.class, () -> method.invoke(parser, sameFirstRowRegions, 1));
+        InvocationTargetException ex1 = assertThrows(InvocationTargetException.class, () -> method.invoke(parser, sameFirstRowRegions, 1, null));
         assertInstanceOf(IllegalArgumentException.class, ex1.getCause());
 
         // Different first row, same last row → sameRowRange first condition is false → exception
         List<CellRangeAddress> sameLastRowRegions = List.of(new CellRangeAddress(1, 4, 0, 0), new CellRangeAddress(2, 4, 1, 1));
-        InvocationTargetException ex2 = assertThrows(InvocationTargetException.class, () -> method.invoke(parser, sameLastRowRegions, 1));
+        InvocationTargetException ex2 = assertThrows(InvocationTargetException.class, () -> method.invoke(parser, sameLastRowRegions, 1, null));
         assertInstanceOf(IllegalArgumentException.class, ex2.getCause());
     }
 
@@ -238,7 +239,155 @@ class XlsxParserTest {
         }
     }
 
+    @Test
+    @SneakyThrows
+    void testEndAtRow() {
+        byte[] file = createSingleColumnFile("end", 5);
+
+        try (InputStream is = new ByteArrayInputStream(file)) {
+            List<Map<String, Object>> result = new XlsxParser().parseFileStream(is, generateSettingsWithEnd("end", 2, 4, "A"));
+            assertEquals(List.of(
+                    Map.of("A", "a2", ROW_NUMBER_KEY, 2),
+                    Map.of("A", "a3", ROW_NUMBER_KEY, 3),
+                    Map.of("A", "a4", ROW_NUMBER_KEY, 4)
+            ), result);
+        }
+        try (InputStream is = new ByteArrayInputStream(file)) {
+            List<Map<String, Object>> result = new XlsxParser().parseFileStream(is, generateSettingsWithEnd("end", 3, 3, "A"));
+            assertEquals(List.of(Map.of("A", "a3", ROW_NUMBER_KEY, 3)), result);
+        }
+        try (InputStream is = new ByteArrayInputStream(file)) {
+            List<Map<String, Object>> result = new XlsxParser().parseFileStream(is, generateSettingsWithEnd("end", 4, 100, "A"));
+            assertEquals(List.of(
+                    Map.of("A", "a4", ROW_NUMBER_KEY, 4),
+                    Map.of("A", "a5", ROW_NUMBER_KEY, 5)
+            ), result);
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testEndAtRowLessThanStartRow() {
+        XlsxParser xlsxParser = new XlsxParser();
+        IParserSettings settings = generateSettingsWithEnd("end", 3, 2, "A");
+        try (InputStream is = new ByteArrayInputStream(createSingleColumnFile("end", 5))) {
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> xlsxParser.parseFileStream(is, settings));
+            assertEquals("End row 2 must not be less than start row 3", exception.getMessage());
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testMergedRegionsAfterEndAtRowIgnored() {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("summary");
+            for (int i = 0; i < 6; i++) {
+                XSSFRow row = sheet.createRow(i);
+                row.createCell(0).setCellValue("a" + (i + 1));
+                row.createCell(1).setCellValue("b" + (i + 1));
+            }
+            // rows 4-6 hold a summary block with partially overlapping merged regions
+            sheet.addMergedRegion(new CellRangeAddress(3, 5, 0, 0));
+            sheet.addMergedRegion(new CellRangeAddress(4, 5, 1, 1));
+            workbook.write(bos);
+        }
+        byte[] file = bos.toByteArray();
+
+        XlsxParser xlsxParser = new XlsxParser();
+        IParserSettings withoutEnd = generateSettings("summary", 1, "A", "B");
+        try (InputStream is = new ByteArrayInputStream(file)) {
+            assertThrows(IllegalArgumentException.class, () -> xlsxParser.parseFileStream(is, withoutEnd));
+        }
+        try (InputStream is = new ByteArrayInputStream(file)) {
+            List<Map<String, Object>> result = xlsxParser.parseFileStream(is, generateSettingsWithEnd("summary", 1, 3, "A", "B"));
+            assertEquals(List.of(
+                    Map.of("A", "a1", "B", "b1", ROW_NUMBER_KEY, 1),
+                    Map.of("A", "a2", "B", "b2", ROW_NUMBER_KEY, 2),
+                    Map.of("A", "a3", "B", "b3", ROW_NUMBER_KEY, 3)
+            ), result);
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testMergedRegionCrossingEndAtRowIsCut() {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("cut");
+            XSSFRow row1 = sheet.createRow(0);
+            row1.createCell(0).setCellValue("id1");
+            row1.createCell(1).setCellValue("s1");
+            XSSFRow row2 = sheet.createRow(1);
+            row2.createCell(0).setCellValue("id2");
+            row2.createCell(1).setCellValue("s2a");
+            sheet.createRow(2).createCell(1).setCellValue("s2b");
+            // an error cell below the end row would fail the import if it was read
+            sheet.createRow(3).createCell(1).setCellErrorValue(FormulaError.DIV0);
+            sheet.addMergedRegion(new CellRangeAddress(1, 3, 0, 0));
+            workbook.write(bos);
+        }
+
+        try (InputStream is = new ByteArrayInputStream(bos.toByteArray())) {
+            List<Map<String, Object>> result = new XlsxParser().parseFileStream(is, generateSettingsWithEnd("cut", 1, 3, "A", "B"));
+            assertEquals(List.of(
+                    Map.of("A", "id1", "B", "s1", ROW_NUMBER_KEY, 1),
+                    Map.of("A", "id2", "B", List.of("s2a", "s2b"), ROW_NUMBER_KEY, 2)
+            ), result);
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testVisuallyEmptyRowsAreSkipped() {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("blank");
+            sheet.createRow(0).createCell(0).setCellValue("   ");
+            sheet.createRow(1).createCell(0).setCellValue(true);
+            // merged A3:A4 with only blank values in column B
+            sheet.createRow(2).createCell(1).setCellValue(" ");
+            sheet.createRow(3);
+            // merged A5:A6 where column B holds a non-string value
+            sheet.createRow(4);
+            sheet.createRow(5).createCell(1).setCellValue(true);
+            // merged A7:A8 where column B holds text
+            sheet.createRow(6);
+            sheet.createRow(7).createCell(1).setCellValue("b8");
+            sheet.addMergedRegion(new CellRangeAddress(2, 3, 0, 0));
+            sheet.addMergedRegion(new CellRangeAddress(4, 5, 0, 0));
+            sheet.addMergedRegion(new CellRangeAddress(6, 7, 0, 0));
+            workbook.write(bos);
+        }
+
+        try (InputStream is = new ByteArrayInputStream(bos.toByteArray())) {
+            List<Map<String, Object>> result = cleanNulls(new XlsxParser().parseFileStream(is, generateSettings("blank", 1, "A", "B")));
+            assertEquals(List.of(
+                    Map.of("A", true, ROW_NUMBER_KEY, 2),
+                    Map.of("B", Arrays.asList(null, true), ROW_NUMBER_KEY, 5),
+                    Map.of("B", Arrays.asList(null, "b8"), ROW_NUMBER_KEY, 7)
+            ), result);
+        }
+    }
+
+    @SneakyThrows
+    private byte[] createSingleColumnFile(String sheetName, int rowsCount) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet(sheetName);
+            for (int i = 0; i < rowsCount; i++) {
+                sheet.createRow(i).createCell(0).setCellValue("a" + (i + 1));
+            }
+            workbook.write(bos);
+        }
+        return bos.toByteArray();
+    }
+
     private IParserSettings generateSettings(String sheetName, int startingRow, String... customUsedColumnsLetters) {
+        return generateSettingsWithEnd(sheetName, startingRow, null, customUsedColumnsLetters);
+    }
+
+    private IParserSettings generateSettingsWithEnd(String sheetName, int startingRow, Integer endingRow, String... customUsedColumnsLetters) {
         return new IParserSettings() {
             @Override
             public String getSheetName() {
@@ -248,6 +397,11 @@ class XlsxParserTest {
             @Override
             public int getStartFromRow() {
                 return startingRow;
+            }
+
+            @Override
+            public Integer getEndAtRow() {
+                return endingRow;
             }
 
             @Override
