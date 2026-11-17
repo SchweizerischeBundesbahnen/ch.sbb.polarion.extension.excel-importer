@@ -337,6 +337,39 @@ class XlsxParserTest {
         }
     }
 
+    @Test
+    @SneakyThrows
+    void testVisuallyEmptyRowsAreSkipped() {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("blank");
+            sheet.createRow(0).createCell(0).setCellValue("   ");
+            sheet.createRow(1).createCell(0).setCellValue(true);
+            // merged A3:A4 with only blank values in column B
+            sheet.createRow(2).createCell(1).setCellValue(" ");
+            sheet.createRow(3);
+            // merged A5:A6 where column B holds a non-string value
+            sheet.createRow(4);
+            sheet.createRow(5).createCell(1).setCellValue(true);
+            // merged A7:A8 where column B holds text
+            sheet.createRow(6);
+            sheet.createRow(7).createCell(1).setCellValue("b8");
+            sheet.addMergedRegion(new CellRangeAddress(2, 3, 0, 0));
+            sheet.addMergedRegion(new CellRangeAddress(4, 5, 0, 0));
+            sheet.addMergedRegion(new CellRangeAddress(6, 7, 0, 0));
+            workbook.write(bos);
+        }
+
+        try (InputStream is = new ByteArrayInputStream(bos.toByteArray())) {
+            List<Map<String, Object>> result = cleanNulls(new XlsxParser().parseFileStream(is, generateSettings("blank", 1, "A", "B")));
+            assertEquals(List.of(
+                    Map.of("A", true, ROW_NUMBER_KEY, 2),
+                    Map.of("B", Arrays.asList(null, true), ROW_NUMBER_KEY, 5),
+                    Map.of("B", Arrays.asList(null, "b8"), ROW_NUMBER_KEY, 7)
+            ), result);
+        }
+    }
+
     @SneakyThrows
     private byte[] createSingleColumnFile(String sheetName, int rowsCount) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
