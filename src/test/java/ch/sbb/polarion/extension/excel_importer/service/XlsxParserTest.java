@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.apache.poi.ss.usermodel.FormulaError;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -304,6 +305,34 @@ class XlsxParserTest {
                     Map.of("A", "a1", "B", "b1", ROW_NUMBER_KEY, 1),
                     Map.of("A", "a2", "B", "b2", ROW_NUMBER_KEY, 2),
                     Map.of("A", "a3", "B", "b3", ROW_NUMBER_KEY, 3)
+            ), result);
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testMergedRegionCrossingEndAtRowIsCut() {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("cut");
+            XSSFRow row1 = sheet.createRow(0);
+            row1.createCell(0).setCellValue("id1");
+            row1.createCell(1).setCellValue("s1");
+            XSSFRow row2 = sheet.createRow(1);
+            row2.createCell(0).setCellValue("id2");
+            row2.createCell(1).setCellValue("s2a");
+            sheet.createRow(2).createCell(1).setCellValue("s2b");
+            // an error cell below the end row would fail the import if it was read
+            sheet.createRow(3).createCell(1).setCellErrorValue(FormulaError.DIV0);
+            sheet.addMergedRegion(new CellRangeAddress(1, 3, 0, 0));
+            workbook.write(bos);
+        }
+
+        try (InputStream is = new ByteArrayInputStream(bos.toByteArray())) {
+            List<Map<String, Object>> result = new XlsxParser().parseFileStream(is, generateSettingsWithEnd("cut", 1, 3, "A", "B"));
+            assertEquals(List.of(
+                    Map.of("A", "id1", "B", "s1", ROW_NUMBER_KEY, 1),
+                    Map.of("A", "id2", "B", List.of("s2a", "s2b"), ROW_NUMBER_KEY, 2)
             ), result);
         }
     }

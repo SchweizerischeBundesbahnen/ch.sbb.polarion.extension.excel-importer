@@ -50,28 +50,26 @@ public class XlsxParser implements IParser {
         }
         int startFromRow = parserSettings.getStartFromRow();
         Integer endAtRow = parserSettings.getEndAtRow();
-        if (endAtRow != null && endAtRow < startFromRow) {
-            throw new IllegalArgumentException(String.format("End row %d must not be less than start row %d", endAtRow, startFromRow));
-        }
+        validateRowRange(startFromRow, endAtRow);
+        int lastRow = endAtRow == null ? Integer.MAX_VALUE : endAtRow;
         XSSFSheet sheet = workbook.getSheetAt(sheetIndex);
         List<CellRangeAddress> mergedRegions = sheet.getMergedRegions();
         validateMergedRegions(mergedRegions, startFromRow, endAtRow);
         Set<String> usedColumnsLetters = parserSettings.getUsedColumnsLetters();
         for (Row row : sheet) {
             // the sheet iterator skips rows absent from the file, so a visit counter drifts from the real row number
-            if (row.getRowNum() + 1 < startFromRow) {
-                continue;
-            }
-            if (endAtRow != null && row.getRowNum() + 1 > endAtRow) {
+            int rowNumber = row.getRowNum() + 1;
+            if (rowNumber > lastRow) {
                 break;
             }
-            Map<String, Object> map = parseRow(row, usedColumnsLetters, mergedRegions);
-            // sometimes we get a row full of nulls - we have to skip it
-            // also we skip rows with empty (or visually empty) strings
-            if (map != null && !map.values().stream().allMatch(v -> v == null || (v instanceof String s && StringUtils.isEmptyTrimmed(s))
-                    || v instanceof List<?> l && l.stream().allMatch(i -> i == null || (i instanceof String str && StringUtils.isEmptyTrimmed(str))))) {
-                map.put(ROW_NUMBER_KEY, row.getRowNum() + 1);
-                result.add(map);
+            if (rowNumber >= startFromRow) {
+                Map<String, Object> map = parseRow(row, usedColumnsLetters, mergedRegions, lastRow);
+                // sometimes we get a row full of nulls - we have to skip it
+                // also we skip rows with empty (or visually empty) strings
+                if (map != null && !isEmptyRow(map)) {
+                    map.put(ROW_NUMBER_KEY, rowNumber);
+                    result.add(map);
+                }
             }
         }
         inputStream.close();
@@ -79,8 +77,22 @@ public class XlsxParser implements IParser {
         return result;
     }
 
+    private static void validateRowRange(int startFromRow, @Nullable Integer endAtRow) {
+        if (endAtRow != null && endAtRow < startFromRow) {
+            throw new IllegalArgumentException(String.format("End row %d must not be less than start row %d", endAtRow, startFromRow));
+        }
+    }
+
+    private static boolean isEmptyRow(Map<String, Object> map) {
+        return map.values().stream().allMatch(v -> v == null || (v instanceof String s && StringUtils.isEmptyTrimmed(s))
+                || v instanceof List<?> l && l.stream().allMatch(i -> i == null || (i instanceof String str && StringUtils.isEmptyTrimmed(str))));
+    }
+
+    /**
+     * @param lastRow 1-based last row to import; rows of a merged region below it are not read
+     */
     @Nullable
-    private Map<String, Object> parseRow(Row row, Set<String> usedColumnsLetters, List<CellRangeAddress> mergedRegions) {
+    private Map<String, Object> parseRow(Row row, Set<String> usedColumnsLetters, List<CellRangeAddress> mergedRegions, int lastRow) {
         Map<String, Object> map = new HashMap<>();
         CellRangeAddress nearestMergedRegion = mergedRegions.stream().filter(r -> r.containsRow(row.getRowNum())).findFirst().orElse(null);
         if (nearestMergedRegion != null && nearestMergedRegion.getFirstRow() != row.getRowNum()) {
@@ -99,7 +111,8 @@ public class XlsxParser implements IParser {
             } else if (nearestMergedRegion != null) {
                 // collect values from all rows of the merged region into a list for the current column
                 List<Object> valuesList = new ArrayList<>();
-                for (int r = nearestMergedRegion.getFirstRow(); r <= nearestMergedRegion.getLastRow(); r++) {
+                int lastRegionRow = Math.min(nearestMergedRegion.getLastRow(), lastRow - 1);
+                for (int r = nearestMergedRegion.getFirstRow(); r <= lastRegionRow; r++) {
                     Cell nextCell = row.getSheet().getRow(r).getCell(currentColumnIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
                     valuesList.add(getCellValue(nextCell, currentLetter));
                 }
