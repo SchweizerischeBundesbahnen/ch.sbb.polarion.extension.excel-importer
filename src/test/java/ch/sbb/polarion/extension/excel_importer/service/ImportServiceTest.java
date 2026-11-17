@@ -1768,6 +1768,8 @@ class ImportServiceTest {
                 @Override
                 public int getStartFromRow() { return 1; }
                 @Override
+                public Integer getEndAtRow() { return null; }
+                @Override
                 public Set<String> getUsedColumnsLetters() { return Set.of("A", "B"); }
             };
             try (var input = getClass().getClassLoader().getResourceAsStream("test.xlsx")) {

@@ -200,6 +200,7 @@ class ExcelSheetMappingSettingsTest {
                 String.format(ExcelSheetMappingSettingsModel.END_ENTRY, ExcelSheetMappingSettingsModel.SHEET_NAME) + System.lineSeparator());
         assertEquals("Sheet1", model.getSheetName());
         assertEquals(1, model.getStartFromRow());
+        assertNull(model.getEndAtRow());
         assertFalse(model.isDisableEnumDependenciesValidation());
         assertFalse(model.isSkipWorkflowOnStatusChange());
     }
@@ -217,6 +218,25 @@ class ExcelSheetMappingSettingsTest {
 
         assertTrue(restored.isDisableEnumDependenciesValidation());
         assertTrue(restored.isSkipWorkflowOnStatusChange());
+    }
+
+    @Test
+    void testEndAtRowSurvivesSerialization() {
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .sheetName("Sheet1")
+                .startFromRow(2)
+                .endAtRow(10)
+                .build();
+
+        ExcelSheetMappingSettingsModel restored = new ExcelSheetMappingSettingsModel();
+        restored.deserialize(model.serialize());
+
+        assertEquals(2, restored.getStartFromRow());
+        assertEquals(10, restored.getEndAtRow());
+
+        model.setEndAtRow(null);
+        restored.deserialize(model.serialize());
+        assertNull(restored.getEndAtRow());
     }
 
     @Test

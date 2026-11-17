@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 public class ExcelSheetMappingSettingsModel extends SettingsModel implements IParserSettings {
     public static final String SHEET_NAME = "SHEET_NAME";
     public static final String START_FROM_ROW = "START_FROM_ROW";
+    public static final String END_AT_ROW = "END_AT_ROW";
     public static final String OVERWRITE_WITH_EMPTY = "OVERWRITE_WITH_EMPTY";
     public static final String UNLINK_EXISTING = "UNLINK_EXISTING";
     public static final String IGNORE_UNKNOWN = "IGNORE_UNKNOWN";
@@ -50,6 +51,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
 
     private String sheetName;
     private int startFromRow;
+    private Integer endAtRow;
     private boolean overwriteWithEmpty;
     private boolean unlinkExisting;
     private boolean ignoreUnknown;
@@ -65,6 +67,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
     protected String serializeModelData() {
         return serializeEntry(SHEET_NAME, sheetName) +
                 serializeEntry(START_FROM_ROW, startFromRow) +
+                serializeEntry(END_AT_ROW, endAtRow) +
                 serializeEntry(OVERWRITE_WITH_EMPTY, overwriteWithEmpty) +
                 serializeEntry(UNLINK_EXISTING, unlinkExisting) +
                 serializeEntry(IGNORE_UNKNOWN, ignoreUnknown) +
@@ -83,6 +86,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
         sheetName = deserializeEntry(SHEET_NAME, serializedString);
         Integer startFromRowValue = deserializeEntry(START_FROM_ROW, serializedString, Integer.class);
         startFromRow = startFromRowValue == null ? 1 : startFromRowValue;
+        endAtRow = deserializeEntry(END_AT_ROW, serializedString, Integer.class);
         overwriteWithEmpty = !Objects.equals(Boolean.FALSE.toString(), deserializeEntry(OVERWRITE_WITH_EMPTY, serializedString));
         unlinkExisting = Objects.equals(Boolean.TRUE.toString(), deserializeEntry(UNLINK_EXISTING, serializedString));
         ignoreUnknown = Objects.equals(Boolean.TRUE.toString(), deserializeEntry(IGNORE_UNKNOWN, serializedString));

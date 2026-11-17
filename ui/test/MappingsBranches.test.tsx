@@ -168,6 +168,77 @@ describe('Mappings with a Test Steps field', () => {
   });
 });
 
+describe('Mappings end import row', () => {
+  const routesWithRows = (rows: { startFromRow: number; endAtRow?: number | null }): Route[] =>
+    replaceRoute(mappingsRoutes(), /\/settings\/mappings\/names\/[^/]+\/content/, {
+      method: 'GET',
+      match: /\/settings\/mappings\/names\/[^/]+\/content/,
+      json: {
+        sheetName: 'Sheet1',
+        ...rows,
+        columnsMapping: { A: 'title' },
+        defaultWorkItemType: 'requirement',
+        linkColumn: 'A',
+      },
+    });
+
+  const endCheckbox = () => document.querySelector<HTMLInputElement>('#end-at-row-enabled')!;
+  const endInput = () => document.querySelector<HTMLInputElement>('#end-at-row');
+
+  const setNumber = (input: HTMLInputElement, value: string) => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    setter.call(input, value);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  it('hides the end row input until the checkbox is checked and saves null when unchecked', async () => {
+    await mount(routesWithRows({ startFromRow: 3 }));
+    await vi.waitFor(() => expect(mappingRows()).toBe(1), { timeout: 5000 });
+    expect(endCheckbox().checked).toBe(false);
+    expect(endInput()).toBeNull();
+
+    endCheckbox().click();
+    await vi.waitFor(() => expect(endInput()?.value).toBe('3'));
+    endCheckbox().click();
+    await vi.waitFor(() => expect(endInput()).toBeNull());
+
+    const saved = await saveAndCapture();
+    expect(saved.endAtRow).toBeNull();
+  });
+
+  it('loads a stored end row and saves it back', async () => {
+    await mount(routesWithRows({ startFromRow: 2, endAtRow: 10 }));
+    await vi.waitFor(() => expect(endInput()?.value).toBe('10'), { timeout: 5000 });
+    expect(endCheckbox().checked).toBe(true);
+    const saved = await saveAndCapture();
+    expect(saved.endAtRow).toBe(10);
+  });
+
+  it('refuses to save an end row less than the start row', async () => {
+    await mount(routesWithRows({ startFromRow: 5, endAtRow: 10 }));
+    await vi.waitFor(() => expect(endInput()?.value).toBe('10'), { timeout: 5000 });
+    setNumber(endInput()!, '4');
+    await vi.waitFor(() => expect(endInput()?.value).toBe('4'));
+    saveButton().click();
+    await vi.waitFor(
+      () =>
+        expect(document.body.textContent).toContain('End row number must be greater than or equal to start row number'),
+      { timeout: 5000 },
+    );
+  });
+
+  it('refuses to save an empty end row', async () => {
+    await mount(routesWithRows({ startFromRow: 1, endAtRow: 10 }));
+    await vi.waitFor(() => expect(endInput()?.value).toBe('10'), { timeout: 5000 });
+    setNumber(endInput()!, '');
+    saveButton().click();
+    await vi.waitFor(
+      () => expect(document.body.textContent).toContain('End row number must be a positive integer value'),
+      { timeout: 5000 },
+    );
+  });
+});
+
 describe('Mappings metadata load failures', () => {
   it('reports a failure to load the work item types', async () => {
     await mount(

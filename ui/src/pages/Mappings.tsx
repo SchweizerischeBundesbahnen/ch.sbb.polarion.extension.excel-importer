@@ -48,6 +48,8 @@ export default function Mappings() {
   // Form state (the mapping configuration content).
   const [sheetName, setSheetName] = useState('Sheet1');
   const [startFromRow, setStartFromRow] = useState<number>(1);
+  const [endAtRowEnabled, setEndAtRowEnabled] = useState(false);
+  const [endAtRow, setEndAtRow] = useState<number>(1);
   const [overwriteWithEmpty, setOverwriteWithEmpty] = useState(false);
   const [ignoreUnknown, setIgnoreUnknown] = useState(false);
   const [disableEnumDependenciesValidation, setDisableEnumDependenciesValidation] = useState(false);
@@ -123,6 +125,8 @@ export default function Mappings() {
   const applySettings = useCallback((model: MappingSettings) => {
     setSheetName(model.sheetName ?? '');
     setStartFromRow(model.startFromRow ?? 1);
+    setEndAtRowEnabled(model.endAtRow != null);
+    setEndAtRow(model.endAtRow ?? model.startFromRow ?? 1);
     setOverwriteWithEmpty(!!model.overwriteWithEmpty);
     setIgnoreUnknown(!!model.ignoreUnknown);
     setDisableEnumDependenciesValidation(!!model.disableEnumDependenciesValidation);
@@ -227,6 +231,14 @@ export default function Mappings() {
     if (startFromRow === undefined || startFromRow === null || Number.isNaN(startFromRow) || startFromRow < 1) {
       return 'Row number must be a positive integer value';
     }
+    if (endAtRowEnabled) {
+      if (Number.isNaN(endAtRow) || endAtRow < 1) {
+        return 'End row number must be a positive integer value';
+      }
+      if (endAtRow < startFromRow) {
+        return 'End row number must be greater than or equal to start row number';
+      }
+    }
     const seenColumns: string[] = [];
     for (const row of rootRows) {
       const field = getField(row.fieldId);
@@ -285,6 +297,7 @@ export default function Mappings() {
     return {
       sheetName,
       startFromRow,
+      endAtRow: endAtRowEnabled ? endAtRow : null,
       overwriteWithEmpty,
       ignoreUnknown,
       disableEnumDependenciesValidation,
@@ -402,6 +415,40 @@ export default function Mappings() {
                   value={Number.isNaN(startFromRow) ? '' : startFromRow}
                   onChange={(e) => setStartFromRow(parseInt(e.target.value, 10))}
                 />
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <input
+                  id="end-at-row-enabled"
+                  type="checkbox"
+                  checked={endAtRowEnabled}
+                  onChange={(e) => {
+                    setEndAtRowEnabled(e.target.checked);
+                    if (e.target.checked && (Number.isNaN(endAtRow) || endAtRow < startFromRow)) {
+                      setEndAtRow(startFromRow);
+                    }
+                  }}
+                />
+                <label
+                  htmlFor="end-at-row-enabled"
+                  title="Stop the import after this row. Rows below it are not imported."
+                >
+                  End import in row:
+                </label>
+              </td>
+              <td>
+                {endAtRowEnabled && (
+                  <input
+                    id="end-at-row"
+                    aria-label="End import row number"
+                    type="number"
+                    min={Number.isNaN(startFromRow) ? 1 : startFromRow}
+                    step={1}
+                    value={Number.isNaN(endAtRow) ? '' : endAtRow}
+                    onChange={(e) => setEndAtRow(parseInt(e.target.value, 10))}
+                  />
+                )}
               </td>
             </tr>
             <tr>
@@ -588,6 +635,10 @@ export default function Mappings() {
           <p>
             This section contains inputs with the Excel sheet name (<code>Sheet1</code> by default) and the row number
             (1 by default) to import data from.
+          </p>
+          <p>
+            Check <b>End import in row</b> to set the last row to import. Rows below it are ignored. The value must be
+            greater than or equal to the start row.
           </p>
           <h3>Workitem Type To Create</h3>
           <p>This section contains a combobox with workitem types available for the current project.</p>

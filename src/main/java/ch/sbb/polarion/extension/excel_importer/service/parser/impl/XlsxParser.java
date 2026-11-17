@@ -49,14 +49,21 @@ public class XlsxParser implements IParser {
             throw new IllegalArgumentException(String.format("File doesn't contain sheet '%s'", sheetName));
         }
         int startFromRow = parserSettings.getStartFromRow();
+        Integer endAtRow = parserSettings.getEndAtRow();
+        if (endAtRow != null && endAtRow < startFromRow) {
+            throw new IllegalArgumentException(String.format("End row %d must not be less than start row %d", endAtRow, startFromRow));
+        }
         XSSFSheet sheet = workbook.getSheetAt(sheetIndex);
         List<CellRangeAddress> mergedRegions = sheet.getMergedRegions();
-        validateMergedRegions(mergedRegions, startFromRow);
+        validateMergedRegions(mergedRegions, startFromRow, endAtRow);
         Set<String> usedColumnsLetters = parserSettings.getUsedColumnsLetters();
         for (Row row : sheet) {
             // the sheet iterator skips rows absent from the file, so a visit counter drifts from the real row number
             if (row.getRowNum() + 1 < startFromRow) {
                 continue;
+            }
+            if (endAtRow != null && row.getRowNum() + 1 > endAtRow) {
+                break;
             }
             Map<String, Object> map = parseRow(row, usedColumnsLetters, mergedRegions);
             // sometimes we get a row full of nulls - we have to skip it
@@ -125,8 +132,11 @@ public class XlsxParser implements IParser {
         }
     }
 
-    private void validateMergedRegions(List<CellRangeAddress> mergedRegions, int startFromRow) {
-        List<CellRangeAddress> dataAreaRegions = mergedRegions.stream().filter(r -> r.getLastRow() >= startFromRow - 1).toList();
+    private void validateMergedRegions(List<CellRangeAddress> mergedRegions, int startFromRow, @Nullable Integer endAtRow) {
+        List<CellRangeAddress> dataAreaRegions = mergedRegions.stream()
+                .filter(r -> r.getLastRow() >= startFromRow - 1)
+                .filter(r -> endAtRow == null || r.getFirstRow() <= endAtRow - 1)
+                .toList();
         for (int i = 0; i < dataAreaRegions.size(); i++) {
             for (int j = i + 1; j < dataAreaRegions.size(); j++) {
                 CellRangeAddress region1 = dataAreaRegions.get(i);
