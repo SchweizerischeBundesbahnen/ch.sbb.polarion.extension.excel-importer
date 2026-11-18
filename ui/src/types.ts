@@ -67,4 +67,6 @@ export interface MappingSettings {
   stepsMapping?: Record<string, Record<string, string>>;
   defaultWorkItemType: string;
   linkColumn: string;
+  /** Reject the whole import when a non-empty value repeats in the link column. */
+  linkColumnUnique?: boolean;
 }

@@ -39,6 +39,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
     public static final String STEPS_MAPPING = "STEPS_MAPPING";
     public static final String DEFAULT_WI_TYPE = "DEFAULT_WI_TYPE";
     public static final String LINK_COLUMN = "LINK_COLUMN";
+    public static final String LINK_COLUMN_UNIQUE = "LINK_COLUMN_UNIQUE";
 
     /**
      * Prefix for columns mapping keys which are used as fillers for test steps items.
@@ -62,6 +63,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
     private Map<String, Map<String, String>> stepsMapping;
     private String defaultWorkItemType;
     private String linkColumn;
+    private boolean linkColumnUnique;
 
     @Override
     protected String serializeModelData() {
@@ -77,7 +79,8 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
                 serializeEntry(ENUMS_MAPPING, enumsMapping) +
                 serializeEntry(STEPS_MAPPING, stepsMapping) +
                 serializeEntry(DEFAULT_WI_TYPE, defaultWorkItemType) +
-                serializeEntry(LINK_COLUMN, linkColumn);
+                serializeEntry(LINK_COLUMN, linkColumn) +
+                serializeEntry(LINK_COLUMN_UNIQUE, linkColumnUnique);
     }
 
     @Override
@@ -97,6 +100,7 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
         stepsMapping = Objects.requireNonNullElse(deserializeEntry(STEPS_MAPPING, serializedString, Map.class), Map.of());
         defaultWorkItemType = deserializeEntry(DEFAULT_WI_TYPE, serializedString);
         linkColumn = deserializeEntry(LINK_COLUMN, serializedString);
+        linkColumnUnique = Objects.equals(Boolean.TRUE.toString(), deserializeEntry(LINK_COLUMN_UNIQUE, serializedString));
     }
 
     @JsonIgnore

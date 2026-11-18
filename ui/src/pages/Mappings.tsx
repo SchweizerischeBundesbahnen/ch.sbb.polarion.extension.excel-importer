@@ -61,6 +61,7 @@ export default function Mappings() {
   const [enumsMapping, setEnumsMapping] = useState<Record<string, Record<string, string>>>({});
   const [unlinkExisting, setUnlinkExisting] = useState(false);
   const [linkColumn, setLinkColumn] = useState('');
+  const [linkColumnUnique, setLinkColumnUnique] = useState(false);
 
   // UI state.
   const [selectedConfig, setSelectedConfig] = useState<string | null>(null);
@@ -145,6 +146,7 @@ export default function Mappings() {
       })),
     );
     setLinkColumn(model.linkColumn ?? '');
+    setLinkColumnUnique(!!model.linkColumnUnique);
   }, []);
 
   const handleContentLoaded = useCallback(
@@ -307,6 +309,7 @@ export default function Mappings() {
       enumsMapping,
       defaultWorkItemType: selectedWiType,
       linkColumn,
+      linkColumnUnique,
       unlinkExisting,
     };
   };
@@ -607,6 +610,20 @@ export default function Mappings() {
             allowEmpty
             placeholder=""
           />
+          <span>
+            <input
+              id="link-column-unique"
+              type="checkbox"
+              checked={linkColumnUnique}
+              onChange={(e) => setLinkColumnUnique(e.target.checked)}
+            />
+            <label
+              htmlFor="link-column-unique"
+              title="Cancel the import when a value repeats in the link column. The error message lists the repeated values and their rows."
+            >
+              Values must be unique
+            </label>
+          </span>
         </div>
 
         {/* No onRevertToDefault: the Mappings page hides the Default button (there is no default). */}
@@ -659,6 +676,10 @@ export default function Mappings() {
           <h3>Link Column</h3>
           <p>
             This section contains a combobox for linking Excel rows to existing Polarion workitems for data updates.
+          </p>
+          <p>
+            Check <b>Values must be unique</b> to cancel the import when a value repeats in the link column. Nothing is
+            imported, and the error message lists the repeated values with their rows. Empty values are not checked.
           </p>
           <h3>Date and Time Formats</h3>
           <p>

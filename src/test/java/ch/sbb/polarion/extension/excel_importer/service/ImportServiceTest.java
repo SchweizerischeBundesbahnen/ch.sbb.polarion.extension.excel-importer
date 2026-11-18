@@ -158,6 +158,65 @@ class ImportServiceTest {
     }
 
     @Test
+    void testImportWithDuplicateLinkValuesStartsNoTransaction() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1", XlsxParser.ROW_NUMBER_KEY, 2)));
+        parsedData.add(new HashMap<>(Map.of("A", "a2", XlsxParser.ROW_NUMBER_KEY, 3)));
+        parsedData.add(new HashMap<>(Map.of("A", "a1", XlsxParser.ROW_NUMBER_KEY, 4)));
+        when(mockedSettings.isLinkColumnUnique()).thenReturn(true);
+        when(mockedSettings.getLinkColumn()).thenReturn("A");
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            ImportService importService = new ImportService(polarionServiceExt);
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                    () -> importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]));
+
+            assertEquals("Link column 'A' must contain unique values, nothing was imported. Duplicates: 'a1' (rows 2, 4)", exception.getMessage());
+            executor.verifyNoInteractions();
+        }
+    }
+
+    @Test
+    void testImportWithDuplicateLinkValuesNotCheckedWhenOptionOff() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1", XlsxParser.ROW_NUMBER_KEY, 2)));
+        parsedData.add(new HashMap<>(Map.of("A", "a1", XlsxParser.ROW_NUMBER_KEY, 3)));
+        when(mockedSettings.isLinkColumnUnique()).thenReturn(false);
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            ImportService importService = new ImportService(polarionServiceExt);
+            importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+
+            executor.verify(() -> TransactionalExecutor.executeInWriteTransaction(any()));
+        }
+    }
+
+    @Test
+    void testValidateLinkColumnUnique() {
+        ImportService importService = new ImportService(mock(PolarionServiceExt.class));
+
+        List<Map<String, Object>> unique = new ArrayList<>();
+        unique.add(new HashMap<>(Map.of("A", "a1", XlsxParser.ROW_NUMBER_KEY, 1)));
+        unique.add(new HashMap<>(Map.of("A", "a2", XlsxParser.ROW_NUMBER_KEY, 2)));
+        // empty values may repeat: with the 'id' link column each of them creates a new work item
+        unique.add(new HashMap<>(Map.of("A", " ", XlsxParser.ROW_NUMBER_KEY, 3)));
+        unique.add(new HashMap<>(Map.of("A", " ", XlsxParser.ROW_NUMBER_KEY, 4)));
+        unique.add(new HashMap<>(Map.of("B", "b5", XlsxParser.ROW_NUMBER_KEY, 5)));
+        unique.add(new HashMap<>(Map.of("B", "b6", XlsxParser.ROW_NUMBER_KEY, 6)));
+        assertDoesNotThrow(() -> importService.validateLinkColumnUnique(unique, "A"));
+
+        List<Map<String, Object>> duplicates = new ArrayList<>();
+        duplicates.add(new HashMap<>(Map.of("A", "b", XlsxParser.ROW_NUMBER_KEY, 1)));
+        duplicates.add(new HashMap<>(Map.of("A", "a", XlsxParser.ROW_NUMBER_KEY, 2)));
+        duplicates.add(new HashMap<>(Map.of("A", "b", XlsxParser.ROW_NUMBER_KEY, 3)));
+        duplicates.add(new HashMap<>(Map.of("A", "a", XlsxParser.ROW_NUMBER_KEY, 4)));
+        duplicates.add(new HashMap<>(Map.of("A", "b", XlsxParser.ROW_NUMBER_KEY, 5)));
+        duplicates.add(new HashMap<>(Map.of("A", "c", XlsxParser.ROW_NUMBER_KEY, 6)));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> importService.validateLinkColumnUnique(duplicates, "A"));
+        assertEquals("Link column 'A' must contain unique values, nothing was imported. Duplicates: 'b' (rows 1, 3, 5), 'a' (rows 2, 4)", exception.getMessage());
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void testImportSkipsUpdateBreakingEnumDependency() {
         PolarionServiceExt polarionServiceExt = polarionServiceWithProject();

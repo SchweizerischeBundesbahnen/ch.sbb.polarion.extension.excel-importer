@@ -239,6 +239,45 @@ describe('Mappings end import row', () => {
   });
 });
 
+describe('Mappings link column uniqueness', () => {
+  const routesWithUnique = (linkColumnUnique?: boolean): Route[] =>
+    replaceRoute(mappingsRoutes(), /\/settings\/mappings\/names\/[^/]+\/content/, {
+      method: 'GET',
+      match: /\/settings\/mappings\/names\/[^/]+\/content/,
+      json: {
+        sheetName: 'Sheet1',
+        startFromRow: 1,
+        columnsMapping: { A: 'title' },
+        defaultWorkItemType: 'requirement',
+        linkColumn: 'A',
+        ...(linkColumnUnique === undefined ? {} : { linkColumnUnique }),
+      },
+    });
+
+  const uniqueCheckbox = () => document.querySelector<HTMLInputElement>('#link-column-unique')!;
+
+  it('is off for a mapping saved without the option and saves the checked value', async () => {
+    await mount(routesWithUnique());
+    await vi.waitFor(() => expect(mappingRows()).toBe(1), { timeout: 5000 });
+    expect(uniqueCheckbox().checked).toBe(false);
+
+    uniqueCheckbox().click();
+    await vi.waitFor(() => expect(uniqueCheckbox().checked).toBe(true));
+    const saved = await saveAndCapture();
+    expect(saved.linkColumnUnique).toBe(true);
+  });
+
+  it('loads a stored option and saves it unchecked', async () => {
+    await mount(routesWithUnique(true));
+    await vi.waitFor(() => expect(uniqueCheckbox().checked).toBe(true), { timeout: 5000 });
+
+    uniqueCheckbox().click();
+    await vi.waitFor(() => expect(uniqueCheckbox().checked).toBe(false));
+    const saved = await saveAndCapture();
+    expect(saved.linkColumnUnique).toBe(false);
+  });
+});
+
 describe('Mappings metadata load failures', () => {
   it('reports a failure to load the work item types', async () => {
     await mount(
