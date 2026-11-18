@@ -177,6 +177,22 @@ class ImportServiceTest {
     }
 
     @Test
+    void testImportWithUniqueLinkValuesStartsTransaction() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1", XlsxParser.ROW_NUMBER_KEY, 2)));
+        parsedData.add(new HashMap<>(Map.of("A", "a2", XlsxParser.ROW_NUMBER_KEY, 3)));
+        when(mockedSettings.isLinkColumnUnique()).thenReturn(true);
+        when(mockedSettings.getLinkColumn()).thenReturn("A");
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            ImportService importService = new ImportService(polarionServiceExt);
+            importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+
+            executor.verify(() -> TransactionalExecutor.executeInWriteTransaction(any()));
+        }
+    }
+
+    @Test
     void testImportWithDuplicateLinkValuesNotCheckedWhenOptionOff() {
         PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
         parsedData.add(new HashMap<>(Map.of("A", "a1", XlsxParser.ROW_NUMBER_KEY, 2)));
