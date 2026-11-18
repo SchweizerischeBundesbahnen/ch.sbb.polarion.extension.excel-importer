@@ -38,6 +38,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -84,6 +85,9 @@ public class ImportService {
                         PARAM_SETTINGS, settings
                 ), true).get(PARAM_RESULT);
         context.log("Xlsx file parsed successfully, found %d rows".formatted(xlsxData.size()));
+        if (settings.isLinkColumnUnique()) {
+            validateLinkColumnUnique(xlsxData, settings.getLinkColumn());
+        }
 
         stopIfAbortRequested(abortRequested);
         TransactionalExecutor.executeInWriteTransaction(transaction -> processData(xlsxData, context, abortRequested));
@@ -157,6 +161,27 @@ public class ImportService {
         }
         context.log("Work items processing completed");
         return null;
+    }
+
+    /**
+     * Rejects the file when a non-empty value repeats in the link column. Runs before the write transaction, so nothing is imported.
+     */
+    @VisibleForTesting
+    void validateLinkColumnUnique(@NotNull List<Map<String, Object>> xlsxData, String linkColumn) {
+        Map<String, List<Object>> rowsByValue = new LinkedHashMap<>();
+        for (Map<String, Object> dataRow : xlsxData) {
+            Object value = dataRow.get(linkColumn);
+            if (!isEmpty(value)) {
+                rowsByValue.computeIfAbsent(String.valueOf(value), k -> new ArrayList<>()).add(dataRow.get(XlsxParser.ROW_NUMBER_KEY));
+            }
+        }
+        String duplicates = rowsByValue.entrySet().stream()
+                .filter(entry -> entry.getValue().size() > 1)
+                .map(entry -> "'%s' (rows %s)".formatted(entry.getKey(), entry.getValue().stream().map(String::valueOf).collect(Collectors.joining(", "))))
+                .collect(Collectors.joining(", "));
+        if (!duplicates.isEmpty()) {
+            throw new IllegalArgumentException("Link column '%s' must contain unique values, nothing was imported. Duplicates: %s".formatted(linkColumn, duplicates));
+        }
     }
 
     private String validateResultingObjectAndRunWorkflow(IWorkItem workItem, ImportContext context) {

@@ -203,6 +203,24 @@ class ExcelSheetMappingSettingsTest {
         assertNull(model.getEndAtRow());
         assertFalse(model.isDisableEnumDependenciesValidation());
         assertFalse(model.isSkipWorkflowOnStatusChange());
+        assertFalse(model.isLinkColumnUnique());
+    }
+
+    @Test
+    void testLinkColumnUniqueSurvivesSerialization() {
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .sheetName("Sheet1")
+                .linkColumn("A")
+                .linkColumnUnique(true)
+                .build();
+
+        ExcelSheetMappingSettingsModel restored = new ExcelSheetMappingSettingsModel();
+        restored.deserialize(model.serialize());
+        assertTrue(restored.isLinkColumnUnique());
+
+        model.setLinkColumnUnique(false);
+        restored.deserialize(model.serialize());
+        assertFalse(restored.isLinkColumnUnique());
     }
 
     @Test
