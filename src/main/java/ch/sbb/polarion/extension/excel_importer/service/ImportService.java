@@ -160,18 +160,19 @@ public class ImportService {
                         if (!workItem.isModified()) {
                             logEntries.add("no changes were made to '%s'".formatted(workItem.getId()));
                             context.unchangedIds.add(workItem.getId());
+                            workItem.save();
                         } else {
                             String errorMessage = validateResultingObjectAndRunWorkflow(workItem, context);
                             if (errorMessage != null) {
                                 workItem.forget();
                                 logEntries.add("the data was not updated for '%s': %s".formatted(workItem.getId(), errorMessage));
                                 context.skippedIds.add(workItem.getId());
-                                continue;
+                            } else {
+                                logEntries.add("the data was updated for '%s'".formatted(workItem.getId()));
+                                context.updatedIds.add(workItem.getId());
+                                workItem.save();
                             }
-                            logEntries.add("the data was updated for '%s'".formatted(workItem.getId()));
-                            context.updatedIds.add(workItem.getId());
                         }
-                        workItem.save();
                     }
                 }
                 context.log(rowLabel + ": " + String.join(", ", logEntries));
