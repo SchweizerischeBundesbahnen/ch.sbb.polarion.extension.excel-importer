@@ -86,6 +86,44 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Mappings page visual', () => {
     await expect(page.elementLocator(document.body)).toMatchScreenshot('mappings-options-modal');
   });
 
+  it('general settings: all options checked (end row and filter query inputs shown)', async () => {
+    installFetchMock([
+      { method: 'GET', match: /\/settings\/mappings\/names\?/, json: NAMES },
+      {
+        method: 'GET',
+        match: /\/settings\/mappings\/names\/[^/]+\/content/,
+        json: {
+          ...CONTENT,
+          startFromRow: 2,
+          endAtRow: 150,
+          filterQuery: 'status:(draft OR open) AND type:requirement AND NOT severity:blocker',
+          skipWorkItemsCreation: true,
+          overwriteWithEmpty: true,
+          ignoreUnknown: true,
+          disableEnumDependenciesValidation: true,
+          skipWorkflowOnStatusChange: true,
+        },
+      },
+      { method: 'GET', match: /\/projects\/[^/]+\/workitem_types\/[^/]+\/fields/, json: FIELDS },
+      { method: 'GET', match: /\/projects\/[^/]+\/workitem_types(\?|$)/, json: WORKITEM_TYPES },
+    ]);
+    setUrl(`?feature=mappings&embedded=true&scope=${encodeURIComponent(SCOPE)}`);
+    render(<App />);
+    await vi.waitFor(
+      () => {
+        expect(document.querySelector<HTMLInputElement>('#end-at-row')?.value).toBe('150');
+        expect(document.querySelector<HTMLInputElement>('#filter-query')?.value).toContain('status:(draft OR open)');
+        expect(document.querySelector<HTMLInputElement>('#skip-workflow-on-status-change')?.checked).toBe(true);
+      },
+      { timeout: 5000 },
+    );
+    await page.viewport(1280, 720);
+    await settleBeforeCapture();
+    await expect(
+      page.elementLocator(document.querySelector('table.general-settings') as HTMLElement),
+    ).toMatchScreenshot('mappings-general-settings-all-checked');
+  });
+
   // Renders the mapping table for a config whose second column maps to the given field, then captures
   // just the #mapping-table (focused on the row state).
   async function shotMappingTable(fieldId: string, extraFields: unknown[], name: string) {

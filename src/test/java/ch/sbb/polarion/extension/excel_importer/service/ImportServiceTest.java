@@ -39,6 +39,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -262,6 +265,154 @@ class ImportServiceTest {
             assertTrue(result.getLog().contains("a1: the data was not updated for 'EL-1': Can not set 'Cough syrup' into 'Product' field when 'Shop' is 'Grocery store'"));
             verify(workItem).forget();
             verify(workItem, never()).save();
+        }
+    }
+
+    /**
+     * A work item that matches the link value but not the filter query is skipped, not created again.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    void testFilterQueryUpdatesOnlyMatchingWorkItems() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1")));
+        parsedData.add(new HashMap<>(Map.of("A", "a2")));
+        when(mockedSettings.getLinkColumn()).thenReturn("A");
+        when(mockedSettings.getColumnsMapping()).thenReturn(Map.of("A", "excelId"));
+        when(mockedSettings.getFilterQuery()).thenReturn(" status:draft ");
+
+        IWorkItem matching = mock(IWorkItem.class);
+        when(matching.getId()).thenReturn("EL-1");
+        when(matching.getValue("excelId")).thenReturn("a1");
+        when(matching.isModified()).thenReturn(true);
+        IWorkItem outsideFilter = mock(IWorkItem.class);
+        when(outsideFilter.getId()).thenReturn("EL-2");
+        when(outsideFilter.getValue("excelId")).thenReturn("a2");
+        when(polarionServiceExt.findWorkItemsById(any(), any(), any())).thenReturn(List.of(matching, outsideFilter));
+        when(polarionServiceExt.findWorkItemsById(any(), any(), any(), eq("status:draft"))).thenReturn(List.of(matching));
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            executor.when(() -> TransactionalExecutor.executeInWriteTransaction(any())).thenAnswer(invocation -> {
+                RunnableInWriteTransaction<Object> runnable = invocation.getArgument(0);
+                return runnable.run(mock(WriteTransaction.class));
+            });
+            ImportService importService = spy(new ImportService(polarionServiceExt));
+            doNothing().when(importService).fillWorkItemFields(any(), any(), any(), any());
+
+            ImportResult result = importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+
+            verify(polarionServiceExt).validateWorkItemQuery(TEST_PROJECT_ID, "status:draft");
+            assertEquals(List.of("EL-1"), result.getUpdatedIds());
+            assertEquals(List.of("EL-2"), result.getSkippedIds());
+            assertTrue(result.getLog().contains("a2: 'EL-2' does not match the filter query, skipped"));
+            verify(matching).save();
+            verify(importService, never()).fillWorkItemFields(eq(outsideFilter), any(), any(), any());
+            verify(outsideFilter, never()).save();
+            verify(polarionServiceExt, never()).createWorkItem(any(), any());
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testFilterQueryKeepsCreation() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1")));
+        when(mockedSettings.getLinkColumn()).thenReturn("A");
+        when(mockedSettings.getColumnsMapping()).thenReturn(Map.of("A", "excelId"));
+        when(mockedSettings.getFilterQuery()).thenReturn("status:draft");
+        IWorkItem createdWorkItem = mock(IWorkItem.class);
+        when(createdWorkItem.getId()).thenReturn("EL-3");
+        when(polarionServiceExt.findWorkItemsById(any(), any(), any())).thenReturn(List.of());
+        when(polarionServiceExt.findWorkItemsById(any(), any(), any(), any())).thenReturn(List.of());
+        when(polarionServiceExt.createWorkItem(any(), any())).thenReturn(createdWorkItem);
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            executor.when(() -> TransactionalExecutor.executeInWriteTransaction(any())).thenAnswer(invocation -> {
+                RunnableInWriteTransaction<Object> runnable = invocation.getArgument(0);
+                return runnable.run(mock(WriteTransaction.class));
+            });
+            ImportService importService = spy(new ImportService(polarionServiceExt));
+            doNothing().when(importService).fillWorkItemFields(any(), any(), any(), any());
+
+            ImportResult result = importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+
+            assertEquals(List.of("EL-3"), result.getCreatedIds());
+            verify(createdWorkItem).save();
+        }
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = "status:draft")
+    @SuppressWarnings("unchecked")
+    void testSkipWorkItemsCreation(String filterQuery) {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1")));
+        when(mockedSettings.getLinkColumn()).thenReturn("A");
+        when(mockedSettings.getColumnsMapping()).thenReturn(Map.of("A", "excelId"));
+        when(mockedSettings.getFilterQuery()).thenReturn(filterQuery);
+        when(mockedSettings.isSkipWorkItemsCreation()).thenReturn(true);
+        when(polarionServiceExt.findWorkItemsById(any(), any(), any())).thenReturn(List.of());
+        lenient().when(polarionServiceExt.findWorkItemsById(any(), any(), any(), any())).thenReturn(List.of());
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            executor.when(() -> TransactionalExecutor.executeInWriteTransaction(any())).thenAnswer(invocation -> {
+                RunnableInWriteTransaction<Object> runnable = invocation.getArgument(0);
+                return runnable.run(mock(WriteTransaction.class));
+            });
+
+            ImportResult result = new ImportService(polarionServiceExt).processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+
+            assertEquals(List.of("a1"), result.getSkippedIds());
+            assertTrue(result.getCreatedIds().isEmpty());
+            assertTrue(result.getLog().contains("a1: no work item found, new work item was not created because 'Skip new workitems creation' is enabled"));
+            verify(polarionServiceExt, never()).createWorkItem(any(), any());
+            verify(polarionServiceExt, never()).findWorkItemTypeInProject(any(), any());
+        }
+    }
+
+    @Test
+    void testInvalidFilterQueryStartsNoTransaction() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1")));
+        when(mockedSettings.getFilterQuery()).thenReturn("status:(draft");
+        doThrow(new IllegalArgumentException("Filter query 'status:(draft' is invalid, nothing was imported. Cause: Cannot parse query"))
+                .when(polarionServiceExt).validateWorkItemQuery(TEST_PROJECT_ID, "status:(draft");
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            ImportService importService = new ImportService(polarionServiceExt);
+            assertThrows(IllegalArgumentException.class, () -> importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]));
+
+            executor.verifyNoInteractions();
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testBlankFilterQueryKeepsCreation() {
+        PolarionServiceExt polarionServiceExt = polarionServiceWithProject();
+        parsedData.add(new HashMap<>(Map.of("A", "a1")));
+        when(mockedSettings.getLinkColumn()).thenReturn("A");
+        when(mockedSettings.getColumnsMapping()).thenReturn(Map.of("A", "excelId"));
+        when(mockedSettings.getFilterQuery()).thenReturn("   ");
+        IWorkItem createdWorkItem = mock(IWorkItem.class);
+        when(createdWorkItem.getId()).thenReturn("EL-3");
+        when(polarionServiceExt.findWorkItemsById(any(), any(), any())).thenReturn(List.of());
+        when(polarionServiceExt.createWorkItem(any(), any())).thenReturn(createdWorkItem);
+
+        try (MockedStatic<TransactionalExecutor> executor = mockStatic(TransactionalExecutor.class)) {
+            executor.when(() -> TransactionalExecutor.executeInWriteTransaction(any())).thenAnswer(invocation -> {
+                RunnableInWriteTransaction<Object> runnable = invocation.getArgument(0);
+                return runnable.run(mock(WriteTransaction.class));
+            });
+            ImportService importService = spy(new ImportService(polarionServiceExt));
+            doNothing().when(importService).fillWorkItemFields(any(), any(), any(), any());
+
+            ImportResult result = importService.processFile(TEST_PROJECT_ID, "testMapping", new byte[0]);
+
+            assertEquals(List.of("EL-3"), result.getCreatedIds());
+            verify(polarionServiceExt, never()).validateWorkItemQuery(any(), any());
+            verify(polarionServiceExt, never()).findWorkItemsById(any(), any(), any(), any());
         }
     }
 

@@ -212,12 +212,40 @@ code {
   padding: 3px 4px;
 }
 
+/* Browsers give text and number inputs different default widths. */
+.general-settings #sheet-name,
+.general-settings #start-from-row,
+.general-settings #end-at-row {
+  box-sizing: border-box;
+  width: 180px;
+}
+
 .general-settings label {
   margin-left: 4px;
 }
 
 .general-settings td.skip-option {
   padding-left: 24px;
+}
+
+.general-settings .filter-query {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.general-settings #filter-query {
+  width: 420px;
+}
+
+/* --sbb-info-icon comes from react-sbb-polarion, the same icon pdf-exporter shows. */
+.help-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  background: var(--sbb-info-icon) no-repeat;
+  cursor: help;
 }
 
 .wi-types-row,
@@ -240,6 +268,20 @@ code {
 #mapping-table td {
   padding: 5px 6px 5px 0;
   vertical-align: middle;
+}
+
+/* Inline-block controls align by baseline, so the taller button and the styled checkbox sit off center. */
+.mapping-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.unlink-existing-label,
+.link-column-unique {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .mapping-row label {
@@ -276,14 +318,14 @@ code {
 /* Compound selector so the left gap beats the base `.sbb-btn { margin: 0 }` shorthand
    (single-class specificity would otherwise be overridden depending on stylesheet load order). */
 .sbb-btn.options-mapping-button {
-  margin-left: 12px;
+  margin-left: 8px;
 }
 
 /* Only the gap is this label's own: it is a <label> inside .mapping-row, so its size and muted color
    come from the `.mapping-row label` rule above (which outranks a single class), exactly like its
    sibling labels. */
 .unlink-existing-label {
-  margin-left: 12px;
+  margin-left: 8px;
 }
 
 /* Square +/− row buttons: keep the .sbb-btn control chrome but override its size/padding. The

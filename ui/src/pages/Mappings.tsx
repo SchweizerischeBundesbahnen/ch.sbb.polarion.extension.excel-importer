@@ -50,6 +50,9 @@ export default function Mappings() {
   const [startFromRow, setStartFromRow] = useState<number>(1);
   const [endAtRowEnabled, setEndAtRowEnabled] = useState(false);
   const [endAtRow, setEndAtRow] = useState<number>(1);
+  const [filterQueryEnabled, setFilterQueryEnabled] = useState(false);
+  const [filterQuery, setFilterQuery] = useState('');
+  const [skipWorkItemsCreation, setSkipWorkItemsCreation] = useState(false);
   const [overwriteWithEmpty, setOverwriteWithEmpty] = useState(false);
   const [ignoreUnknown, setIgnoreUnknown] = useState(false);
   const [disableEnumDependenciesValidation, setDisableEnumDependenciesValidation] = useState(false);
@@ -128,6 +131,9 @@ export default function Mappings() {
     setStartFromRow(model.startFromRow ?? 1);
     setEndAtRowEnabled(model.endAtRow != null);
     setEndAtRow(model.endAtRow ?? model.startFromRow ?? 1);
+    setFilterQueryEnabled(!!model.filterQuery?.trim());
+    setFilterQuery(model.filterQuery ?? '');
+    setSkipWorkItemsCreation(!!model.skipWorkItemsCreation);
     setOverwriteWithEmpty(!!model.overwriteWithEmpty);
     setIgnoreUnknown(!!model.ignoreUnknown);
     setDisableEnumDependenciesValidation(!!model.disableEnumDependenciesValidation);
@@ -241,6 +247,9 @@ export default function Mappings() {
         return 'End row number must be greater than or equal to start row number';
       }
     }
+    if (filterQueryEnabled && filterQuery.trim().length === 0) {
+      return 'Filter query cannot be empty. Enter a query or uncheck the option';
+    }
     const seenColumns: string[] = [];
     for (const row of rootRows) {
       const field = getField(row.fieldId);
@@ -300,6 +309,7 @@ export default function Mappings() {
       sheetName,
       startFromRow,
       endAtRow: endAtRowEnabled ? endAtRow : null,
+      filterQuery: filterQueryEnabled ? filterQuery.trim() : null,
       overwriteWithEmpty,
       ignoreUnknown,
       disableEnumDependenciesValidation,
@@ -308,6 +318,7 @@ export default function Mappings() {
       stepsMapping,
       enumsMapping,
       defaultWorkItemType: selectedWiType,
+      skipWorkItemsCreation,
       linkColumn,
       linkColumnUnique,
       unlinkExisting,
@@ -455,6 +466,63 @@ export default function Mappings() {
               </td>
             </tr>
             <tr>
+              <td>
+                <input
+                  id="filter-query-enabled"
+                  type="checkbox"
+                  checked={filterQueryEnabled}
+                  onChange={(e) => {
+                    setFilterQueryEnabled(e.target.checked);
+                    if (!e.target.checked) {
+                      setFilterQuery('');
+                    }
+                  }}
+                />
+                <label
+                  htmlFor="filter-query-enabled"
+                  title="Only work items that match this Lucene query can be updated. Note that new work items may still be created unless 'Skip new workitems creation' is enabled."
+                >
+                  Filter by query:
+                </label>
+              </td>
+              <td colSpan={2}>
+                {filterQueryEnabled && (
+                  <span className="filter-query">
+                    <input
+                      id="filter-query"
+                      aria-label="Filter query"
+                      type="text"
+                      placeholder="e.g. status:draft AND type:requirement"
+                      value={filterQuery}
+                      onChange={(e) => setFilterQuery(e.target.value)}
+                    />
+                    <span
+                      className="help-icon"
+                      role="img"
+                      aria-label="Only work items that match this Lucene query can be updated. Note that new work items may still be created unless 'Skip new workitems creation' is enabled."
+                      title="Only work items that match this Lucene query can be updated. Note that new work items may still be created unless 'Skip new workitems creation' is enabled."
+                    />
+                  </span>
+                )}
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={3}>
+                <input
+                  id="skip-workitems-creation"
+                  type="checkbox"
+                  checked={skipWorkItemsCreation}
+                  onChange={(e) => setSkipWorkItemsCreation(e.target.checked)}
+                />
+                <label
+                  htmlFor="skip-workitems-creation"
+                  title="Do not create new work items. Rows without a matching work item are skipped."
+                >
+                  Skip new workitems creation
+                </label>
+              </td>
+            </tr>
+            <tr>
               <td colSpan={2}>
                 <input
                   id="overwrite"
@@ -517,7 +585,7 @@ export default function Mappings() {
           </tbody>
         </table>
 
-        <h2 className="align-left">Workitem Type To Create</h2>
+        <h2 className="align-left">Workitem Type</h2>
         <div id="workitem-types-container" className="wi-types-row">
           <label htmlFor="workitem-type">Import rows as: </label>
           <SearchableSelect
@@ -610,7 +678,7 @@ export default function Mappings() {
             allowEmpty
             placeholder=""
           />
-          <span>
+          <span className="link-column-unique">
             <input
               id="link-column-unique"
               type="checkbox"
@@ -657,11 +725,25 @@ export default function Mappings() {
             Check <b>End import in row</b> to set the last row to import. Rows below it are ignored. The value must be
             greater than or equal to the start row.
           </p>
-          <h3>Workitem Type To Create</h3>
+          <p>
+            Check <b>Filter by query</b> and enter a Lucene query, e.g. <code>status:draft AND type:requirement</code>.
+            Only work items that match the query can be updated. A work item that matches the link column value but not
+            the query is skipped. Rows without a matching work item still create new work items, unless{' '}
+            <b>Skip new workitems creation</b> is checked.
+          </p>
+          <p>
+            Check <b>Skip new workitems creation</b> to only update existing work items. Rows without a matching work
+            item are skipped.
+          </p>
+          <h3>Workitem Type</h3>
           <p>This section contains a combobox with workitem types available for the current project.</p>
           <p>
             In case if there is no workitem found by given identifier - it will be created using this type. This means
             that the extension can update any type in the current project (not only the one selected in this combobox).
+          </p>
+          <p>
+            The selected type also defines the fields available in the mapping below, even with{' '}
+            <b>Skip new workitems creation</b> checked.
           </p>
           <h3>Column Name To Workitem Field Mapping</h3>
           <p>This section contains comboboxes for mapping Excel column names to Polarion workitem fields.</p>

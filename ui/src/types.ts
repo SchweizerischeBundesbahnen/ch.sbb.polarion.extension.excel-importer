@@ -57,6 +57,10 @@ export interface MappingSettings {
   startFromRow: number;
   /** Last row to import (inclusive). Absent or null imports up to the end of the sheet. */
   endAtRow?: number | null;
+  /** Lucene query that limits which existing work items can be updated. */
+  filterQuery?: string | null;
+  /** No new work items are created; rows without a matching work item are skipped. */
+  skipWorkItemsCreation?: boolean;
   overwriteWithEmpty: boolean;
   ignoreUnknown: boolean;
   disableEnumDependenciesValidation: boolean;
