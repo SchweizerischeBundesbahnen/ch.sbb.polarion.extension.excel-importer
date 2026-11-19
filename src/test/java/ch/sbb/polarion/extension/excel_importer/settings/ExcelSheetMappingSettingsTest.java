@@ -258,6 +258,38 @@ class ExcelSheetMappingSettingsTest {
     }
 
     @Test
+    void testFilterQuerySurvivesSerialization() {
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .sheetName("Sheet1")
+                .filterQuery("status:draft AND type:requirement")
+                .build();
+
+        ExcelSheetMappingSettingsModel restored = new ExcelSheetMappingSettingsModel();
+        restored.deserialize(model.serialize());
+        assertEquals("status:draft AND type:requirement", restored.getFilterQuery());
+
+        model.setFilterQuery(null);
+        restored.deserialize(model.serialize());
+        assertNull(restored.getFilterQuery());
+    }
+
+    @Test
+    void testSkipWorkItemsCreationSurvivesSerialization() {
+        ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()
+                .sheetName("Sheet1")
+                .skipWorkItemsCreation(true)
+                .build();
+
+        ExcelSheetMappingSettingsModel restored = new ExcelSheetMappingSettingsModel();
+        restored.deserialize(model.serialize());
+        assertTrue(restored.isSkipWorkItemsCreation());
+
+        model.setSkipWorkItemsCreation(false);
+        restored.deserialize(model.serialize());
+        assertFalse(restored.isSkipWorkItemsCreation());
+    }
+
+    @Test
     void testGetUsedColumnsLetters() {
         // Regular columns + prefix keys filtered out + stepsMapping values included
         ExcelSheetMappingSettingsModel model = ExcelSheetMappingSettingsModel.builder()

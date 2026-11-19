@@ -17,6 +17,7 @@ import com.polarion.alm.tracker.model.ITypeOpt;
 import com.polarion.alm.tracker.model.IWithAttachments;
 import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.platform.core.PlatformContext;
+import com.polarion.platform.persistence.IDataService;
 import com.polarion.subterra.base.data.identification.IContextId;
 import com.polarion.subterra.base.data.model.IStructType;
 import org.junit.jupiter.api.Test;
@@ -136,6 +137,28 @@ class PolarionServiceExtTest {
         when(trackerService.queryWorkItems(eq(expectedQuery), anyString())).thenReturn(new PObjectListStub<>(List.of(testWorkItem)));
         List<IWorkItem> workItems = new PolarionServiceExt().findWorkItemsById("testProjectId", "fieldId", List.of("ABC 123", "A(B)", "AB*"));
         assertEquals(1, workItems.size());
+    }
+
+    @Test
+    void testFindWorkItemsByIdWithFilterQuery() {
+        IWorkItem testWorkItem = mock(IWorkItem.class);
+        String expectedQuery = "(project.id:testProjectId) AND (fieldId:T\\-123) AND (status:draft OR status:open)";
+        when(trackerService.queryWorkItems(eq(expectedQuery), anyString())).thenReturn(new PObjectListStub<>(List.of(testWorkItem)));
+        List<IWorkItem> workItems = new PolarionServiceExt().findWorkItemsById("testProjectId", "fieldId", List.of("T-123"), "status:draft OR status:open");
+        assertEquals(List.of(testWorkItem), workItems);
+    }
+
+    @Test
+    void testValidateWorkItemQuery() {
+        IDataService dataService = mock(IDataService.class);
+        when(trackerService.getDataService()).thenReturn(dataService);
+        when(dataService.getInstancesCount(IWorkItem.PROTO, "(project.id:testProjectId) AND (status:draft)")).thenReturn(3);
+        when(dataService.getInstancesCount(IWorkItem.PROTO, "(project.id:testProjectId) AND (status:(draft)")).thenThrow(new IllegalStateException("Cannot parse query"));
+        PolarionServiceExt service = new PolarionServiceExt();
+
+        assertDoesNotThrow(() -> service.validateWorkItemQuery("testProjectId", "status:draft"));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> service.validateWorkItemQuery("testProjectId", "status:(draft"));
+        assertEquals("Filter query 'status:(draft' is invalid, nothing was imported. Cause: Cannot parse query", exception.getMessage());
     }
 
     @Test

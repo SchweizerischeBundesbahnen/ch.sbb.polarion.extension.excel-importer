@@ -278,6 +278,119 @@ describe('Mappings link column uniqueness', () => {
   });
 });
 
+describe('Mappings filter query', () => {
+  const routesWithFilter = (filterQuery?: string | null): Route[] =>
+    replaceRoute(mappingsRoutes(), /\/settings\/mappings\/names\/[^/]+\/content/, {
+      method: 'GET',
+      match: /\/settings\/mappings\/names\/[^/]+\/content/,
+      json: {
+        sheetName: 'Sheet1',
+        startFromRow: 1,
+        filterQuery,
+        columnsMapping: { A: 'title' },
+        defaultWorkItemType: 'requirement',
+        linkColumn: 'A',
+      },
+    });
+
+  const filterCheckbox = () => document.querySelector<HTMLInputElement>('#filter-query-enabled')!;
+  const filterInput = () => document.querySelector<HTMLInputElement>('#filter-query');
+
+  const setText = (input: HTMLInputElement, value: string) => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    setter.call(input, value);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  it('hides the query input until the checkbox is checked and saves null when unchecked', async () => {
+    await mount(routesWithFilter());
+    await vi.waitFor(() => expect(mappingRows()).toBe(1), { timeout: 5000 });
+    expect(filterCheckbox().checked).toBe(false);
+    expect(filterInput()).toBeNull();
+
+    filterCheckbox().click();
+    await vi.waitFor(() => expect(filterInput()).not.toBeNull());
+    expect(document.querySelector('.filter-query .help-icon')?.getAttribute('title')).toContain(
+      "unless 'Skip new workitems creation' is enabled",
+    );
+    setText(filterInput()!, 'status:draft');
+    filterCheckbox().click();
+    await vi.waitFor(() => expect(filterInput()).toBeNull());
+
+    const saved = await saveAndCapture();
+    expect(saved.filterQuery).toBeNull();
+  });
+
+  it('loads a stored query and saves it back trimmed', async () => {
+    await mount(routesWithFilter('status:draft'));
+    await vi.waitFor(() => expect(filterInput()?.value).toBe('status:draft'), { timeout: 5000 });
+    expect(filterCheckbox().checked).toBe(true);
+    setText(filterInput()!, '  status:open  ');
+    await vi.waitFor(() => expect(filterInput()?.value).toBe('  status:open  '));
+    const saved = await saveAndCapture();
+    expect(saved.filterQuery).toBe('status:open');
+  });
+
+  it('refuses to save a blank query while the checkbox is checked', async () => {
+    await mount(routesWithFilter('status:draft'));
+    await vi.waitFor(() => expect(filterInput()?.value).toBe('status:draft'), { timeout: 5000 });
+    setText(filterInput()!, '   ');
+    saveButton().click();
+    await vi.waitFor(
+      () =>
+        expect(document.body.textContent).toContain(
+          'Filter query cannot be empty. Enter a query or uncheck the option',
+        ),
+      { timeout: 5000 },
+    );
+  });
+});
+
+describe('Mappings skip work items creation', () => {
+  const routesWithSkip = (skipWorkItemsCreation?: boolean): Route[] =>
+    replaceRoute(mappingsRoutes(), /\/settings\/mappings\/names\/[^/]+\/content/, {
+      method: 'GET',
+      match: /\/settings\/mappings\/names\/[^/]+\/content/,
+      json: {
+        sheetName: 'Sheet1',
+        startFromRow: 1,
+        skipWorkItemsCreation,
+        columnsMapping: { A: 'title' },
+        defaultWorkItemType: 'requirement',
+        linkColumn: 'A',
+      },
+    });
+
+  const skipCheckbox = () => document.querySelector<HTMLInputElement>('#skip-workitems-creation')!;
+  const typeDisabled = () => document.querySelector('#workitem-types-container [disabled]') !== null;
+
+  it('keeps the type selector enabled while checked and saves the type', async () => {
+    await mount(routesWithSkip());
+    await vi.waitFor(() => expect(mappingRows()).toBe(1), { timeout: 5000 });
+    expect(skipCheckbox().checked).toBe(false);
+    expect(typeDisabled()).toBe(false);
+
+    skipCheckbox().click();
+    await vi.waitFor(() => expect(skipCheckbox().checked).toBe(true));
+    expect(typeDisabled()).toBe(false);
+
+    const saved = await saveAndCapture();
+    expect(saved.skipWorkItemsCreation).toBe(true);
+    expect(saved.defaultWorkItemType).toBe('requirement');
+  });
+
+  it('loads a stored flag and saves false when unchecked', async () => {
+    await mount(routesWithSkip(true));
+    await vi.waitFor(() => expect(skipCheckbox().checked).toBe(true), { timeout: 5000 });
+
+    skipCheckbox().click();
+    await vi.waitFor(() => expect(skipCheckbox().checked).toBe(false));
+
+    const saved = await saveAndCapture();
+    expect(saved.skipWorkItemsCreation).toBe(false);
+  });
+});
+
 describe('Mappings metadata load failures', () => {
   it('reports a failure to load the work item types', async () => {
     await mount(

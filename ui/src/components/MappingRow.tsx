@@ -67,50 +67,54 @@ export default function MappingRow({
         )}
       </td>
       <td>
-        <label htmlFor={columnId}>Column: </label>
-        <div className="column-input-wrapper">
-          <ColumnInput
-            id={columnId}
-            value={row.column}
-            disabled={columnDisabled}
-            onChange={(value) => onColumnChange(row.uid, value)}
-          />
+        <div className="mapping-cell">
+          <label htmlFor={columnId}>Column: </label>
+          <div className="column-input-wrapper">
+            <ColumnInput
+              id={columnId}
+              value={row.column}
+              disabled={columnDisabled}
+              onChange={(value) => onColumnChange(row.uid, value)}
+            />
+          </div>
         </div>
       </td>
       <td>
-        <label htmlFor={fieldId}> Field Name: </label>
-        {isSubRow ? (
-          <input id={fieldId} type="text" className="fs-14 field-name" value={row.stepName ?? ''} disabled readOnly />
-        ) : (
-          <>
-            <SearchableSelect
-              id={fieldId}
-              value={row.fieldId}
-              onChange={(value) => onFieldChange(row.uid, value)}
-              options={fieldOptions}
-              allowEmpty
-              placeholder="Select field name..."
-            />
-            {showOptionsButton && (
-              <button
-                type="button"
-                className="sbb-btn sbb-btn--control options-mapping-button"
-                onClick={() => onOpenOptions(row.uid)}
-              >
-                Options mapping
-              </button>
-            )}
-            {showUnlink && (
-              <label
-                className="unlink-existing-label"
-                title="If checked, existing links to work items not present in the imported data will be removed."
-              >
-                <input type="checkbox" checked={unlinkExisting} onChange={(e) => onUnlinkChange(e.target.checked)} />{' '}
-                Unlink existing
-              </label>
-            )}
-          </>
-        )}
+        <div className="mapping-cell">
+          <label htmlFor={fieldId}> Field Name: </label>
+          {isSubRow ? (
+            <input id={fieldId} type="text" className="fs-14 field-name" value={row.stepName ?? ''} disabled readOnly />
+          ) : (
+            <>
+              <SearchableSelect
+                id={fieldId}
+                value={row.fieldId}
+                onChange={(value) => onFieldChange(row.uid, value)}
+                options={fieldOptions}
+                allowEmpty
+                placeholder="Select field name..."
+              />
+              {showOptionsButton && (
+                <button
+                  type="button"
+                  className="sbb-btn sbb-btn--control options-mapping-button"
+                  onClick={() => onOpenOptions(row.uid)}
+                >
+                  Options mapping
+                </button>
+              )}
+              {showUnlink && (
+                <label
+                  className="unlink-existing-label"
+                  title="If checked, existing links to work items not present in the imported data will be removed."
+                >
+                  <input type="checkbox" checked={unlinkExisting} onChange={(e) => onUnlinkChange(e.target.checked)} />{' '}
+                  Unlink existing
+                </label>
+              )}
+            </>
+          )}
+        </div>
       </td>
     </tr>
   );

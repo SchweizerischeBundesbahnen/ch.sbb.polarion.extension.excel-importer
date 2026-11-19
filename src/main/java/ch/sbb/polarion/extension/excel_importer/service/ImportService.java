@@ -76,7 +76,7 @@ public class ImportService {
     public ImportResult processFile(String projectId, String mappingName, byte[] fileContent, @NotNull BooleanSupplier abortRequested) {
         ITrackerProject trackerProject = polarionServiceExt.findProject(projectId);
         ExcelSheetMappingSettingsModel settings = new ExcelSheetMappingSettings().load(projectId, SettingId.fromName(mappingName));
-        ITypeOpt workItemType = polarionServiceExt.findWorkItemTypeInProject(trackerProject, settings.getDefaultWorkItemType());
+        ITypeOpt workItemType = settings.isSkipWorkItemsCreation() ? null : polarionServiceExt.findWorkItemTypeInProject(trackerProject, settings.getDefaultWorkItemType());
         ImportContext context = new ImportContext(trackerProject, workItemType, settings);
 
         List<Map<String, Object>> xlsxData = (List<Map<String, Object>>) BundleJarsPrioritizingRunnable.executeCached(
@@ -87,6 +87,13 @@ public class ImportService {
         context.log("Xlsx file parsed successfully, found %d rows".formatted(xlsxData.size()));
         if (settings.isLinkColumnUnique()) {
             validateLinkColumnUnique(xlsxData, settings.getLinkColumn());
+        }
+        if (context.filterQuery != null) {
+            polarionServiceExt.validateWorkItemQuery(projectId, context.filterQuery);
+            context.log("Filter query is set, only existing work items matching '%s' are updated".formatted(context.filterQuery));
+        }
+        if (settings.isSkipWorkItemsCreation()) {
+            context.log("'Skip new workitems creation' is enabled, no new work items are created");
         }
 
         stopIfAbortRequested(abortRequested);
@@ -109,6 +116,9 @@ public class ImportService {
             }
 
             List<IWorkItem> foundWorkItems = polarionServiceExt.findWorkItemsById(context.project.getId(), identifierFieldId, workItemIds);
+            // Queried apart from the unfiltered lookup: a work item outside the filter must be skipped, not treated as missing and created again.
+            Set<String> filteredWorkItemIds = context.filterQuery == null ? Set.of() : polarionServiceExt.findWorkItemsById(context.project.getId(), identifierFieldId, workItemIds, context.filterQuery)
+                    .stream().map(IWorkItem::getId).collect(Collectors.toSet());
             for (Map<String, Object> columnMappingRecord : chunk) {
                 stopIfAbortRequested(abortRequested);
                 Object idValue = columnMappingRecord.get(context.settings.getLinkColumn());
@@ -120,6 +130,9 @@ public class ImportService {
                     if (IUniqueObject.KEY_ID.equals(identifierFieldId) && !isEmpty(idValue)) {
                         context.skippedIds.add(idString);
                         logEntries.add("no work item found by ID '%s'. Since the 'id' is used as the 'Link Column', new work item creation is impossible".formatted(idString));
+                    } else if (context.settings.isSkipWorkItemsCreation()) {
+                        context.skippedIds.add(rowLabel);
+                        logEntries.add("no work item found, new work item was not created because 'Skip new workitems creation' is enabled");
                     } else {
                         IWorkItem createdWorkItem = polarionServiceExt.createWorkItem(context.project, context.workItemType);
                         fillWorkItemFields(createdWorkItem, columnMappingRecord, context, identifierFieldId);
@@ -138,22 +151,28 @@ public class ImportService {
                         context.log("ATTENTION! Found multiple work items for '%s' with value '%s'. Will update all of them.".formatted(idString, idValue));
                     }
                     for (IWorkItem workItem : workItems) {
+                        if (context.filterQuery != null && !filteredWorkItemIds.contains(workItem.getId())) {
+                            logEntries.add("'%s' does not match the filter query, skipped".formatted(workItem.getId()));
+                            context.skippedIds.add(workItem.getId());
+                            continue;
+                        }
                         fillWorkItemFields(workItem, columnMappingRecord, context, identifierFieldId);
                         if (!workItem.isModified()) {
                             logEntries.add("no changes were made to '%s'".formatted(workItem.getId()));
                             context.unchangedIds.add(workItem.getId());
+                            workItem.save();
                         } else {
                             String errorMessage = validateResultingObjectAndRunWorkflow(workItem, context);
                             if (errorMessage != null) {
                                 workItem.forget();
                                 logEntries.add("the data was not updated for '%s': %s".formatted(workItem.getId(), errorMessage));
                                 context.skippedIds.add(workItem.getId());
-                                continue;
+                            } else {
+                                logEntries.add("the data was updated for '%s'".formatted(workItem.getId()));
+                                context.updatedIds.add(workItem.getId());
+                                workItem.save();
                             }
-                            logEntries.add("the data was updated for '%s'".formatted(workItem.getId()));
-                            context.updatedIds.add(workItem.getId());
                         }
-                        workItem.save();
                     }
                 }
                 context.log(rowLabel + ": " + String.join(", ", logEntries));
@@ -523,8 +542,15 @@ public class ImportService {
 
     static class ImportContext {
         ITrackerProject project;
+        /**
+         * Null when 'Skip new workitems creation' is enabled: no work item is created, so the type is not resolved.
+         */
         ITypeOpt workItemType;
         ExcelSheetMappingSettingsModel settings;
+        /**
+         * Limits the existing work items that can be updated. A blank value from a REST client counts as no filter.
+         */
+        String filterQuery;
         List<String> logs = new ArrayList<>();
         List<String> updatedIds = new ArrayList<>();
         List<String> createdIds = new ArrayList<>();
@@ -536,6 +562,7 @@ public class ImportService {
             this.project = project;
             this.workItemType = workItemType;
             this.settings = settings;
+            this.filterQuery = StringUtils.isEmptyTrimmed(settings.getFilterQuery()) ? null : settings.getFilterQuery().trim();
         }
 
         void log(String message) {

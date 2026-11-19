@@ -21,6 +21,7 @@ import com.polarion.subterra.base.data.identification.IContextId;
 import com.polarion.subterra.base.data.model.IStructType;
 import com.polarion.subterra.base.data.model.internal.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -85,8 +86,15 @@ public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.servic
         return typeOpt;
     }
 
-    @SuppressWarnings("unchecked") // ITrackerService.queryWorkItems is declared with a raw IPObjectList
     public List<IWorkItem> findWorkItemsById(String projectId, String identifierCustomFieldId, Collection<String> ids) {
+        return findWorkItemsById(projectId, identifierCustomFieldId, ids, null);
+    }
+
+    /**
+     * @param filterQuery an extra Lucene query the work items must also match, or null for none
+     */
+    @SuppressWarnings("unchecked") // ITrackerService.queryWorkItems is declared with a raw IPObjectList
+    public List<IWorkItem> findWorkItemsById(String projectId, String identifierCustomFieldId, Collection<String> ids, @Nullable String filterQuery) {
         // The identifiers are raw spreadsheet cell values. Unescaped they either stop matching a value
         // carrying a space, which makes the importer create a duplicate work item, or they break the query
         // and take the whole chunk of rows down with them.
@@ -94,10 +102,23 @@ public class PolarionServiceExt extends ch.sbb.polarion.extension.generic.servic
         if (identifierTerms == null) {
             return List.of();
         }
-        String query = LuceneUtils.and(LuceneUtils.projectTerm(projectId), identifierTerms);
+        String query = LuceneUtils.and(LuceneUtils.projectTerm(projectId), identifierTerms, filterQuery);
         return trackerService.queryWorkItems(query, "id").stream()
                 .filter(IWorkItem.class::isInstance)
                 .toList();
+    }
+
+    /**
+     * Polarion has no public syntax check for a query, so it runs the query and reports what it throws.
+     *
+     * @throws IllegalArgumentException when Polarion cannot run the query
+     */
+    public void validateWorkItemQuery(@NotNull String projectId, @NotNull String query) {
+        try {
+            trackerService.getDataService().getInstancesCount(IWorkItem.PROTO, LuceneUtils.and(LuceneUtils.projectTerm(projectId), query));
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("Filter query '%s' is invalid, nothing was imported. Cause: %s".formatted(query, e.getMessage()), e);
+        }
     }
 
     public IWorkItem createWorkItem(ITrackerProject project, ITypeOpt workItemCreationType) {

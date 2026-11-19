@@ -40,6 +40,8 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
     public static final String DEFAULT_WI_TYPE = "DEFAULT_WI_TYPE";
     public static final String LINK_COLUMN = "LINK_COLUMN";
     public static final String LINK_COLUMN_UNIQUE = "LINK_COLUMN_UNIQUE";
+    public static final String FILTER_QUERY = "FILTER_QUERY";
+    public static final String SKIP_WORKITEMS_CREATION = "SKIP_WORKITEMS_CREATION";
 
     /**
      * Prefix for columns mapping keys which are used as fillers for test steps items.
@@ -64,6 +66,8 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
     private String defaultWorkItemType;
     private String linkColumn;
     private boolean linkColumnUnique;
+    private String filterQuery;
+    private boolean skipWorkItemsCreation;
 
     @Override
     protected String serializeModelData() {
@@ -80,7 +84,9 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
                 serializeEntry(STEPS_MAPPING, stepsMapping) +
                 serializeEntry(DEFAULT_WI_TYPE, defaultWorkItemType) +
                 serializeEntry(LINK_COLUMN, linkColumn) +
-                serializeEntry(LINK_COLUMN_UNIQUE, linkColumnUnique);
+                serializeEntry(LINK_COLUMN_UNIQUE, linkColumnUnique) +
+                serializeEntry(FILTER_QUERY, filterQuery) +
+                serializeEntry(SKIP_WORKITEMS_CREATION, skipWorkItemsCreation);
     }
 
     @Override
@@ -101,6 +107,8 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
         defaultWorkItemType = deserializeEntry(DEFAULT_WI_TYPE, serializedString);
         linkColumn = deserializeEntry(LINK_COLUMN, serializedString);
         linkColumnUnique = Objects.equals(Boolean.TRUE.toString(), deserializeEntry(LINK_COLUMN_UNIQUE, serializedString));
+        filterQuery = deserializeEntry(FILTER_QUERY, serializedString);
+        skipWorkItemsCreation = Objects.equals(Boolean.TRUE.toString(), deserializeEntry(SKIP_WORKITEMS_CREATION, serializedString));
     }
 
     @JsonIgnore
