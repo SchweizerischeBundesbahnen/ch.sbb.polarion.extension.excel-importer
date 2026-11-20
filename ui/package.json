@@ -4,7 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "docs:index": "node scripts/build-docs-index.mjs",
+    "predev": "npm run docs:index",
     "dev": "vite",
+    "prebuild": "node scripts/build-docs-index.mjs --require",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
@@ -42,6 +45,7 @@
     "eslint-plugin-jsx-a11y-x": "0.2.0",
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.14.0",
+    "node-html-parser": "9.0.7",
     "playwright": "1.65.1",
     "prettier": "3.10.1",
     "typescript": "6.0.3",
