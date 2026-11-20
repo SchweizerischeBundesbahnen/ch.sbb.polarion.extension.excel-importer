@@ -11,8 +11,9 @@
 // into src/docs/search-index.json.
 //
 // Two modes:
-//   --require (used by `prebuild`, i.e. the real Maven/production build): the rendered article MUST be present;
-//      a missing article fails the build (exit 1) rather than silently shipping a stale index.
+//   --require (used by `prebuild`, i.e. the real Maven/production build): the rendered article MUST be present
+//      and yield at least one section; otherwise the build fails (exit 1) rather than silently shipping a stale
+//      or empty index.
 //   default  (used by `predev` and the Vitest globalSetup, i.e. runs without Maven): a missing article is a
 //      warning and an EMPTY index is written, so a fresh clone still runs and tests - the
 //      documentation search is then simply hidden.
@@ -22,10 +23,10 @@
 //
 // The article directory defaults to the shipped webapp html (src/main/resources/webapp/excel-importer-app/html,
 // where markdown2html renders the articles in generate-sources); override it with DOCS_SECTION_INDEX_DIR.
-import { parse } from 'node-html-parser';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { sectionsOf } from './docs-sections.mjs';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const uiDir = resolve(scriptDir, '..');
@@ -36,44 +37,6 @@ const indexDir = process.env.DOCS_SECTION_INDEX_DIR
   ? resolve(process.env.DOCS_SECTION_INDEX_DIR)
   : resolve(repoRoot, 'src/main/resources/webapp/excel-importer-app/html');
 const outFile = resolve(uiDir, 'src/docs/search-index.json');
-
-/** Collapse runs of whitespace and trim. */
-const clean = (text) => text.replace(/\s+/g, ' ').trim();
-
-/**
- * One record per h2/h3/h4 heading: its anchor id, title, and the plain text beneath it up to the next heading. An h4
- * is a subsection of its own, such as "Enum dependencies" under the general settings of a mapping; leaving it out would drop its
- * text from the search.
- * The text is kept whole: the search matches on it and never displays it (results show the titles), so a cap
- * would only hide terms further down a section. All articles together are some 60 KB of text.
- */
-function sectionsOf(html) {
-  // `blockTextElements` lists the elements whose content is raw text rather than markup. Name only the real
-  // raw-text elements: every key counts, whatever its value - `true` keeps the content as one text node,
-  // `false` DISCARDS it - so `pre` must be absent, not false, or no code block (property keys, CSS, config
-  // snippets) would reach the index. Absent, <pre>/<code> parse as elements and `.text` drops their
-  // syntax-highlighting <span>s.
-  const root = parse(html, { blockTextElements: { script: true, style: true, noscript: true } });
-  const elements = root.childNodes.filter((node) => node.nodeType === 1);
-  const sections = [];
-  let current = null;
-  for (const element of elements) {
-    const tag = element.tagName?.toLowerCase() ?? '';
-    if (tag === 'h2' || tag === 'h3' || tag === 'h4') {
-      current = { anchor: element.getAttribute('id') ?? '', title: clean(element.text), body: [] };
-      sections.push(current);
-    } else if (/^h[1-6]$/.test(tag)) {
-      current = null; // h1 / h5-h6 end the current section but are not indexed themselves
-    } else if (current) {
-      current.body.push(element.text);
-    }
-  }
-  return sections.map((section) => ({
-    anchor: section.anchor,
-    title: section.title,
-    text: clean(section.body.join(' ')),
-  }));
-}
 
 const missing = config.items.filter((item) => !existsSync(resolve(indexDir, `${item.id}.html`)));
 if (missing.length > 0) {
@@ -92,7 +55,18 @@ if (missing.length > 0) {
 const records = [];
 for (const item of config.items) {
   const html = readFileSync(resolve(indexDir, `${item.id}.html`), 'utf8');
-  for (const section of sectionsOf(html)) {
+  const sections = sectionsOf(html);
+  if (sections.length === 0) {
+    // An article always has an h2. None found means the rendered HTML no longer has the flat structure
+    // sectionsOf walks, and the search would silently miss the whole article.
+    const message = `build-docs-index: no h2/h3/h4 section found in ${item.id}.html`;
+    if (strict) {
+      console.error(message);
+      process.exit(1);
+    }
+    console.warn(message);
+  }
+  for (const section of sections) {
     records.push({
       doc: item.id,
       docTitle: item.title,
