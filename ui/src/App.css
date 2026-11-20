@@ -386,13 +386,3 @@ code {
   box-sizing: border-box;
 }
 
-/* --- Documentation site: screenshots --- */
-/* A screenshot of the extension is itself white controls on a white page, so without a frame it reads as
-   part of the article around it. The frame is the one the User Guide page had before it became a site.
-   border-box keeps a full-width screenshot inside the column, which the lib's content-box would not. */
-.docs-main .markdown-body img {
-  box-sizing: border-box;
-  max-width: 100%;
-  margin: 10px 0;
-  border: 15px solid #eee;
-}
