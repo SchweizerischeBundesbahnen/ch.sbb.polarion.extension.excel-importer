@@ -22,12 +22,15 @@
                   projectGroupScope="false"
                   repositoryScope="true"/>
 
-        <extender id="user-guide"
-                  name="User Guide"
+        <!-- Single entry point to the documentation site (Quick Start, User Guide, REST API, Velocity
+             Functions). It lands on Quick Start; the in-page sidebar navigates to the rest, so those
+             articles need no menu entry of their own. -->
+        <extender id="documentation"
+                  name="Documentation"
                   parentNodeId="excel-importer"
                   parentNodeName="Excel Importer"
                   iconUrl="/polarion/excel-importer-app/ui/images/menu/16x16/user_guide.svg"
-                  pageUrl="/polarion/excel-importer-app/ui/app/index.html?feature=user-guide&amp;embedded=true&amp;scope=$scope$"
+                  pageUrl="/polarion/excel-importer-app/ui/app/index.html?feature=quick-start&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>

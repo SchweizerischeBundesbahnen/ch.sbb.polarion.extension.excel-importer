@@ -43,6 +43,8 @@ export default defineConfig({
     ],
   },
   test: {
+    // Generates the (uncommitted) documentation search index before any test file imports it.
+    globalSetup: ['./scripts/vitest-global-setup.mjs'],
     include: ['test/**/*.{test,spec}.{ts,tsx}'],
     setupFiles: ['./test/setup.ts'],
     // Insulate the suite from a developer's `ui/.env.local`. Vite loads that file in test mode too, so a

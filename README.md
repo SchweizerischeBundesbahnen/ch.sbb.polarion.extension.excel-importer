@@ -62,6 +62,17 @@ Changes only take effect after restart of Polarion.
    ```
 5. Save changes by clicking 💾 Save
 
+## Documentation
+
+| Page | Contents |
+| --- | --- |
+| [Quick start](QUICK_START.md) | From the installed extension to the first imported file |
+| [User guide](USER_GUIDE.md) | Mappings, the import and the cell content each field type accepts |
+| [REST API](REST_API.md) | Importing files, managing mappings and exporting tables from a script |
+| [Velocity functions](VELOCITY_FUNCTIONS.md) | Exporting HTML tables of a Polarion page to Excel |
+
+The same pages are available in Polarion: Administration ➙ Excel Importer ➙ Documentation.
+
 ## REST API
 
 This extension provides REST API. OpenAPI Specification can be obtained [here](docs/openapi.json).

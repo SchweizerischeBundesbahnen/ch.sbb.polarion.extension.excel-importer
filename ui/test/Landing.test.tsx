@@ -35,7 +35,15 @@ describe('Landing page', () => {
       a.getAttribute('href'),
     );
     expect(links).toEqual(
-      expect.arrayContaining(['?feature=about', '?feature=mappings', '?feature=user-guide', '?feature=import-file']),
+      expect.arrayContaining([
+        '?feature=about',
+        '?feature=mappings',
+        '?feature=quick-start',
+        '?feature=user-guide',
+        '?feature=rest-api',
+        '?feature=velocity-functions',
+        '?feature=import-file',
+      ]),
     );
     // Projects loaded into the scope picker's options (global + the two projects).
     await vi.waitFor(() => {
