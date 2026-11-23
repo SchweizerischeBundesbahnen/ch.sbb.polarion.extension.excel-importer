@@ -237,6 +237,18 @@ describe('Mappings end import row', () => {
       { timeout: 5000 },
     );
   });
+
+  it('refuses to save a decimal end row', async () => {
+    await mount(routesWithRows({ startFromRow: 1, endAtRow: 10 }));
+    await vi.waitFor(() => expect(endInput()?.value).toBe('10'), { timeout: 5000 });
+    setNumber(endInput()!, '4.5');
+    expect(endInput()?.value).toBe('4.5');
+    saveButton().click();
+    await vi.waitFor(
+      () => expect(document.body.textContent).toContain('End row number must be a positive integer value'),
+      { timeout: 5000 },
+    );
+  });
 });
 
 describe('Mappings link column uniqueness', () => {

@@ -178,7 +178,7 @@ class ExcelSheetMappingSettingsTest {
             assertEquals("setting_oneCustomSheetName", loadedOneModel.getSheetName());
             assertEquals("setting_oneDefaultWorkItemType", loadedOneModel.getDefaultWorkItemType());
             assertEquals(Map.of("setting_oneMapping1", Map.of("mapping1", "mapping1")), loadedOneModel.getEnumsMapping());
-            assertEquals("setting_oneDefaultWorkItemType", loadedOneModel.getDefaultWorkItemType());
+            assertEquals(Map.of("setting_oneMapping1", "mapping1"), loadedOneModel.getColumnsMapping());
             assertEquals(1, loadedOneModel.getStartFromRow());
             assertEquals("setting_one", loadedOneModel.getBundleTimestamp());
 
@@ -186,7 +186,7 @@ class ExcelSheetMappingSettingsTest {
             assertEquals("setting_twoCustomSheetName", loadedTwoModel.getSheetName());
             assertEquals("setting_twoDefaultWorkItemType", loadedTwoModel.getDefaultWorkItemType());
             assertEquals(Map.of("setting_twoMapping1", Map.of("mapping1", "mapping1")), loadedTwoModel.getEnumsMapping());
-            assertEquals("setting_twoDefaultWorkItemType", loadedTwoModel.getDefaultWorkItemType());
+            assertEquals(Map.of("setting_twoMapping1", "mapping1"), loadedTwoModel.getColumnsMapping());
             assertEquals(1, loadedTwoModel.getStartFromRow());
             assertEquals("setting_two", loadedTwoModel.getBundleTimestamp());
         }

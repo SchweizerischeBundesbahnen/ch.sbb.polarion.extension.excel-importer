@@ -17,6 +17,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,16 +34,24 @@ public class XlsxParser implements IParser {
 
     @Override
     @SneakyThrows
-    @SuppressWarnings("java:S1166")
     public List<Map<String, Object>> parseFileStream(InputStream inputStream, IParserSettings parserSettings) {
-        List<Map<String, Object>> result = new ArrayList<>();
+        try (inputStream; XSSFWorkbook workbook = openWorkbook(inputStream)) {
+            return parseWorkbook(workbook, parserSettings);
+        }
+    }
 
-        XSSFWorkbook workbook;
+    @SuppressWarnings("java:S1166")
+    private static XSSFWorkbook openWorkbook(InputStream inputStream) throws IOException {
         try {
-            workbook = new XSSFWorkbook(inputStream);
+            return new XSSFWorkbook(inputStream);
         } catch (NotOfficeXmlFileException | POIXMLException e) {
             throw new IllegalArgumentException("File isn't an xlsx: " + e.getMessage(), e);
         }
+    }
+
+    private List<Map<String, Object>> parseWorkbook(XSSFWorkbook workbook, IParserSettings parserSettings) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
         int sheetIndex = 0;
         String sheetName = parserSettings.getSheetName();
         if (!StringUtils.isEmpty(sheetName) && (sheetIndex = workbook.getSheetIndex(sheetName)) == -1) {
@@ -72,7 +81,6 @@ public class XlsxParser implements IParser {
                 }
             }
         }
-        inputStream.close();
 
         return result;
     }

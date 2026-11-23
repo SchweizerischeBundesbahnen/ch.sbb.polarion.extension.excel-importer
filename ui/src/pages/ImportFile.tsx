@@ -198,8 +198,8 @@ export default function ImportFile() {
           </div>
 
           {importing && (
-            <div className="import-progress">
-              <span className="spinner" />
+            <div className="import-progress" role="status" aria-live="polite" aria-atomic="true">
+              <span className="spinner" aria-hidden="true" />
               <span>Import is in progress. Please wait...</span>
             </div>
           )}

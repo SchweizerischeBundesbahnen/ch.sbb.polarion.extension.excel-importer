@@ -116,7 +116,9 @@ public class ExcelSheetMappingSettingsModel extends SettingsModel implements IPa
     public Set<String> getUsedColumnsLetters() {
         Set<String> result = new HashSet<>((columnsMapping != null) ? columnsMapping.keySet().stream()
                 .filter(k -> !k.startsWith(TEST_STEPS_COLUMN_FILLER_PREFIX)).collect(Collectors.toSet()) : Set.of());
-        stepsMapping.values().forEach(m -> result.addAll(m.values()));
+        if (stepsMapping != null) {
+            stepsMapping.values().forEach(m -> result.addAll(m.values()));
+        }
         return result;
     }
 

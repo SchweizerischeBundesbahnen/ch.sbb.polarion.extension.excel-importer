@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.excel_importer.service.htmltable;
 
 import lombok.Builder;
+import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
@@ -11,6 +12,7 @@ import java.util.stream.Stream;
  * Cascade properties for the cell. Used for easy access to the properties of parent row or the whole table.
  */
 @Builder
+@ToString
 public class CellConfig {
 
     private Map<String, String> table;

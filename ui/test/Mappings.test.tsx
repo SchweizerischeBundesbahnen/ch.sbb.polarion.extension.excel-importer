@@ -217,9 +217,20 @@ describe('Mappings page', () => {
 
   it('treats an empty (NaN) start row as invalid', async () => {
     await mountLoaded();
-    await userEvent.clear(document.querySelector<HTMLInputElement>('input[type="number"]')!); // -> parseInt('') = NaN
+    await userEvent.clear(document.querySelector<HTMLInputElement>('input[type="number"]')!); // -> valueAsNumber = NaN
     sbbButton('Save').click();
     await vi.waitFor(() => expect(document.body.textContent).toContain('Row number must be a positive integer value'));
+  });
+
+  it('refuses to save a decimal start row', async () => {
+    await mountLoaded();
+    const startRow = document.querySelector<HTMLInputElement>('#start-from-row')!;
+    await userEvent.clear(startRow);
+    await userEvent.type(startRow, '1.5'); // typed key by key: the value must not be cut to 1
+    expect(startRow.value).toBe('1.5');
+    sbbButton('Save').click();
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Row number must be a positive integer value'));
+    expect(fetchMock.mock.calls.some((c) => (c[1]?.method ?? 'GET').toUpperCase() === 'PUT')).toBe(false);
   });
 
   it('toggles the general-settings checkboxes', async () => {
@@ -242,6 +253,37 @@ describe('Mappings page', () => {
       .find((b) => (b.textContent ?? '').trim() === 'Add new')!
       .click();
     await vi.waitFor(() => expect(document.querySelector('.mappings-form.dimmed')).not.toBeNull());
+  });
+
+  it('keeps the keyboard out of the form while the configuration-name editor is open', async () => {
+    await mountLoaded();
+    const form = document.querySelector<HTMLElement>('.mappings-form')!;
+    const sheetName = sheetNameInput()!;
+    sheetName.focus();
+    expect(document.activeElement).toBe(sheetName);
+
+    sbbButton('Add new').click();
+    await vi.waitFor(() => expect(form.inert).toBe(true));
+    for (let i = 0; i < 15; i++) {
+      await userEvent.tab();
+      expect(form.contains(document.activeElement)).toBe(false);
+    }
+    sheetName.focus();
+    expect(document.activeElement).not.toBe(sheetName);
+  });
+
+  it('makes the form editable again when the configuration-name editor is closed', async () => {
+    await mountLoaded();
+    const form = document.querySelector<HTMLElement>('.mappings-form')!;
+    sbbButton('Add new').click();
+    await vi.waitFor(() => expect(form.inert).toBe(true));
+    const closeEditor = Array.from(document.querySelectorAll<HTMLButtonElement>('.sbb-btn')).find(
+      (b) => (b.textContent ?? '').trim() === 'Cancel' && !form.contains(b),
+    )!;
+    closeEditor.click();
+    await vi.waitFor(() => expect(form.inert).toBe(false));
+    sheetNameInput()!.focus();
+    expect(document.activeElement).toBe(sheetNameInput());
   });
 
   it('renders Test Steps sub-rows for a Test Steps field', async () => {
