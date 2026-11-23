@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.excel_importer.service.parser.impl.XlsxParser;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedConstruction;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.apache.poi.ss.usermodel.FormulaError;
@@ -20,6 +21,7 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,7 @@ import java.util.Set;
 
 import static ch.sbb.polarion.extension.excel_importer.service.parser.impl.XlsxParser.ROW_NUMBER_KEY;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class XlsxParserTest {
@@ -151,6 +154,36 @@ class XlsxParserTest {
                     () -> xlsxParser.parseFileStream(xlsxInputStream, parserSettings),
                     "Expected IllegalArgumentException thrown, but it didn't");
             assertTrue(exception.getMessage().startsWith("File isn't an xlsx"));
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testResourcesClosedAfterSuccessfulParse() {
+        XSSFSheet sheet = mock(XSSFSheet.class);
+        when(sheet.iterator()).thenReturn(Collections.emptyIterator());
+        InputStream inputStream = mock(InputStream.class);
+        try (MockedConstruction<XSSFWorkbook> workbooks = mockConstruction(XSSFWorkbook.class,
+                (mock, context) -> when(mock.getSheetAt(0)).thenReturn(sheet))) {
+            assertEquals(List.of(), new XlsxParser().parseFileStream(inputStream, generateSettings(SHEET_FIRST, 1)));
+
+            verify(workbooks.constructed().get(0)).close();
+            verify(inputStream).close();
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testResourcesClosedAfterFailedParse() {
+        InputStream inputStream = mock(InputStream.class);
+        IParserSettings settings = generateSettings("unknown", 1);
+        XlsxParser xlsxParser = new XlsxParser();
+        try (MockedConstruction<XSSFWorkbook> workbooks = mockConstruction(XSSFWorkbook.class,
+                (mock, context) -> when(mock.getSheetIndex("unknown")).thenReturn(-1))) {
+            assertThrows(IllegalArgumentException.class, () -> xlsxParser.parseFileStream(inputStream, settings));
+
+            verify(workbooks.constructed().get(0)).close();
+            verify(inputStream).close();
         }
     }
 

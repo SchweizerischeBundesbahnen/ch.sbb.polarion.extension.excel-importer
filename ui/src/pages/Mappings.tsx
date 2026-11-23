@@ -236,11 +236,11 @@ export default function Mappings() {
     if (!sheetName || sheetName.trim().length === 0) {
       return 'Sheet name cannot be empty';
     }
-    if (startFromRow === undefined || startFromRow === null || Number.isNaN(startFromRow) || startFromRow < 1) {
+    if (!Number.isInteger(startFromRow) || startFromRow < 1) {
       return 'Row number must be a positive integer value';
     }
     if (endAtRowEnabled) {
-      if (Number.isNaN(endAtRow) || endAtRow < 1) {
+      if (!Number.isInteger(endAtRow) || endAtRow < 1) {
         return 'End row number must be a positive integer value';
       }
       if (endAtRow < startFromRow) {
@@ -404,7 +404,7 @@ export default function Mappings() {
         onEditingNameChange={setEditingName}
       />
 
-      <div className={editingName ? 'mappings-form dimmed' : 'mappings-form'}>
+      <div className={editingName ? 'mappings-form dimmed' : 'mappings-form'} inert={editingName}>
         <h2>General Settings</h2>
         <table className="general-settings">
           <tbody>
@@ -427,7 +427,7 @@ export default function Mappings() {
                   min={1}
                   step={1}
                   value={Number.isNaN(startFromRow) ? '' : startFromRow}
-                  onChange={(e) => setStartFromRow(parseInt(e.target.value, 10))}
+                  onChange={(e) => setStartFromRow(e.target.valueAsNumber)}
                 />
               </td>
             </tr>
@@ -460,7 +460,7 @@ export default function Mappings() {
                     min={Number.isNaN(startFromRow) ? 1 : startFromRow}
                     step={1}
                     value={Number.isNaN(endAtRow) ? '' : endAtRow}
-                    onChange={(e) => setEndAtRow(parseInt(e.target.value, 10))}
+                    onChange={(e) => setEndAtRow(e.target.valueAsNumber)}
                   />
                 )}
               </td>
